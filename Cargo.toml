@@ -1,0 +1,64 @@
+[workspace]
+members = [
+    "packages/dega-inj",
+    "contracts/dega-cw721",
+    "contracts/dega-minter",
+]
+resolver = "2"
+
+[workspace.package]
+version         = "1.0.0"
+rust-version    = "1.69.0"
+edition         = "2021"
+homepage        = "https://www.dega.org"
+# TODO Replace with final URL
+repository      = "https://github.com/CerratoA/inj-contracts"
+license         = "None (all rights reserved)"
+publish         = false
+
+
+[workspace.dependencies]
+cosmwasm-std            = { version = "1.2.1" }
+cosmwasm-schema         = { version = "1.2.1" }
+cw-storage-plus         = { version = "0.15.0" }
+cw2                     = { version = "1.1.2" }
+cw721                   = { version = "0.18.0" }
+cw721-base              = { version = "0.18.0" }
+cw-utils                = { version = "1.0.1" }
+cw-multi-test           = { version = "0.16.2" }
+cw-ownable              = { version = "0.5.1" }
+injective-cosmwasm      = { version = "0.1.39" }
+injective-math          = { version = "0.1.23" }
+ethereum-types          = { version = "0.5.2" }
+schemars                = { version = "0.8.8" }
+serde                   = { version = "1.0.136", default-features = false, features = ["derive"] }
+serde_repr              = { version = "0.1" }
+subtle-encoding         = { version = "0.5.1", features = ["bech32-preview"] }
+thiserror               = { version = "1.0.31" }
+
+dega-inj                = { version = "1.0.0", path = "packages/dega-inj" }
+dega-cw721              = { version = "1.0.0", path = "contracts/dega-cw721" }
+dega-minter         = { version = "1.0.0", path = "contracts/dega-minter" }
+
+[profile.release.package.dega-inj]
+codegen-units       = 1
+incremental         = false
+
+[profile.release.package.cw721]
+codegen-units       = 1
+incremental         = false
+
+[profile.release.package.dega-minter]
+codegen-units       = 1
+incremental         = false
+
+[profile.release]
+opt-level           = 3
+debug               = false
+rpath               = false
+lto                 = true
+debug-assertions    = false
+codegen-units       = 1
+panic               = 'abort'
+incremental         = false
+overflow-checks     = true
