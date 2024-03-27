@@ -92,7 +92,6 @@ pub mod entry {
     pub fn migrate(
         deps: DepsMut,
         _env: Env,
-        _info: MessageInfo,
         _msg: Cw721BaseInstantiateMsg,
     ) -> Result<Response, ContractError> {
 

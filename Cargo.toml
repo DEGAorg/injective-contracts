@@ -3,6 +3,7 @@ members = [
     "packages/dega-inj",
     "contracts/dega-cw721",
     "contracts/dega-minter",
+    "cli",
 ]
 resolver = "2"
 
@@ -16,14 +17,13 @@ repository      = "https://github.com/CerratoA/inj-contracts"
 license         = "None (all rights reserved)"
 publish         = false
 
-
 [workspace.dependencies]
 cosmwasm-std            = { version = "1.2.1" }
 cosmwasm-schema         = { version = "1.2.1" }
 cw-storage-plus         = { version = "0.15.0" }
 cw2                     = { version = "1.1.2" }
 cw721                   = { version = "0.18.0" }
-cw721-base              = { version = "0.18.0" }
+cw721-base              = { version = "0.18.0", library = true }
 cw-utils                = { version = "1.0.1" }
 cw-multi-test           = { version = "0.16.2" }
 cw-ownable              = { version = "0.5.1" }
@@ -38,7 +38,8 @@ thiserror               = { version = "1.0.31" }
 
 dega-inj                = { version = "1.0.0", path = "packages/dega-inj" }
 dega-cw721              = { version = "1.0.0", path = "contracts/dega-cw721" }
-dega-minter         = { version = "1.0.0", path = "contracts/dega-minter" }
+dega-minter             = { version = "1.0.0", path = "contracts/dega-minter" }
+dega-inj-cli            = { version = "1.0.0", path = "cli" }
 
 [profile.release.package.dega-inj]
 codegen-units       = 1
@@ -52,6 +53,10 @@ incremental         = false
 codegen-units       = 1
 incremental         = false
 
+[profile.release.package.dega-inj-cli]
+codegen-units       = 1
+incremental         = false
+
 [profile.release]
 opt-level           = 3
 debug               = false
@@ -62,3 +67,4 @@ codegen-units       = 1
 panic               = 'abort'
 incremental         = false
 overflow-checks     = true
+

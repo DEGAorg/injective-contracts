@@ -18,7 +18,7 @@ args    = ["clippy", "--tests", "--", "-D", "warnings"]
 
 [tasks.build]
 command = "cargo"
-args    = ["build", "--release", "--locked", "--target", "wasm32-unknown-unknown"]
+args    = ["build", "--workspace", "--release", "--locked", "--target", "wasm32-unknown-unknown", "--exclude", "dega-inj-cli"]
 
 [tasks.optimize]
 # https://hub.docker.com/r/cosmwasm/workspace-optimizer/tags https://hub.docker.com/r/cosmwasm/workspace-optimizer-arm64/tags

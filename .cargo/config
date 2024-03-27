@@ -1,0 +1,2 @@
+[alias]
+install-cli = "install --path cli --debug"
