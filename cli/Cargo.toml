@@ -7,10 +7,6 @@ edition = "2021"
 name = "dega-inj"
 path = "src/main.rs"
 
-[profile.release]
-# Needed for cosm-injective to compile properly
-debug-assertions        = true
-
 [dependencies]
 cosmwasm-std            = { workspace = true }
 cw-storage-plus         = { workspace = true }
@@ -27,6 +23,9 @@ serde                   = { workspace = true }
 serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
+
+sg721                   = { workspace = true }
+sg721-base              = { workspace = true, features = ["library"] }
 
 dega-inj                = { workspace = true }
 dega-cw721              = { workspace = true }

@@ -1,5 +1,7 @@
+use cosmwasm_std::Decimal;
 // Use this file to define the various default message you want deploy to use
 use lazy_static::lazy_static;
+use sg721::{CollectionInfo, RoyaltyInfoResponse};
 
 
 pub const ADMIN: &str = "inj1wgkzl830488jjzfut7lqhxdsynxc6njmr2j9kv";
@@ -13,7 +15,25 @@ lazy_static! {
         name: "TestCollection".into(),
         symbol: "TEST_COLLECTION".into(),
         minter: ADMIN.into(),
+        collection_info: CollectionInfo {
+            creator: ADMIN.into(),
+            description: "Test Collection".into(),
+            image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
+            external_link: Some("https://realms.degaplatform.com/".into()),
+            explicit_content: Some(false),
+            start_trading_time: None,
+            royalty_info: Some(RoyaltyInfoResponse {
+                payment_address: ADMIN.into(),
+                share: Decimal::percent(2),
+            }),
+        }
     };
+
+    // pub static ref CW721_INSTANTIATE: cw721_base::msg::InstantiateMsg = cw721_base::msg::InstantiateMsg {
+    //     name: "TestCollection".into(),
+    //     symbol: "TEST_COLLECTION".into(),
+    //     minter: ADMIN.into()
+    // };
 
     /// Perhaps we want to mint some tokens after the contract is deployed.
     /// We could send this message as part of the set_up_msgs.

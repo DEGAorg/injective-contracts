@@ -12,4 +12,7 @@ pub enum ContractError {
 
     #[error("{0}")]
     Cw721Base(#[from] cw721_base::ContractError),
+
+    #[error("{0}")]
+    Sg721Base(#[from] sg721_base::ContractError),
 }

@@ -12,28 +12,36 @@ use cosmwasm_std::{
 use cw2::{
     set_contract_version
 };
+use crate::error::{
+    ContractError
+};
+use cosmwasm_std::{
+    Binary,
+    Deps,
+    //StdError,
+    StdResult,
+    Empty
+};
+
+// CW721 BASE IMPORTS
 use cw721_base::{
     Extension,
 };
 use cw721_base::{
-    entry::{
-        instantiate as base_cw721_instantiate,
-        execute as base_cw721_execute,
-        query as base_cw721_query
-    },
+    // entry::{
+    //     instantiate as base_cw721_instantiate,
+    //     execute as base_cw721_execute,
+    //     query as base_cw721_query
+    // },
     msg::{
         InstantiateMsg as Cw721BaseInstantiateMsg,
         ExecuteMsg as Cw721BaseExecuteMsgTemplate,
         QueryMsg as Cw721BaseQueryMsgTemplate,
     }
 };
-use crate::error::{
-    ContractError
-};
-use cosmwasm_std::Empty;
 use cw721_base::{
     Cw721Contract,
-    ContractError as Cw721BaseContractError,
+    //ContractError as Cw721BaseContractError,
 };
 
 pub type Cw721BaseExecuteMsg = Cw721BaseExecuteMsgTemplate<Extension,Empty>;
@@ -41,11 +49,36 @@ pub type Cw721BaseQueryMsg = Cw721BaseQueryMsgTemplate<Empty>;
 pub type Cw721BaseContract<'a> = Cw721Contract<'a,Extension,Empty,Empty,Empty>;
 
 
+// SG721 BASE IMPORTS
+use sg721::{
+    InstantiateMsg as Sg721BaseInstantiateMsg,
+};
+use sg721_base::{
+    entry::{
+        instantiate as base_sg721_instantiate,
+        execute as base_sg721_execute,
+        query as base_sg721_query
+    },
+    msg::{
+        //ExecuteMsg as Sg721BaseExecuteMsgTemplate,
+        QueryMsg as Sg721BaseQueryMsg,
+    },
+    ExecuteMsg as Sg721BaseExecuteMsg,
+};
+
+use sg721_base::{
+    Sg721Contract,
+    ContractError as Sg721BaseContractError,
+};
+
+pub type Sg721BaseContract<'a> = Sg721Contract<'a,Extension>;
+
+
 const CONTRACT_NAME: &str = "dega-cw721";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
-    use cosmwasm_std::{Binary, Deps, StdError, StdResult};
+
     use super::{
         *
     };
@@ -55,13 +88,13 @@ pub mod entry {
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        msg: Cw721BaseInstantiateMsg,
+        msg: Sg721BaseInstantiateMsg,
     ) -> Result<Response, ContractError> {
 
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-        base_cw721_instantiate(deps, env, info, msg)
-            .map_err(| e: StdError | e.into())
+        base_sg721_instantiate(deps, env, info, msg)
+            .map_err(| e: Sg721BaseContractError | e.into())
     }
 
     #[entry_point]
@@ -69,23 +102,23 @@ pub mod entry {
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        msg: Cw721BaseExecuteMsg,
+        msg: Sg721BaseExecuteMsg,
     ) -> Result<Response, ContractError> {
 
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-        base_cw721_execute(deps, env, info, msg.into())
-            .map_err(| e: Cw721BaseContractError | e.into())
+        base_sg721_execute(deps, env, info, msg)
+            .map_err(| e: Sg721BaseContractError | e.into())
     }
 
     #[entry_point]
     pub fn query(
         deps: Deps,
         env: Env,
-        msg: Cw721BaseQueryMsg
+        msg: Sg721BaseQueryMsg
     ) -> StdResult<Binary> {
 
-        base_cw721_query(deps, env, msg.into())
+        base_sg721_query(deps, env, msg.into())
     }
 
     #[entry_point]

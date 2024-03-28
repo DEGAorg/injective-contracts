@@ -1,0 +1,46 @@
+[package]
+name        = "base-minter"
+authors     = ["Shane Vitarana <s@noreply.publicawesome.com>"]
+description = "Stargaze NFT basic 1/1 minter contract"
+version      = "3.5.0"
+edition      = "2021"
+homepage     = "https://stargaze.zone"
+repository   = "https://github.com/public-awesome/launchpad"
+license      = "Apache-2.0"
+
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all instantiate/execute/query exports
+library = []
+
+[dependencies]
+base-factory    = { workspace = true }
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }
+cw2             = { workspace = true }
+cw721           = { workspace = true }
+cw721-base      = { workspace = true, features = ["library"] }
+cw-storage-plus = { workspace = true }
+cw-utils        = { workspace = true }
+schemars        = { workspace = true }
+serde           = { workspace = true }
+sg1             = { workspace = true }
+sg2             = { workspace = true }
+sg4             = { workspace = true }
+sg721           = { workspace = true }
+sg721-base      = { workspace = true, features = ["library"] }
+sg-std          = { workspace = true }
+thiserror       = { workspace = true }
+url             = { workspace = true }

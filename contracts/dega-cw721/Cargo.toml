@@ -51,6 +51,9 @@ serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 
+sg721                   = { workspace = true, features = ["library"] }
+sg721-base              = { workspace = true, features = ["library"] }
+
 dega-inj                = { workspace = true }
 
 [dev-dependencies]
