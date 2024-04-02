@@ -1,7 +1,7 @@
 [package]
-name            = "sg-lib-replace"
+name            = "sg-mod"
 authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
-description     = "A library used to fix stargate chain dependencies in a simple way"
+description     = "A library used to mod stargate chain dependencies in a simple way"
 version         = "3.5.0"
 rust-version    = { workspace = true }
 edition         = { workspace = true }
@@ -31,5 +31,8 @@ library = []
 cosmwasm-std                = { workspace = true }
 cosmwasm-schema             = { workspace = true }
 injective-cosmwasm          = { workspace = true }
+sg2                         = { workspace = true }
+sg4                         = { workspace = true }
+sg721                       = { workspace = true }
 
 [dev-dependencies]

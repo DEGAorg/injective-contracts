@@ -74,7 +74,7 @@ use sg721_base::{
 pub type Sg721BaseContract<'a> = Sg721Contract<'a,Extension>;
 
 
-const CONTRACT_NAME: &str = "dega-cw721";
+const CONTRACT_NAME: &str = "DEGA CW721";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {

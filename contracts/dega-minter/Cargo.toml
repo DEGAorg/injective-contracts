@@ -51,6 +51,10 @@ serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 
+sg4                     = { workspace = true }
+sg-mod                  = { workspace = true }
+base-minter             = { workspace = true, features = ["library"] }
+
 dega-inj                = { workspace = true }
 
 [dev-dependencies]

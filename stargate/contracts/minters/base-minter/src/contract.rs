@@ -1,22 +1,22 @@
 use crate::error::ContractError;
 use crate::msg::{ConfigResponse, ExecuteMsg};
-use crate::state::{increment_token_index, Config, COLLECTION_ADDRESS, CONFIG, STATUS};
-use base_factory::msg::{BaseMinterCreateMsg, ParamsResponse};
-use base_factory::state::Extension;
+use crate::state::{increment_token_index, Config, COLLECTION_ADDRESS, CONFIG, STATUS, MinterConfigInner};
+use sg_mod::base_factory::msg::{BaseMinterCreateMsg}; // DEGA MOD (added sg_mod)
+use sg_mod::base_factory::state::Extension; // DEGA MOD (added sg_mod)
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Addr, Binary, CosmosMsg, Decimal, Deps, DepsMut, Empty, Env, MessageInfo,
+    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, // DEGA MOD (removed unused imports)
     Reply, Response, StdResult, SubMsg, Timestamp, WasmMsg,
 };
-use cw2::set_contract_version;
-use cw_utils::{must_pay, nonpayable, parse_reply_instantiate_data};
-use sg1::checked_fair_burn;
-use sg2::query::Sg2QueryMsg;
+//use cw2::set_contract_version; // DEGA MOD (removed dependency)
+use cw_utils::{nonpayable, parse_reply_instantiate_data}; // DEGA MOD (removed unused imports)
+//use sg1::checked_fair_burn; // DEGA MOD (removed dependency)
+//use sg2::query::Sg2QueryMsg; // DEGA MOD (removed dependency)
 use sg4::{QueryMsg, Status, StatusResponse, SudoMsg};
 use sg721::{ExecuteMsg as Sg721ExecuteMsg, InstantiateMsg as Sg721InstantiateMsg};
 use sg721_base::msg::{CollectionInfoResponse, QueryMsg as Sg721QueryMsg};
-use sg_std::NATIVE_DENOM;
+//use sg_mod::sg_std::NATIVE_DENOM; // DEGA MOD (added sg_mod / removed unused import)
 use url::Url;
 
 const CONTRACT_NAME: &str = "crates.io:sg-base-minter";
@@ -30,31 +30,37 @@ pub fn instantiate(
     info: MessageInfo,
     msg: BaseMinterCreateMsg,
 ) -> Result<Response, ContractError> {
-    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    //set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?; // DEGA MOD - set in the child
 
     let factory = info.sender.clone();
 
     // set default status so it can be queried without failing
     STATUS.save(deps.storage, &Status::default())?;
 
+    // DEGA MOD (No factor concept so no need for info from factory)
     // Make sure the sender is the factory contract
     // This will fail if the sender cannot parse a response from the factory contract
-    let factory_params: ParamsResponse = deps
-        .querier
-        .query_wasm_smart(factory.clone(), &Sg2QueryMsg::Params {})?;
+    // let factory_params: ParamsResponse = deps
+    //     .querier
+    //     .query_wasm_smart(factory.clone(), &Sg2QueryMsg::Params {})?;
+
+    let minter_config_inner = MinterConfigInner {
+        params: msg.init_msg.params.clone(),
+        extension: Empty {},
+    };
 
     let config = Config {
-        factory: factory.clone(),
+        //factory: factory.clone(), // DEGA MOD (factory concept not used)
         collection_code_id: msg.collection_params.code_id,
         // assume the mint price is the minimum mint price
         // 100% is fair burned
-        mint_price: factory_params.params.min_mint_price,
-        extension: Empty {},
+        mint_price: msg.init_msg.params.min_mint_price, // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
+        extension: minter_config_inner, // DEGA MOD (inject the minter params into the config in the extension slot)
     };
 
     // Use default start trading time if not provided
     let mut collection_info = msg.collection_params.info.clone();
-    let offset = factory_params.params.max_trading_offset_secs;
+    let offset = msg.init_msg.params.max_trading_offset_secs; // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
     let start_trading_time = msg
         .collection_params
         .info
@@ -84,6 +90,7 @@ pub fn instantiate(
             msg.collection_params.name.trim()
         ),
     };
+
     let submsg = SubMsg::reply_on_success(wasm_msg, INSTANTIATE_SG721_REPLY_ID);
 
     Ok(Response::new()
@@ -91,7 +98,8 @@ pub fn instantiate(
         .add_attribute("contract_name", CONTRACT_NAME)
         .add_attribute("contract_version", CONTRACT_VERSION)
         .add_attribute("sender", factory)
-        .add_submessage(submsg))
+        .add_submessage(submsg)
+    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -114,7 +122,7 @@ pub fn execute_mint_sender(
     info: MessageInfo,
     token_uri: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
+    //let config = CONFIG.load(deps.storage)?; // DEGA MOD - not used
     let collection_address = COLLECTION_ADDRESS.load(deps.storage)?;
 
     // This is a 1:1 minter, minted at min_mint_price
@@ -135,21 +143,22 @@ pub fn execute_mint_sender(
 
     let mut res = Response::new();
 
-    let factory: ParamsResponse = deps
-        .querier
-        .query_wasm_smart(config.factory, &Sg2QueryMsg::Params {})?;
-    let factory_params = factory.params;
-
-    let funds_sent = must_pay(&info, NATIVE_DENOM)?;
-
-    // Create network fee msgs
-    let mint_fee_percent = Decimal::bps(factory_params.mint_fee_bps);
-    let network_fee = config.mint_price.amount * mint_fee_percent;
-    // For the base 1/1 minter, the entire mint price should be Fair Burned
-    if network_fee != funds_sent {
-        return Err(ContractError::InvalidMintPrice {});
-    }
-    checked_fair_burn(&info, network_fee.u128(), None, &mut res)?;
+    // DEGA MOD - Comment out fair burn logic. Note, might be helpful later as secondary market royalty example.
+    // let factory: ParamsResponse = deps
+    //     .querier
+    //     .query_wasm_smart(config.factory, &Sg2QueryMsg::Params {})?;
+    // let factory_params = factory.params;
+    //
+    // let funds_sent = must_pay(&info, NATIVE_DENOM)?;
+    //
+    // // Create network fee msgs
+    // let mint_fee_percent = Decimal::bps(factory_params.mint_fee_bps);
+    // let network_fee = config.mint_price.amount * mint_fee_percent;
+    // // For the base 1/1 minter, the entire mint price should be Fair Burned
+    // if network_fee != funds_sent {
+    //     return Err(ContractError::InvalidMintPrice {});
+    // }
+    // checked_fair_burn(&info, network_fee.u128(), None, &mut res)?;
 
     // Create mint msgs
     let mint_msg = Sg721ExecuteMsg::<Extension, Empty>::Mint {
@@ -169,7 +178,8 @@ pub fn execute_mint_sender(
         .add_attribute("action", "mint")
         .add_attribute("sender", info.sender)
         .add_attribute("token_uri", token_uri)
-        .add_attribute("network_fee", network_fee.to_string()))
+        //.add_attribute("network_fee", network_fee.to_string()) // DEGA MOD - network fee removed
+    )
 }
 
 pub fn execute_update_start_trading_time(

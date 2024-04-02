@@ -1,0 +1,16 @@
+[package]
+name        = "sg4"
+authors     = ["Shane Vitarana <s@noreply.publicawesome.com>"]
+description = "Definition and types for the SG4 interface"
+version      = "3.5.0"
+edition      = "2021"
+homepage     = "https://stargaze.zone"
+repository   = "https://github.com/public-awesome/launchpad"
+license      = "Apache-2.0"
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }
+schemars        = { workspace = true }
+serde           = { workspace = true }
+thiserror       = { workspace = true }

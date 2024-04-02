@@ -1,6 +1,6 @@
 use cosmwasm_std::{StdError, Timestamp};
 use cw_utils::PaymentError;
-use sg1::FeeError;
+//use sg1::FeeError; // DEGA MOD (removed dependency)
 use thiserror::Error;
 use url::ParseError;
 
@@ -15,8 +15,9 @@ pub enum ContractError {
     #[error("{0}")]
     ParseError(#[from] ParseError),
 
-    #[error("{0}")]
-    Fee(#[from] FeeError),
+    // DEGA MOD (No need for this error related to stargaze fair burn)
+    //#[error("{0}")]
+    //Fee(#[from] FeeError),
 
     #[error("Unauthorized: {0}")]
     Unauthorized(String),

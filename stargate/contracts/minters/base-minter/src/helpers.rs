@@ -3,7 +3,7 @@ use cosmwasm_std::{
     to_json_binary, Addr, Coin, ContractInfoResponse, CustomQuery, Querier, QuerierWrapper,
     StdResult, WasmMsg, WasmQuery,
 };
-use sg_std::CosmosMsg;
+use sg_mod::sg_std::CosmosMsg; // DEGA MOD (added sg_mod)
 
 use crate::msg::ExecuteMsg;
 

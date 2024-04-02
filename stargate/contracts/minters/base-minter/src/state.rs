@@ -1,8 +1,22 @@
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Empty, StdResult, Storage};
 use cw_storage_plus::Item;
+use sg2::MinterParams;
 use sg4::{MinterConfig, Status};
+use sg_mod::base_factory::state::Extension;
 
-pub type Config = MinterConfig<Empty>;
+// DEGA MOD
+// Inserted the minter parameters into the config to store with the minter since they are no
+// longer persisted with the factory.
+// P = Params extension
+// C = Config extension
+#[cw_serde]
+pub struct MinterConfigInner<P,C> {
+    pub params: MinterParams<P>,
+    pub extension: C,
+}
+
+pub type Config = MinterConfig<MinterConfigInner<Extension,Empty>>;
 
 /// Initial configuration of the minter
 pub const CONFIG: Item<Config> = Item::new("config");

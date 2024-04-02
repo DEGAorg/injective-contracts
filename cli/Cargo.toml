@@ -24,11 +24,13 @@ serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 
+sg2                     = { workspace = true }
 sg721                   = { workspace = true }
 sg721-base              = { workspace = true, features = ["library"] }
 
 dega-inj                = { workspace = true }
 dega-cw721              = { workspace = true }
+dega-minter             = { workspace = true }
 
 # Keeping CLI specific dependencies isolated here as they are less verified in terms of audit / security (not used in either production CW721 or SG721)
 anyhow                  = { version = "1"}
@@ -42,7 +44,8 @@ strum_macros            = { version = "0.25.3"}
 tokio                   = { version = "1"}
 interactive-parse       = { version = "0.1"}
 
-wasm-deploy             = { version = "0.6.0", git = "https://github.com/cryptechdev/wasm-deploy.git", rev = "2de656b", features = ["wasm-opt", "injective"]}
+#wasm-deploy             = { version = "0.6.0", git = "https://github.com/cryptechdev/wasm-deploy.git", rev = "2de656b", features = ["wasm-opt", "injective"]}
+wasm-deploy             = { version = "0.6.0", path = "../packages/wasm-deploy", features = ["wasm-opt", "injective"]}
 
 [dev-dependencies]
 cosmwasm-schema         = { workspace = true }

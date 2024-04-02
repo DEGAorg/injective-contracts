@@ -13,7 +13,7 @@ use cw_ownable::cw_ownable_execute;
 use cw_ownable::cw_ownable_query;
 use cw_utils::Expiration;
 use sg721::RoyaltyInfoResponse;
-use sg_lib_replace::sg_std::{Response, SubMsg, NATIVE_DENOM};
+use sg_mod::sg_std::{Response, SubMsg, NATIVE_DENOM}; // DEGA MOD (added sg_mod)
 
 #[cw_ownable_execute]
 #[cw_serde]

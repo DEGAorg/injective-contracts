@@ -4,9 +4,7 @@ use std::env::{
 use std::fs::{
     create_dir_all
 };
-use cosmwasm_schema::{
-    remove_schemas
-};
+use cosmwasm_schema::{remove_schemas};
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

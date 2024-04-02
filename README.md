@@ -31,7 +31,7 @@ and ensure the docker service is running
 
 ### Install and setup the workspace CLI
 ```
-cargo install-cli
+cargo update-cli
 (cd .wasm-deploy && cp sample-config.josn config.json)
 ```
 - The command above copies a default CLI config checked into version control to be yours to modify

@@ -21,6 +21,7 @@ async fn main() -> anyhow::Result<()> {
     // You can use the builder pattern to change them.
     // Creating a new instance as below will use the defaults which this project represents.
     let settings = WorkspaceSettings::new(workspace_root)?;
+
     // Build the CLI and get matches.
     let cli = Cli::<Contracts, CustomSubcommand>::command();
     let matches = cli.get_matches();

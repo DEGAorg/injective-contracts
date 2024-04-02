@@ -1,0 +1,109 @@
+use cosmwasm_std::{Binary, Deps, DepsMut, entry_point, Env, MessageInfo, Response, StdResult};
+use cw2::set_contract_version;
+use crate::error::ContractError;
+pub mod error;
+pub mod msg;
+pub mod state;
+
+// SGBaseMinter Imports
+use base_minter::{
+    contract::{
+        instantiate as sg_base_minter_instantiate,
+        execute as sg_base_minter_execute,
+        query as sg_base_minter_query,
+        reply as sg_base_minter_reply
+    },
+    msg::{
+        //InstantiateMsg as SgBaseMinterInstantiateMsg, // Specified in messages but not actually what the base minter uses...
+        ExecuteMsg as SgBaseMinterExecuteMsg,
+    },
+    error::{
+        ContractError as SgBaseMinterContractError,
+    }
+};
+
+use sg4::{
+    QueryMsg as SgBaseMinterQueryMsg,
+};
+
+use sg_mod::base_factory::{
+    msg::{
+        BaseMinterCreateMsg as SgBaseMinterInstantiateMsg,
+    }
+};
+
+
+const CONTRACT_NAME: &str = "DEGA Minter";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+pub mod entry {
+    use cosmwasm_std::Reply;
+    use super::{
+        *
+    };
+
+    #[entry_point]
+    pub fn instantiate(
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        msg: SgBaseMinterInstantiateMsg,
+    ) -> Result<Response, ContractError> {
+
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+        sg_base_minter_instantiate(deps, env, info, msg)
+            .map_err(| e: SgBaseMinterContractError | e.into())
+    }
+
+    #[entry_point]
+    pub fn execute(
+        deps: DepsMut,
+        env: Env,
+        info: MessageInfo,
+        msg: SgBaseMinterExecuteMsg,
+    ) -> Result<Response, ContractError> {
+
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+        sg_base_minter_execute(deps, env, info, msg)
+            .map_err(| e: SgBaseMinterContractError | e.into())
+    }
+
+    #[entry_point]
+    pub fn query(
+        deps: Deps,
+        env: Env,
+        msg: SgBaseMinterQueryMsg
+    ) -> StdResult<Binary> {
+
+        sg_base_minter_query(deps, env, msg.into())
+    }
+
+    #[entry_point]
+    pub fn migrate(
+        deps: DepsMut,
+        _env: Env,
+        _msg: SgBaseMinterInstantiateMsg,
+    ) -> Result<Response, ContractError> {
+
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+        Ok(Response::default())
+    }
+
+    #[entry_point]
+    pub fn reply(
+        deps: DepsMut,
+        env: Env,
+        msg: Reply
+    ) -> Result<Response, ContractError> {
+
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+        sg_base_minter_reply(deps, env, msg)
+            .map_err(| e: SgBaseMinterContractError | e.into())
+    }
+
+
+}

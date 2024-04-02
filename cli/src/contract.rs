@@ -1,7 +1,8 @@
+use wasm_deploy::config::ContractInfo;
 // This file defines your contract. It's mostly boiler plate.
 use wasm_deploy::contract::{Deploy, Msg};
 use wasm_deploy::derive::contracts;
-use crate::defaults::{CW721_INSTANTIATE, CW721_SETUP_MSGS, ADMIN};
+use crate::defaults::{CW721_SETUP_MSGS, ADMIN, get_default_minter_instantiate_msg};
 
 
 /// This is where you define the list of all contracts you want wasm-deploy to know about
@@ -9,8 +10,7 @@ use crate::defaults::{CW721_INSTANTIATE, CW721_SETUP_MSGS, ADMIN};
 /// Simply create an enum with variants for each contract.
 #[contracts]
 pub enum Contracts {
-    // Cw20Base is just an example.
-    // You should replace it with your own contract.
+
     #[contract(
         admin = ADMIN,
         package_id = "dega-cw721",
@@ -25,7 +25,22 @@ pub enum Contracts {
 
     )]
     DegaCw721,
-    // You can add more contracts to this list
+
+    #[contract(
+    admin = ADMIN,
+    package_id = "dega-minter",
+    bin_name = "dega_minter",
+    rename = "dega-minter",
+    instantiate = dega_minter::msg::InstantiateMsg,
+    execute = dega_minter::msg::ExecuteMsg,
+    query = dega_minter::msg::QueryMsg,
+    // cw20_send = ...
+    // migrate = ...
+    // path = "contracts/cw20_base"  // | layout.
+
+    )]
+    DegaMinter,
+
 }
 
 // Take a look at the Deploy trait.
@@ -35,16 +50,18 @@ pub enum Contracts {
 // You'll also likely want to use lazy_static to create the messages you need.
 impl Deploy for Contracts {
     // This method gets the preprogrammed instantiate msg for the contract.
-    fn instantiate_msg(&self) -> Option<Box<dyn Msg>> {
+    fn instantiate_msg(&self, contracts_info: &Vec<ContractInfo>) -> Option<Box<dyn Msg>> {
         match self {
-            Contracts::DegaCw721 { .. } => Some(Box::new(CW721_INSTANTIATE.to_owned())),
+            Contracts::DegaCw721 { .. } => None, //Some(Box::new(CW721_INSTANTIATE.to_owned())),
+            Contracts::DegaMinter => Some(Box::new(get_default_minter_instantiate_msg(contracts_info))),
         }
     }
 
     // This method gets the preprogrammed migrate msg for the contract.
-    fn migrate_msg(&self) -> Option<Box<dyn Msg>> {
+    fn migrate_msg(&self, contracts_info: &Vec<ContractInfo>) -> Option<Box<dyn Msg>> {
         match self {
-            Contracts::DegaCw721 { .. } => Some(Box::new(CW721_INSTANTIATE.to_owned())),
+            Contracts::DegaCw721 { .. } => None, //Some(Box::new(CW721_INSTANTIATE.to_owned())),
+            Contracts::DegaMinter => Some(Box::new(get_default_minter_instantiate_msg(contracts_info))),
         }
     }
 
@@ -55,6 +72,7 @@ impl Deploy for Contracts {
                 .iter()
                 .map(|x| Box::new(x.clone()) as Box<dyn Msg>)
                 .collect(),
+            Contracts::DegaMinter => vec![],
         }
     }
 }

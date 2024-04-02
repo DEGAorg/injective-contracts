@@ -436,6 +436,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "base-minter"
+version = "3.5.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw-utils 1.0.3",
+ "cw2 1.1.2",
+ "cw721 0.18.0",
+ "cw721-base 0.18.0",
+ "schemars",
+ "serde",
+ "sg-mod",
+ "sg2",
+ "sg4",
+ "sg721",
+ "sg721-base",
+ "thiserror",
+ "url",
+]
+
+[[package]]
 name = "base16ct"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1590,6 +1612,7 @@ dependencies = [
  "cw721-base 0.18.0",
  "dega-cw721",
  "dega-inj",
+ "dega-minter",
  "env_logger",
  "ethereum-types 0.5.2",
  "injective-cosmwasm",
@@ -1601,6 +1624,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_repr",
+ "sg2",
  "sg721",
  "sg721-base",
  "strum 0.25.0",
@@ -1615,6 +1639,7 @@ dependencies = [
 name = "dega-minter"
 version = "1.0.0"
 dependencies = [
+ "base-minter",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
@@ -1631,6 +1656,8 @@ dependencies = [
  "schemars",
  "serde",
  "serde_repr",
+ "sg-mod",
+ "sg4",
  "subtle-encoding",
  "thiserror",
 ]
@@ -5046,12 +5073,40 @@ dependencies = [
 ]
 
 [[package]]
-name = "sg-lib-replace"
+name = "sg-mod"
 version = "3.5.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
  "injective-cosmwasm",
+ "sg2",
+ "sg4",
+ "sg721",
+]
+
+[[package]]
+name = "sg2"
+version = "3.5.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 0.15.1",
+ "cw-utils 1.0.3",
+ "schemars",
+ "serde",
+ "sg721",
+ "thiserror",
+]
+
+[[package]]
+name = "sg4"
+version = "3.5.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -5081,7 +5136,7 @@ dependencies = [
  "cw721 0.18.0",
  "cw721-base 0.18.0",
  "serde",
- "sg-lib-replace",
+ "sg-mod",
  "sg721",
  "thiserror",
  "url",
@@ -6282,7 +6337,6 @@ checksum = "af190c94f2773fdb3729c55b007a722abb5384da03bc0986df4c289bf5567e96"
 [[package]]
 name = "wasm-deploy"
 version = "0.6.0"
-source = "git+https://github.com/cryptechdev/wasm-deploy.git?rev=2de656b#2de656be8b3a95b1f9b57ede2ab320d0adacc074"
 dependencies = [
  "anyhow",
  "async-recursion",
