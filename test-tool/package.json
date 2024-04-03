@@ -1,0 +1,19 @@
+{
+  "name": "test-tool",
+  "version": "1.0.0",
+  "description": "A typescript testing tool for the dega inj contracts",
+  "main": "dist/test.js",
+  "scripts": {
+    "tsc": "npx tsc",
+    "test": "npx ts-node test.ts",
+    "run-test": "npm run tsc && node dist/test.js"
+  },
+  "author": "Unamint Studios, Will Stahl <will@stahl.cc>",
+  "license": "None (all rights reserved)",
+  "dependencies": {
+    "@injectivelabs/sdk-ts": "^1.14.7",
+    "dotenv": "^16.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
+  }
+}

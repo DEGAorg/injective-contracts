@@ -2,7 +2,7 @@ use wasm_deploy::config::ContractInfo;
 // This file defines your contract. It's mostly boiler plate.
 use wasm_deploy::contract::{Deploy, Msg};
 use wasm_deploy::derive::contracts;
-use crate::defaults::{CW721_SETUP_MSGS, ADMIN, get_default_minter_instantiate_msg};
+use crate::defaults::{ADMIN, get_default_minter_instantiate_msg};
 
 
 /// This is where you define the list of all contracts you want wasm-deploy to know about
@@ -68,10 +68,7 @@ impl Deploy for Contracts {
     // This method gets the preprogrammed set up msgs for the contract.
     fn set_up_msgs(&self) -> Vec<Box<dyn Msg>> {
         match self {
-            Contracts::DegaCw721 => CW721_SETUP_MSGS
-                .iter()
-                .map(|x| Box::new(x.clone()) as Box<dyn Msg>)
-                .collect(),
+            Contracts::DegaCw721 => vec![],
             Contracts::DegaMinter => vec![],
         }
     }

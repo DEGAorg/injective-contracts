@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use colored::Colorize;
@@ -348,15 +349,64 @@ async fn execute_instantiate(
             .await?;
         drop(config);
         let mut config = CONFIG.write().await;
-        for (index, contract) in has_msg.into_iter().enumerate() {
-            let contract_info = config.get_contract_mut(&contract.to_string())?;
-            contract_info.addr = Some(response.addresses[index].to_string());
+
+
+        // DEGA MOD START
+        // This was the original code in the wasm-deploy CLI, all of the new code below until DEGA MOD END was added
+        // This was added because by suprise:
+        // 1 - When multiple contracts we're instantiated from a single message, it still returns all the addresses
+        // 2 - The CLI does not expect this and stores the address incorrectly as a result.
+
+        // This part commented out and replaced
+        // for (index, contract) in has_msg.into_iter().enumerate() {
+        //     let contract_info = config.get_contract_mut(&contract.to_string())?;
+        //     contract_info.addr = Some(response.addresses[index].to_string());
+        // }
+
+        // Put in a fix that parses the reply from the batch instantiate to get the code for each successful instantiation
+        // Then properly store both addresses, since the other address is the address of the NFT contract.
+        let mut address_code_map: HashMap<String, u64> = HashMap::new();
+
+        for event in response.res.deliver_tx.events.clone() {
+            let mut maybe_code_id : Option<u64> = None;
+            let mut maybe_address : Option<String> = None;
+            if event.kind.contains("nstantiated") {
+                event.attributes.iter().find(|x| x.key.contains("code_id")).map(|x| {
+                    maybe_code_id = x.value.trim_matches('"').parse::<u64>().ok();
+                });
+                event.attributes.iter().find(|x| x.key.contains("address")).map(|x| {
+                    maybe_address = Some(x.clone().value.trim_matches('"').to_string());
+                });
+
+                if let (Some(code_id), Some(address)) = (maybe_code_id, maybe_address) {
+                    address_code_map.insert(address, code_id);
+                }
+            }
         }
+
+        for response_address in response.addresses.clone() {
+
+            let response_addr_str = response_address.to_string();
+            let maybe_code = address_code_map.get(&response_addr_str);
+            if let Some(code_id) = maybe_code {
+
+                // Try to find a contract in our config that matches this code_id
+                let env = config.get_active_env()?.clone();
+                let matching_some_code = Some(*code_id);
+                let maybe_contract_match = env.contracts.iter().find(|x| x.code_id == matching_some_code);
+                if let Some(contract) = maybe_contract_match {
+
+                    let contract_info = config.get_contract_mut(&contract.name)?;
+                    contract_info.addr = Some(response_address.to_string());
+                }
+            }
+        }
+        // DEGA MOD END
+
         config.save(settings)?;
         Some(response.res)
     })
 }
-
 
 async fn execute_store_code(
     contracts: &[impl Deploy],

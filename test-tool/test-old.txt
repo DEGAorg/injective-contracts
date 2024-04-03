@@ -1,0 +1,155 @@
+//import wasmDeployConfig from '../.wasm-deploy/config.json';
+import { config } from "dotenv";
+import {
+    getNetworkEndpoints,
+    Network,
+    //getNetworkInfo,
+} from "@injectivelabs/networks";
+import {
+    ChainGrpcBankApi,
+    IndexerGrpcAccountPortfolioApi,
+    PrivateKey,
+    ChainGrpcWasmApi,
+    //InjectiveDirectEthSecp256k1Wallet
+} from "@injectivelabs/sdk-ts";
+// import {
+//     CosmwasmWasmV1Query
+// } from '@injectivelabs/core-proto-ts'
+// import {InjectiveSigningStargateClient} from "@injectivelabs/sdk-ts/dist/cjs/core/stargate";
+// import {EncodeObject, OfflineDirectSigner} from "@cosmjs/proto-signing";
+// import {MsgSendEncodeObject} from "@cosmjs/stargate";
+// import {toBase64} from "@cosmjs/encoding";
+//import { MsgSend } from "@injectivelabs/sdk-ts";
+//import { BigNumberInBase } from "@injectivelabs/utils";
+//import { MsgBroadcasterWithPk } from "@injectivelabs/sdk-ts";
+// import { fromUint8Array } from 'js-base64';
+
+//let KEY_NAME = "devkey";
+
+config();
+
+// let keys = wasmDeployConfig.keys;
+//
+// let result = keys.find(key => key.name === KEY_NAME);
+//
+// if (!result) {
+//     console.log('Key not found');
+//     return
+// }
+
+//let mnemonic = result.key.Mnemonic;
+let PRIVATE_KEY_MNEMONIC = process.env.PRIVATE_KEY_MNEMONIC as string;
+let MINTER_ADDRESS = process.env.MINTER_ADDRESS as string;
+let CW720_ADDRESS = process.env.CW720_ADDRESS as string;
+let NETWORK = Network.Testnet;
+
+// class WasmQueryMsg {
+//     contract: number = 0;
+// }
+
+// function getWasmQuery(msg: WasmQueryMsg): EncodeObject {
+//     return {
+//         typeUrl: '/cosmos.bank.v1beta1.MsgSend',
+//         value: msg,
+//     };
+// }
+//
+// async function runQuery(contractAddress: string) {
+//
+//     const privateKey = PrivateKey.fromMnemonic(mnemonic);
+//
+//     const network = getNetworkInfo(Network.Testnet);
+//     const endpoints = getNetworkEndpoints(NETWORK);
+//
+//     const wallet = (await InjectiveDirectEthSecp256k1Wallet.fromKey(
+//         Buffer.from(privateKey.toPrivateKeyHex(), "hex")
+//     )) as OfflineDirectSigner;
+//     const [account] = await wallet.getAccounts();
+//
+//     const client =
+//         await InjectiveSigningStargateClient.connectWithSigner(network.rpc as string, wallet);
+//
+//     const sendMsg: EncodeObject[] = [{
+//         typeUrl: '/cosmos.bank.v1beta1.MsgSend',
+//         value: {
+//             fromAddress: account.address,
+//             toAddress: account.address,
+//             amount: [...amount],
+//         },
+//     }];
+//
+//     return client.signAndBroadcast(senderAddress, [sendMsg], fee, memo)
+//
+// }
+
+
+function main() {
+
+    /** Querying Example */
+    (async () => {
+
+        const privateKey = PrivateKey.fromMnemonic(PRIVATE_KEY_MNEMONIC);
+        const injectiveAddress = privateKey.toBech32();
+        const endpoints = getNetworkEndpoints(NETWORK);
+
+        const chainGrpcBankApi = new ChainGrpcBankApi(endpoints.grpc);
+        const indexerGrpcAccountPortfolioApi = new IndexerGrpcAccountPortfolioApi(
+            endpoints.indexer
+        );
+
+        //const injectiveAddress = "inj...";
+        const bankBalances = await chainGrpcBankApi.fetchBalances(injectiveAddress);
+
+        console.log(bankBalances);
+
+        const portfolio =
+            await indexerGrpcAccountPortfolioApi.fetchAccountPortfolioBalances(
+                injectiveAddress
+            );
+
+        console.log(portfolio);
+
+
+        const chainGrpcWasmApi = new ChainGrpcWasmApi(endpoints.grpc);
+
+        //const queryFromObject = toBase64({ get_coin: {} })
+
+        // let signedVAA: Uint8Array = new Uint8Array(0);
+        // let otherQuert = {
+        //     is_vaa_redeemed: {
+        //         vaa: fromUint8Array(signedVAA),
+        //     }
+        // };
+
+        let configQuery = { config: {} };
+        const configQueryResults = await chainGrpcWasmApi.fetchSmartContractState(
+            MINTER_ADDRESS,
+            Buffer.from(
+                JSON.stringify({
+                    configQuery,
+                }),
+            ).toString('base64'),
+        );
+        console.log(JSON.stringify(configQueryResults, null, 1));
+
+        let query = { collection_info: {} };
+        const collectionInfoResults = await chainGrpcWasmApi.fetchSmartContractState(
+            CW720_ADDRESS,
+            Buffer.from(
+                JSON.stringify({
+                    query,
+                }),
+            ).toString('base64'),
+        );
+        console.log(JSON.stringify(collectionInfoResults, null, 1));
+
+        // Private Key based Transaction example: (Also includes details on signing a message with the cosmos library)
+        // https://github.com/InjectiveLabs/injective-ts/blob/ce8f591ea66e15f3a620734146a342ecb94bb2d6/.gitbook/transactions/private-key.md
+
+
+
+    })();
+
+}
+
+main();
