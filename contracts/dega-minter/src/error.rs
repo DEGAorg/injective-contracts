@@ -2,14 +2,14 @@ use cosmwasm_std::StdError;
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
-    #[error("{0}")]
+    #[error("StdError in DEGA Minter: {0}")]
     Std(#[from] StdError),
 
-    #[error("{0}")]
+    #[error("PaymentError in DEGA Minter: {0}")]
     Payment(#[from] PaymentError),
 
-    #[error("{0}")]
-    SgBaseMinter(#[from] base_minter::ContractError),
+    #[error("BaseMinterError in DEGA Minter: {0}")]
+    BaseMinter(#[from] base_minter::ContractError),
 }

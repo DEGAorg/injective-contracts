@@ -21,6 +21,7 @@ homepage        = "https://www.dega.org"
 # TODO Replace with final URL
 repository      = "https://github.com/CerratoA/inj-contracts"
 license         = "None (all rights reserved)"
+authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
 publish         = false
 
 [workspace.dependencies]
@@ -41,6 +42,9 @@ serde                   = { version = "1.0.136", default-features = false, featu
 serde_repr              = { version = "0.1" }
 subtle-encoding         = { version = "0.5.1", features = ["bech32-preview"] }
 thiserror               = { version = "1.0.31" }
+# Need to prevent sha256 from pulling in tokio
+sha256                  = { version = "1.5.0", default-features = false }
+hex                     = { version = "0.4.3" }
 
 # Stargate packages
 #base-factory               = { version = "3.5.0", path = "stargate/contracts/factories/base-factory" }
