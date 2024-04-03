@@ -13,6 +13,7 @@
   "dependencies": {
     "@injectivelabs/sdk-ts": "^1.14.7",
     "dotenv": "^16.4.5",
+    "quicktype": "^23.0.115",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.3"
   }
