@@ -312,7 +312,7 @@ async fn execute_instantiate(
             anyhow::Result::Ok((x, msg))
         })
         .collect::<Result<Vec<_>, anyhow::Error>>()?;
-    let has_msg = msgs
+    let _has_msg = msgs
         .iter()
         .filter_map(|x| x.1.as_ref().map(|_| x.0))
         .collect::<Vec<_>>();
