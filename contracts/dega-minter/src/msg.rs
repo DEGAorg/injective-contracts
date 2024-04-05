@@ -1,13 +1,34 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Uint128, Uint256};
+use cosmwasm_std::{Timestamp, Uint128, Uint256};
 use crate::{
     SgBaseMinterInstantiateMsg,
     SgBaseMinterExecuteMsg,
     SgBaseMinterQueryMsg,
 };
 pub type InstantiateMsg = SgBaseMinterInstantiateMsg;
-pub type ExecuteMsg = SgBaseMinterExecuteMsg;
+//pub type ExecuteMsg = SgBaseMinterExecuteMsg;
 //pub type QueryMsg = SgBaseMinterQueryMsg;
+
+
+
+#[cw_serde]
+pub enum ExecuteMsg {
+    Mint { token_uri: String },
+    UpdateStartTradingTime(Option<Timestamp>),
+    SignatureTest { message: String, signature: String, maybe_signer: Option<String> },
+}
+
+impl From<ExecuteMsg> for SgBaseMinterExecuteMsg {
+    fn from(msg: ExecuteMsg) -> SgBaseMinterExecuteMsg {
+        match msg {
+            ExecuteMsg::Mint { token_uri } =>
+                SgBaseMinterExecuteMsg::Mint { token_uri },
+            ExecuteMsg::UpdateStartTradingTime( maybe_stamp ) =>
+                SgBaseMinterExecuteMsg::UpdateStartTradingTime ( maybe_stamp ),
+            _ => unreachable!("cannot convert {:?} to SgBaseMinterQueryMsg", msg),
+        }
+    }
+}
 
 
 #[cw_serde]
@@ -27,7 +48,7 @@ pub struct MintRequest {
 #[cw_serde]
 pub struct CheckSigResponse {
     pub is_valid: bool,
-    pub mint_request_as_base64: String,
+    pub message_hash_hex: String,
 }
 
 #[cw_serde]
@@ -38,9 +59,10 @@ pub enum QueryMsg {
     Status {},
 
     CheckSig {
-        mint_request: MintRequest,
+        message: String,
         signature: String,
         maybe_signer: Option<String>,
+        pub_key: String,
     },
 }
 

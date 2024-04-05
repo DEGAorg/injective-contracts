@@ -1,6 +1,7 @@
 pub mod contract;
 pub mod defaults;
 pub mod subcommand;
+mod signing;
 
 use std::path::PathBuf;
 use clap::{CommandFactory, FromArgMatches};
@@ -31,6 +32,6 @@ async fn main() -> anyhow::Result<()> {
     // These custom args are entirely options
     // If you don't need them, you can remove this line
     // as well as subcommand.rs
-    execute_custom_args(&args)?;
+    execute_custom_args(&args).await?;
     Ok(())
 }

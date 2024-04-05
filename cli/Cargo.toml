@@ -45,8 +45,32 @@ strum_macros            = { version = "0.25.3"}
 tokio                   = { version = "1"}
 interactive-parse       = { version = "0.1"}
 
+# DEGA - Added for signing
+sha3 = "0.10"
+rlp                     = { version = "0.5.2" }
+k256 = { version = "0.13.3", features = ["ecdsa"] }
+ed25519-zebra = "4.0.3"
+rand_core = { version = "0.6", features = ["getrandom"] }
+# Not used directly, but needed to bump transitive dependency, see: https://github.com/CosmWasm/cosmwasm/pull/1899 for details.
+ecdsa = "0.16.2"
+p256 = { version = "0.13.2", features = ["ecdsa"] }
+hex = "0.4"
+hex-literal = "0.4.1"
+cosmwasm-crypto = { version = "1.2.1" }
+ethers-signers = { version = "=2.0.11", optional = true }
+ethers = "=2.0.11"
+bech32 = "0.9.1"
+cosmrs = { version = "0.14.0", features = ["rpc", "cosmwasm", "grpc"] }
+
+
 #wasm-deploy             = { version = "0.6.0", git = "https://github.com/cryptechdev/wasm-deploy.git", rev = "2de656b", features = ["wasm-opt", "injective"]}
 wasm-deploy             = { version = "0.6.0", path = "../packages/wasm-deploy", features = ["wasm-opt", "injective"]}
+digest = "0.10.7"
+sha2 = "0.10"
+pbkdf2 = "0.12.2"
+base64 = "0.13.1"
+colored_json = "4.1.0"
+
 
 [dev-dependencies]
 cosmwasm-schema         = { workspace = true }

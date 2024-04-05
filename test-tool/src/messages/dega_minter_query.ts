@@ -1,30 +1,44 @@
 // To parse this data:
 //
-//   import { Convert, DegaMinterExecuteMsg } from "./file";
+//   import { Convert, DegaMinterQueryMsg } from "./file";
 //
-//   const degaMinterExecuteMsg = Convert.toDegaMinterExecuteMsg(json);
+//   const degaMinterQueryMsg = Convert.toDegaMinterQueryMsg(json);
 //
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
 
-export interface DegaMinterExecuteMsg {
-    mint?:                      Mint;
-    update_start_trading_time?: null | string;
+/**
+ * Returns `MinterConfigResponse<T>`
+ *
+ * Returns `StatusResponse`
+ */
+export interface DegaMinterQueryMsg {
+    config?:    Config;
+    status?:    Status;
+    check_sig?: CheckSig;
 }
 
-export interface Mint {
-    token_uri: string;
+export interface CheckSig {
+    maybe_signer?: null | string;
+    message:       string;
+    signature:     string;
+}
+
+export interface Config {
+}
+
+export interface Status {
 }
 
 // Converts JSON strings to/from your types
 // and asserts the results of JSON.parse at runtime
 export class Convert {
-    public static toDegaMinterExecuteMsg(json: string): DegaMinterExecuteMsg {
-        return cast(JSON.parse(json), r("DegaMinterExecuteMsg"));
+    public static toDegaMinterQueryMsg(json: string): DegaMinterQueryMsg {
+        return cast(JSON.parse(json), r("DegaMinterQueryMsg"));
     }
 
-    public static degaMinterExecuteMsgToJson(value: DegaMinterExecuteMsg): string {
-        return JSON.stringify(uncast(value, r("DegaMinterExecuteMsg")), null, 2);
+    public static degaMinterQueryMsgToJson(value: DegaMinterQueryMsg): string {
+        return JSON.stringify(uncast(value, r("DegaMinterQueryMsg")), null, 2);
     }
 }
 
@@ -181,11 +195,18 @@ function r(name: string) {
 }
 
 const typeMap: any = {
-    "DegaMinterExecuteMsg": o([
-        { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
-        { json: "update_start_trading_time", js: "update_start_trading_time", typ: u(undefined, u(null, "")) },
+    "DegaMinterQueryMsg": o([
+        { json: "config", js: "config", typ: u(undefined, r("Config")) },
+        { json: "status", js: "status", typ: u(undefined, r("Status")) },
+        { json: "check_sig", js: "check_sig", typ: u(undefined, r("CheckSig")) },
     ], false),
-    "Mint": o([
-        { json: "token_uri", js: "token_uri", typ: "" },
+    "CheckSig": o([
+        { json: "maybe_signer", js: "maybe_signer", typ: u(undefined, u(null, "")) },
+        { json: "message", js: "message", typ: "" },
+        { json: "signature", js: "signature", typ: "" },
+    ], false),
+    "Config": o([
+    ], false),
+    "Status": o([
     ], false),
 };

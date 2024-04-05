@@ -1,3 +1,4 @@
+extern crate core;
 use cosmwasm_std::{Binary, Deps, DepsMut, entry_point, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
 use crate::error::ContractError;

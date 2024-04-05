@@ -41,6 +41,37 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "signature_test"
+      ],
+      "properties": {
+        "signature_test": {
+          "type": "object",
+          "required": [
+            "message",
+            "signature"
+          ],
+          "properties": {
+            "maybe_signer": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "message": {
+              "type": "string"
+            },
+            "signature": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {

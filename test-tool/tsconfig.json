@@ -3,7 +3,7 @@
     "target": "es2015",
     "module": "commonjs",
     "moduleResolution": "node",
-    "rootDir": ".",
+    "rootDir": "./src",
     "outDir": "./dist",
     "lib": [
       "DOM",
@@ -23,9 +23,10 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "incremental": true,
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": ["**/*.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["**/*.spec.ts", "dist", "node_modules"]
 }

@@ -5,7 +5,7 @@ use wasm_deploy::config::{ContractInfo};
 use crate::contract::Contracts;
 
 
-pub const ADMIN: &str = "inj1wgkzl830488jjzfut7lqhxdsynxc6njmr2j9kv";
+pub const ADMIN: &str = "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6";
 
 // Using lazy_static helps us create the messages that we need for the various deployment stages.
 lazy_static! {
@@ -75,7 +75,7 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) ->
             name: "TestCollection".into(),
             symbol: "TEST_COLLECTION".into(),
             info: sg721::CollectionInfo {
-                creator: ADMIN.into(),
+                creator: "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6".into(),
                 description: "Test Collection".into(),
                 image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
                 external_link: Some("https://realms.degaplatform.com/".into()),
