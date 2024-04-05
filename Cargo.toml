@@ -1,13 +1,13 @@
 [workspace]
 members = [
     "packages/dega-inj",
-    "stargate/packages/sg721",
-    "stargate/sg-mod",
-    "stargate/contracts/collections/sg721-base",
-    "stargate/contracts/minters/base-minter",
+    "stargaze/packages/sg721",
+    "stargaze/sg-mod",
+    "stargaze/contracts/collections/sg721-base",
+    "stargaze/contracts/minters/base-minter",
     "contracts/dega-cw721",
     "contracts/dega-minter",
-    "stargate/sg-mod",
+    "stargaze/sg-mod",
     "packages/wasm-deploy",
     "cli",
 ]
@@ -48,12 +48,12 @@ hex                     = { version = "0.4.3" }
 
 # Stargate packages
 #base-factory               = { version = "3.5.0", path = "stargate/contracts/factories/base-factory" }
-base-minter                = { version = "3.5.0", path = "stargate/contracts/minters/base-minter" }
+base-minter                = { version = "3.5.0", path = "stargaze/contracts/minters/base-minter" }
 #sg1                        = { version = "3.5.0", path = "stargate/packages/sg1" }
-sg2                        = { version = "3.5.0", path = "stargate/packages/sg2" }
-sg4                        = { version = "3.5.0", path = "stargate/packages/sg4" }
-sg721                      = { version = "3.5.0", path = "stargate/packages/sg721" }
-sg721-base                 = { version = "3.5.0", path = "stargate/contracts/collections/sg721-base" }
+sg2                        = { version = "3.5.0", path = "stargaze/packages/sg2" }
+sg4                        = { version = "3.5.0", path = "stargaze/packages/sg4" }
+sg721                      = { version = "3.5.0", path = "stargaze/packages/sg721" }
+sg721-base                 = { version = "3.5.0", path = "stargaze/contracts/collections/sg721-base" }
 #sg721-nt                   = { version = "3.5.0", path = "stargate/contracts/collections/sg721-nt" }
 #sg721-updatable            = { version = "3.5.0", path = "stargate/contracts/collections/sg721-updatable" }
 #sg-controllers             = { version = "3.5.0", path = "stargate/packages/controllers" }
@@ -73,7 +73,7 @@ sg721-base                 = { version = "3.5.0", path = "stargate/contracts/col
 #sg-eth-airdrop             = { version = "3.5.0", path = "stargate/contracts/sg-eth-airdrop" }
 url                        = { version = "2.2.2" }
 
-sg-mod                     = { version = "3.5.0", path = "stargate/sg-mod" }
+sg-mod                     = { version = "3.5.0", path = "stargaze/sg-mod" }
 
 # DEGA packages
 dega-inj                = { version = "1.0.0", path = "packages/dega-inj" }
