@@ -1,7 +1,7 @@
 import {Context} from "./context";
 import {Config} from "./config";
 import {fromBase64, toBase64} from "@injectivelabs/sdk-ts";
-import {DegaMinterQueryMsg} from "./messages";
+import {DegaCw721QueryMsg, DegaMinterQueryMsg} from "./messages";
 import { Wallet } from 'ethers'
 import { Address as EthereumUtilsAddress } from 'ethereumjs-util'
 import secp256k1 from 'secp256k1'
@@ -60,7 +60,7 @@ export async function info(args: string[]) {
 
     console.log(configQueryResponseObject);
 
-    let collectionInfoQuery: DegaMinterQueryMsg = {collection_info: {}};
+    let collectionInfoQuery: DegaCw721QueryMsg = {collection_info: {}};
 
     const collectionInfoQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
         Config.CW721_ADDRESS,
