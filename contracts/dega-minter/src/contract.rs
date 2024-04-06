@@ -17,7 +17,7 @@ use crate::{
         QueryMsg
     }
 };
-use crate::msg::{CheckSigResponse, ExecuteMsg};
+use crate::msg::{CheckSigResponse, ExecuteMsg, MintRequest};
 
 use sha256::{
     digest
@@ -34,14 +34,14 @@ pub fn query(
     msg: QueryMsg,
 ) -> StdResult<Binary> {
     match msg {
-        QueryMsg::CheckSig {
+        QueryMsg::CheckMsgSig {
             message,
             signature,
             maybe_signer,
             pub_key,
         } => {
             to_json_binary(
-                &query_check_sig(
+                &query_check_msg_sig(
                     deps,
                     env,
                     message,
@@ -50,7 +50,25 @@ pub fn query(
                     pub_key,
                 )?
             )
-        }
+        },
+
+        QueryMsg::CheckMintSig {
+            mint_request,
+            signature,
+            maybe_signer,
+            pub_key,
+        } => {
+            to_json_binary(
+                &query_check_mint_sig(
+                    deps,
+                    env,
+                    mint_request,
+                    signature,
+                    maybe_signer,
+                    pub_key,
+                )?
+            )
+        },
         _ => sg_base_minter_query(deps, env, msg.into()),
     }
 }
@@ -140,7 +158,7 @@ fn execute_signature_test(
 }
 
 
-fn query_check_sig(
+fn query_check_msg_sig(
     deps: Deps,
     _env: Env,
     message: String,
@@ -207,5 +225,20 @@ fn query_check_sig(
     Ok(CheckSigResponse {
         is_valid,
         message_hash_hex: hash,
+    })
+}
+
+fn query_check_mint_sig(
+    deps: Deps,
+    _env: Env,
+    message: MintRequest,
+    signature: String,
+    maybe_signer: Option<String>,
+    pub_key: String
+) -> StdResult<CheckSigResponse> {
+
+    Ok(CheckSigResponse {
+        is_valid: false,
+        message_hash_hex: "".to_string(),
     })
 }

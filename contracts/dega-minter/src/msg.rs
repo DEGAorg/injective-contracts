@@ -58,8 +58,15 @@ pub enum QueryMsg {
     /// Returns `StatusResponse`
     Status {},
 
-    CheckSig {
+    CheckMsgSig {
         message: String,
+        signature: String,
+        maybe_signer: Option<String>,
+        pub_key: String,
+    },
+
+    CheckMintSig {
+        mint_request: MintRequest,
         signature: String,
         maybe_signer: Option<String>,
         pub_key: String,

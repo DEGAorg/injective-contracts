@@ -40,7 +40,7 @@ use serde::Deserialize;
 use sha2::{Sha256, Sha512};
 use std::fs::File;
 use std::io::BufReader;
-use bech32::ToBase32;
+use bech32::{ToBase32, Variant};
 use cosmwasm_crypto::secp256k1_verify;
 use wasm_deploy::config::CONFIG;
 use wasm_deploy::cosm_utils::chain::error::ChainError;
@@ -55,6 +55,11 @@ use wasm_deploy::cosm_utils::signing_key::key::Key;
 use wasm_deploy::query::{query, query_contract};
 use base64;
 use colored_json::to_colored_json_auto;
+use ethers::abi::AbiEncode;
+
+use ethers::signers::LocalWallet as EthersLocalWallet;
+use ethers::signers::Signer;
+use ethers::utils::hex::ToHexExt;
 
 //use crate::ecdsa::{ECDSA_COMPRESSED_PUBKEY_LEN, ECDSA_UNCOMPRESSED_PUBKEY_LEN};
 //use crate::errors::{CryptoError, CryptoResult};
@@ -158,16 +163,16 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     //
     // let secret_key = SigningKey::from_slice(seed_bytes).unwrap();
 
+    let mut seed_bytes = [0u8; 32];
+
     if let Key::Mnemonic(mnemonic) = key.key {
         let phrase = bip32::Mnemonic::new(mnemonic, bip32::Language::English).map_err(|_| ChainError::Mnemonic)?;
         //let seed = phrase.to_seed("");
 
         let salt_phrase = "";
         let salt = Zeroizing::new(format!("mnemonic{}", salt_phrase));
-        let mut seed_bytes = [0u8; 32];
 
-        // switched to sha256 from sha512 to match ethers library
-        // I believe this is what was causing the mismatch between the wasmrs vs ethers ts library gen'd keys
+        // mimic what ethers is doing to attempt to match the inj address format
         pbkdf2::pbkdf2_hmac::<Sha512>(
             phrase.phrase().as_bytes(),
             salt.as_bytes(),
@@ -185,7 +190,9 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
         //secret_key = SigningKey::from_slice(seed_bytes)?;
         //println!("Computed seed from mnemonic");
 
-    } else if let Key::Raw(seed_bytes) = key.key {
+    } else if let Key::Raw(seed_bytes_from_config) = key.key {
+
+        seed_bytes.copy_from_slice(seed_bytes_from_config.as_slice());
 
         println!("Using raw seed");
         println!("Inner Seed Bytes: {:?}", seed_bytes.clone());
@@ -195,9 +202,9 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
         secret_key = SigningKey::from_slice(seed_bytes.as_slice())?;
     }
 
-    println!("Seed Bytes: {:?}", secret_key.to_bytes());
+    println!("Seed Bytes: {:?}", seed_bytes);
 
-    let hex = hex::encode(secret_key.to_bytes());
+    let hex = hex::encode(seed_bytes);
 
     println!("Seed Hex: {:?}", hex);
 
@@ -209,15 +216,34 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     println!("Signature hex: {}", hex::encode(&signature.to_bytes()));
     println!("Signature size: {}", signature.to_bytes().len());
 
-    let public_key = VerifyingKey::from(&secret_key); // Serialize with `::to_encoded_point()`
+    let ethers_wallet = EthersLocalWallet::from(secret_key.clone());
+    //ethers_wallet = ethers_wallet.with_chain_id(1337u64); // Can set chain_id
+    //let signer = ethers_wallet.signer();
+    let ethereum_address = ethers_wallet.address();
+
+    println!("Ethereum PubKey from ethers: {}", ethereum_address.encode_hex_with_prefix());
+
+    let bech32_ethereum_pubkey: String = bech32::encode("inj", ethereum_address.to_base32(), Variant::Bech32)?;
+    println!("Ethereum public key in bech32: {:?}", bech32_ethereum_pubkey);
+    let ethereum_pubkey_bytes = ethereum_address.as_bytes();
+    println!("Ethereum pubkey size (bytes): {:?}", ethereum_pubkey_bytes.len());
+
+    let public_key = VerifyingKey::from(secret_key.clone()); // Serialize with `::to_encoded_point()`
 
     // Verification (uncompressed public key)
+    let uncompressed_pubkey = public_key.to_encoded_point(false);
+    let uncompressed_pubkey_bytes = uncompressed_pubkey.as_bytes();
+
     let uncompressed_result = secp256k1_verify(
         &message_hash,
         signature.to_bytes().as_slice(),
-        public_key.to_encoded_point(false).as_bytes());
+        uncompressed_pubkey_bytes);
 
-    println!("Uncompressed public key size (bytes): {:?}", public_key.to_encoded_point(false).as_bytes().len());
+    println!("Uncompressed public key size (bytes): {:?}", uncompressed_pubkey_bytes.len());
+
+    let bech32_uncompressed_pubkey: String = bech32::encode("inj", uncompressed_pubkey_bytes.to_base32(), Variant::Bech32)?;
+    println!("Uncompressed public key in bech32: {:?}", bech32_uncompressed_pubkey);
+    println!("Uncompressed public key in hex: {:?}", hex::encode(uncompressed_pubkey_bytes));
 
     match uncompressed_result {
         Ok(_) => {
@@ -228,14 +254,21 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
         }
     }
 
+    let compressed_pubkey = public_key.to_encoded_point(true);
+    let compressed_pubkey_bytes = compressed_pubkey.as_bytes();
+
     // Verification (compressed public key)
     let compressed_result = secp256k1_verify(
         &message_hash,
         signature.to_bytes().as_slice(),
-        public_key.to_encoded_point(true).as_bytes()
+        compressed_pubkey_bytes
     );
 
-    println!("Compressed public key size (bytes): {:?}", public_key.to_encoded_point(true).as_bytes().len());
+    println!("Compressed public key size (bytes): {:?}",compressed_pubkey_bytes.len());
+
+    let bech32_compressed_pubkey: String = bech32::encode("inj", compressed_pubkey_bytes.to_base32(), Variant::Bech32)?;
+    println!("Compressed public key in bech32: {:?}", bech32_compressed_pubkey);
+    println!("Compressed public key in hex: {:?}", hex::encode(compressed_pubkey_bytes));
 
     match compressed_result {
         Ok(_) => {
@@ -248,7 +281,7 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
 
     let minter_contract = config.get_contract_addr(&Contracts::DegaMinter.to_string())?.clone();
 
-    let query_msg: QueryMsg = QueryMsg::CheckSig {
+    let query_msg: QueryMsg = QueryMsg::CheckMsgSig {
         message: MSG.to_string(),
         signature: base64::encode(&signature.to_bytes()),
         maybe_signer: None,

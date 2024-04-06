@@ -50,7 +50,7 @@ export async function info(args: string[]) {
     let configQuery: DegaMinterQueryMsg = {config: {}};
     const configQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
         Config.MINTER_ADDRESS,
-        toBase64({config: {}}),
+        toBase64(configQuery),
     );
 
     const configQueryResponseObject: object = fromBase64(
@@ -116,22 +116,23 @@ async function sigTest(args: string[]) {
     console.log("Address: " + Context.signerAddress);
     console.log();
 
+    let checkSigQuery: DegaMinterQueryMsg = {
+        // check_sig: {
+        //     //mint_request: mintRequestBase64,
+        //     signature: sigBase64,
+        //     //maybe_signer: null,
+        // }
+        check_sig: {
+            message: message,
+            signature: sigBase64,
+            maybe_signer: null
+        }
+    };
+
     const checkSigQueryResponse =
         await Context.chainGrpcWasmApi.fetchSmartContractState(
         Config.MINTER_ADDRESS,
-        toBase64({
-            // check_sig: {
-            //     //mint_request: mintRequestBase64,
-            //     signature: sigBase64,
-            //     //maybe_signer: null,
-            // }
-            check_sig: {
-                message: message,
-                signature: sigBase64,
-                maybe_signer: null,
-            }
-
-        } as DegaMinterQueryMsg));
+        toBase64(checkSigQuery));
 
     const checkSigQueryResponseObject: object = fromBase64(
         Buffer.from(checkSigQueryResponse.data).toString("base64")
@@ -154,6 +155,7 @@ async function deriveEthBasedAddress() {
     //const wallet = isPrivateKey ? Wallet.fromMnemonic(mnemonic, defaultDerivationPath) : new Wallet(privateKey)
     const ethereumAddress = wallet.address
     const addressBuffer = EthereumUtilsAddress.fromString(ethereumAddress.toString()).toBuffer()
+    const addressBufferHex = addressBuffer.toString('hex');
     const injectiveAddress = bech32.encode(defaultBech32Prefix, bech32.toWords(addressBuffer))
 
     console.log("mnemonic:")
