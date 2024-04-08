@@ -10,8 +10,8 @@ pub mod contract;
 // SGBaseMinter Imports
 use base_minter::{
     contract::{
-        instantiate as sg_base_minter_instantiate,
-        execute as sg_base_minter_execute,
+        //instantiate as sg_base_minter_instantiate,
+        //execute as sg_base_minter_execute,
         //query as sg_base_minter_query,
         reply as sg_base_minter_reply
     },
@@ -40,7 +40,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
     use cosmwasm_std::Reply;
-    use crate::msg::QueryMsg;
+    use crate::msg::{ExecuteMsg, QueryMsg};
     use super::{
         *
     };
@@ -55,8 +55,7 @@ pub mod entry {
 
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-        sg_base_minter_instantiate(deps, env, info, msg)
-            .map_err(| e: SgBaseMinterContractError | e.into())
+        contract::instantiate(deps, env, info, msg)
     }
 
     #[entry_point]
@@ -64,13 +63,12 @@ pub mod entry {
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        msg: SgBaseMinterExecuteMsg,
+        msg: ExecuteMsg,
     ) -> Result<Response, ContractError> {
 
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-        sg_base_minter_execute(deps, env, info, msg)
-            .map_err(| e: SgBaseMinterContractError | e.into())
+        contract::execute(deps, env, info, msg)
     }
 
     #[entry_point]

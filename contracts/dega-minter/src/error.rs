@@ -12,4 +12,7 @@ pub enum ContractError {
 
     #[error("BaseMinterError in DEGA Minter: {0}")]
     BaseMinter(#[from] base_minter::ContractError),
+
+    #[error("Error initializing DEGA Minter: {0}")]
+    InitializationError(String),
 }

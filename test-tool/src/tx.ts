@@ -180,16 +180,36 @@ export async function sign(args: string[]) {
 
 async function refillLocal(args: string[]) {
 
-    if (args.length < 1 || (args[0] != "primary" && args[0] != "signer")) {
+    if (args.length < 1 || (args[0] != "primary" && args[0] != "signer" && args[0] != "other")) {
         throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
+    }
+
+    let dstInjectiveAddress = "";
+
+    switch (args[0]) {
+        case "primary":
+            dstInjectiveAddress = Context.primaryAddress;
+            break;
+        case "signer":
+                dstInjectiveAddress = Context.signerAddress;
+                break;
+        case "other":
+            if (args.length < 2) {
+                throw new Error("Please specify the address of the recipient of the refill.");
+            }
+            dstInjectiveAddress = args[1];
+            break;
+        default:
+            throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
+
     }
 
      const sendMsg = MsgSend.fromJSON({
         srcInjectiveAddress: Context.localGenesisAddress,
-        dstInjectiveAddress: (args[0] == "primary") ? Context.primaryAddress : Context.signerAddress,
+        dstInjectiveAddress: dstInjectiveAddress,
         amount: {
             denom: "inj",
-            amount: new BigNumberInBase(0.01).toWei().toFixed()
+            amount: new BigNumberInBase(10).toWei().toFixed()
         }
     });
 

@@ -30,25 +30,26 @@ impl From<ExecuteMsg> for SgBaseMinterExecuteMsg {
     }
 }
 
-
 #[cw_serde]
 pub struct MintRequest {
-    to: String, // Address
-    royalty_recipient: String,  // Address
-    royalty_bps: Uint256,  // uint256
-    primary_sale_recipient: String, // Address
-    uri: String, // string (URI)
-    price: Uint256, // uint256
-    currency: String, // Address
-    validity_start_timestamp: Uint128, // uint128
-    validity_end_timestamp: Uint128, // uint128
-    uid: u32, // bytes32
+    pub to: String, // Address
+    pub royalty_recipient: String,  // Address
+    pub royalty_bps: Uint256,  // uint256
+    pub primary_sale_recipient: String, // Address
+    pub uri: String, // string (URI)
+    pub price: Uint256, // uint256
+    pub currency: String, // Address
+    pub validity_start_timestamp: Uint128, // uint128
+    pub validity_end_timestamp: Uint128, // uint128
+    pub uid: u32, // bytes32
 }
 
 #[cw_serde]
 pub struct CheckSigResponse {
     pub is_valid: bool,
     pub message_hash_hex: String,
+    pub verifying_key_len: usize,
+    pub error: Option<String>,
 }
 
 #[cw_serde]
@@ -62,14 +63,14 @@ pub enum QueryMsg {
         message: String,
         signature: String,
         maybe_signer: Option<String>,
-        pub_key: String,
+        maybe_pub_key: Option<String>,
     },
 
     CheckMintSig {
         mint_request: MintRequest,
         signature: String,
         maybe_signer: Option<String>,
-        pub_key: String,
+        maybe_pub_key: Option<String>,
     },
 }
 

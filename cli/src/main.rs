@@ -1,7 +1,6 @@
 pub mod contract;
 pub mod defaults;
 pub mod subcommand;
-mod signing;
 
 use std::path::PathBuf;
 use clap::{CommandFactory, FromArgMatches};

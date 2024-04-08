@@ -43,7 +43,8 @@ serde_repr              = { version = "0.1" }
 subtle-encoding         = { version = "0.5.1", features = ["bech32-preview"] }
 thiserror               = { version = "1.0.31" }
 # Need to prevent sha256 from pulling in tokio
-sha256                  = { version = "1.5.0", default-features = false }
+#sha256                  = { version = "1.5.0", default-features = false } # Removed in liue of sha2 which cosmwasm's crypto-verify sample uses
+sha2                    = { version = "0.10" }
 hex                     = { version = "0.4.3" }
 
 # Stargate packages

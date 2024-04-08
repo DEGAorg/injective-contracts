@@ -51,7 +51,7 @@ serde                   = { workspace = true }
 serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
-sha256                  = { workspace = true }
+sha2                    = { workspace = true }
 hex                     = { workspace = true }
 
 sg4                     = { workspace = true }

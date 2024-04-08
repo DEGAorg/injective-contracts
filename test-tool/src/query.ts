@@ -122,10 +122,11 @@ async function sigTest(args: string[]) {
         //     signature: sigBase64,
         //     //maybe_signer: null,
         // }
-        check_sig: {
+        check_msg_sig: {
             message: message,
             signature: sigBase64,
-            maybe_signer: null
+            maybe_signer: null,
+            maybe_pub_key: null,
         }
     };
 

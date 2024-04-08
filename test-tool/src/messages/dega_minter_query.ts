@@ -13,15 +13,37 @@
  * Returns `StatusResponse`
  */
 export interface DegaMinterQueryMsg {
-    config?:    Config;
-    status?:    Status;
-    check_sig?: CheckSig;
+    config?:         Config;
+    status?:         Status;
+    check_msg_sig?:  CheckMsgSig;
+    check_mint_sig?: CheckMintSig;
 }
 
-export interface CheckSig {
-    maybe_signer?: null | string;
-    message:       string;
-    signature:     string;
+export interface CheckMintSig {
+    maybe_pub_key?: null | string;
+    maybe_signer?:  null | string;
+    mint_request:   MintRequest;
+    signature:      string;
+}
+
+export interface MintRequest {
+    currency:                 string;
+    price:                    string;
+    primary_sale_recipient:   string;
+    royalty_bps:              string;
+    royalty_recipient:        string;
+    to:                       string;
+    uid:                      number;
+    uri:                      string;
+    validity_end_timestamp:   string;
+    validity_start_timestamp: string;
+}
+
+export interface CheckMsgSig {
+    maybe_pub_key?: null | string;
+    maybe_signer?:  null | string;
+    message:        string;
+    signature:      string;
 }
 
 export interface Config {
@@ -198,9 +220,29 @@ const typeMap: any = {
     "DegaMinterQueryMsg": o([
         { json: "config", js: "config", typ: u(undefined, r("Config")) },
         { json: "status", js: "status", typ: u(undefined, r("Status")) },
-        { json: "check_sig", js: "check_sig", typ: u(undefined, r("CheckSig")) },
+        { json: "check_msg_sig", js: "check_msg_sig", typ: u(undefined, r("CheckMsgSig")) },
+        { json: "check_mint_sig", js: "check_mint_sig", typ: u(undefined, r("CheckMintSig")) },
     ], false),
-    "CheckSig": o([
+    "CheckMintSig": o([
+        { json: "maybe_pub_key", js: "maybe_pub_key", typ: u(undefined, u(null, "")) },
+        { json: "maybe_signer", js: "maybe_signer", typ: u(undefined, u(null, "")) },
+        { json: "mint_request", js: "mint_request", typ: r("MintRequest") },
+        { json: "signature", js: "signature", typ: "" },
+    ], false),
+    "MintRequest": o([
+        { json: "currency", js: "currency", typ: "" },
+        { json: "price", js: "price", typ: "" },
+        { json: "primary_sale_recipient", js: "primary_sale_recipient", typ: "" },
+        { json: "royalty_bps", js: "royalty_bps", typ: "" },
+        { json: "royalty_recipient", js: "royalty_recipient", typ: "" },
+        { json: "to", js: "to", typ: "" },
+        { json: "uid", js: "uid", typ: 0 },
+        { json: "uri", js: "uri", typ: "" },
+        { json: "validity_end_timestamp", js: "validity_end_timestamp", typ: "" },
+        { json: "validity_start_timestamp", js: "validity_start_timestamp", typ: "" },
+    ], false),
+    "CheckMsgSig": o([
+        { json: "maybe_pub_key", js: "maybe_pub_key", typ: u(undefined, u(null, "")) },
         { json: "maybe_signer", js: "maybe_signer", typ: u(undefined, u(null, "")) },
         { json: "message", js: "message", typ: "" },
         { json: "signature", js: "signature", typ: "" },
