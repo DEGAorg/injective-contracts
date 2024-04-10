@@ -14,10 +14,11 @@ import {
     MsgSend,
     ChainRestAuthApi,
     BaseAccount,
-    ChainGrpcAuthApi,
+    ChainGrpcAuthApi, MsgStoreCode,
 } from "@injectivelabs/sdk-ts";
 import { BigNumberInBase } from '@injectivelabs/utils'
 import { exec } from 'child_process';
+import path from "node:path";
 
 
 // Transaction Exec example:
@@ -41,6 +42,9 @@ export async function tx(args: string[]) {
             break;
         case "sign":
             await sign(args);
+            break;
+        case "store":
+            await store(args);
             break;
         case "refill-local":
             await refillLocal(args);
@@ -246,6 +250,98 @@ async function refillLocalCommandLine(args: string[]) {
         ` | injectived tx bank send --from=genesis --chain-id="injective-1"` +
         ` --yes --gas-prices=${gasPrices}inj --gas=${gas}inj` +
         ` ${Context.localGenesisAddress} ${dstInjectiveAddress} ${refillAmount}inj`;
+
+    console.log("Running command: " + command)
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.log(`error: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.log(`stderr: ${stderr}`);
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
+    });
+}
+
+
+async function store(args: string[]) {
+    await store_wasm("dega_minter.wasm")
+    await store_wasm("dega_cw721.wasm")
+}
+
+async function store_wasm(wasm_name: string) {
+
+    const artifactsDir = path.resolve(__dirname, "../../artifacts");
+    const minterPath = path.resolve(artifactsDir, wasm_name);
+    const wasmBytes = new Uint8Array(Array.from(fs.readFileSync(minterPath)));
+
+    const storeCodeMsg = MsgStoreCode.fromJSON({
+        sender: Context.primaryAddress,
+        wasmBytes: wasmBytes
+    });
+
+    console.log("Storing code for: " + wasm_name);
+    console.log();
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: storeCodeMsg,
+        gas: {
+            gasPrice: Context.gasPricesAmountGwei.toFixed(),
+            gas: Context.gasAmountGwei.toNumber()
+        }
+    })
+
+    //console.log(response);
+
+    console.log("Successfully Stored Code")
+
+    if (response.events != undefined) {
+        let decoder = new TextDecoder();
+
+        response.events.forEach((event: any) => {
+            let eventTyped: TxEvent = event as TxEvent;
+            if (eventTyped.type == "cosmwasm.wasm.v1.EventCodeStored") {
+                eventTyped.attributes.forEach((attr: TxAttribute) => {
+                    console.log(decoder.decode(attr.key) + ": " + decoder.decode(attr.value));
+                });
+            }
+
+        });
+        console.log("")
+    }
+
+    //await sleep(3000);
+    //await backupPromiseCall(() => counterStore.fetchCount());
+}
+
+interface TxEvent {
+    type: string,
+    attributes: TxAttribute[],
+}
+
+interface TxAttribute {
+    key: Uint8Array,
+    value: Uint8Array,
+}
+
+
+async function storeCommandLine(args: string[]) {
+
+    const artifactsDir = path.resolve(__dirname, "../../artifacts");
+    const minterPath = path.resolve(artifactsDir, "dega_minter.wasm");
+
+    const payerAddress = Context.primaryAddress;
+    const gasPrices = Context.gasPricesAmountGwei.toFixed();
+    const gas = Context.gasAmountGwei.toFixed();
+
+    // Build your command using the variables
+    const command =
+        `yes ${Config.INJECTIVED_PASSWORD}` +
+        ` | injectived tx wasm store ${minterPath} --from=${payerAddress} --chain-id="injective-1"` +
+        ` --yes --gas-prices=${gasPrices}inj --gas=${gas}`; // note, the --gas param does NOT have the "inj" suffix
 
     console.log("Running command: " + command)
 
