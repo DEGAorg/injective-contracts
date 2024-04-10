@@ -72,7 +72,7 @@ use cosmrs::bip32::{
     PrivateKey,
 };
 use ecdsa::elliptic_curve::zeroize::Zeroizing;
-use dega_minter::msg::{MintRequest, QueryMsg};
+use dega_minter::msg::{MintRequest, QueryMsg, SignerSourceType, VerifiableMsg};
 use wasm_deploy::cosm_utils::signing_key::key::Key;
 use wasm_deploy::query::{
     query,
@@ -90,7 +90,7 @@ use cosmrs::tx::{
     SignDoc,
     SignerInfo
 };
-use cosmwasm_std::{StdError, to_json_binary, Uint128, Uint256};
+use cosmwasm_std::{Binary, StdError, to_json_binary, Uint128, Uint256};
 use ecdsa::signature::DigestVerifier;
 use ethers::prelude::coins_bip39::English;
 
@@ -185,7 +185,7 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     println!("Message hash: {:?}", hex::encode(message_hash));
 
     // Signing
-    let mut secret_signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
+
 
     // Get private key from mnemonic:
     let config = CONFIG.read().await;
@@ -238,10 +238,9 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
 
         println!("Seed Hex from cosmrs: {:?}", cosmrs_seed_hex.to_string());
 
-        secret_signing_key = SigningKey::from_slice(cosmrs_seed_bytes.as_slice())?;
+        seed_bytes.copy_from_slice(cosmrs_seed_bytes.as_slice());
+
         println!("Computed seed from mnemonic");
-
-
 
     } else if let Key::Raw(seed_bytes_from_config) = key.key {
 
@@ -252,8 +251,10 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
         let hex = hex::encode(seed_bytes.clone());
         println!("Inner Seed Hex: {:?}", hex);
 
-        secret_signing_key = SigningKey::from_slice(seed_bytes.as_slice())?;
     }
+
+    //let secret_signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
+    let secret_signing_key = SigningKey::from_slice(seed_bytes.as_slice())?;
 
     println!("Seed Bytes: {:?}", seed_bytes);
     let hex = hex::encode(seed_bytes);
@@ -370,41 +371,23 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
 
     let mint_request_signature: Signature = secret_signing_key.sign_digest(mint_request_digest.clone());
 
-    let send_mint_request = true;
 
-    let signature_to_send = if send_mint_request { mint_request_signature } else { text_signature };
-    //let signature_to_send = text_signature; // send the wrong signature
-
-    let signature_to_send_base64 = base64::encode(&signature_to_send.to_bytes());
-
-    let mint_query_msg: QueryMsg = QueryMsg::CheckMintSig {
-        mint_request: mint_request_msg,
-        signature: signature_to_send_base64.clone(),
-        maybe_signer: None, // Some(account_id_from_cosmrs.to_string()),
-        maybe_pub_key: Some(base64::encode(public_key.to_encoded_point(true).as_bytes())),
+    let query_msg: QueryMsg = QueryMsg::CheckSig {
+        message: VerifiableMsg::MintRequest(mint_request_msg),
+        signature: base64::encode(&mint_request_signature.to_bytes()).clone(),
+        //signature: base64::encode(&text_signature.to_bytes()).clone(),
+        //signer_source: SignerSourceType::Address(account_id_from_cosmrs.to_string()),
+        signer_source: SignerSourceType::PubKeyBinary(Binary::from(public_key.to_encoded_point(true).as_bytes()).to_base64()),
+        //signer_source: SignerSourceType::ConfigSignerPubKey,
+        //signer_source: SignerSourceType::ConfigSignerAddress,
     };
 
-    let text_query_msg: QueryMsg = QueryMsg::CheckMsgSig {
-        message: MSG.to_string(),
-        signature: signature_to_send_base64,
-        maybe_signer: None, // Some(account_id_from_cosmrs.to_string()),
-        maybe_pub_key: Some(base64::encode(public_key.to_encoded_point(true).as_bytes())),
-    };
-
-    // Change these two for mint vs text right now
-    let (query_msg, digest_for_sent_message) =
-        if send_mint_request {
-            (mint_query_msg, mint_request_digest)
-        } else {
-            (text_query_msg, message_digest)
-        };
-
-    let sent_digest_hash = digest_for_sent_message.clone().finalize();
+    let sent_digest_hash = mint_request_digest.clone().finalize();
     let sent_hash_hex_string = hex::encode(sent_digest_hash);
 
     println!("Hash Being Sent: {}", sent_hash_hex_string);
 
-    let local_verify_result = public_key.verify_digest(digest_for_sent_message, &signature_to_send);
+    let local_verify_result = public_key.verify_digest(mint_request_digest, &mint_request_signature);
 
     match local_verify_result {
         Ok(_) => {

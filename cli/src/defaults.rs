@@ -1,6 +1,7 @@
-use cosmwasm_std::{Coin, Decimal};
+use cosmwasm_std::{Binary, Coin, Decimal};
 // Use this file to define the various default message you want deploy to use
 use lazy_static::lazy_static;
+use dega_minter::msg::DegaMinterParams;
 use wasm_deploy::config::{ContractInfo};
 use crate::contract::Contracts;
 
@@ -51,24 +52,30 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) ->
         None => panic!("Could not find code ID for {}", contract_name),
     };
 
+    let signer_pub_key = match hex::decode("03db6efcc0a0b602f06f3f9473221cfe43c1dfcfba93704ff3de524a1295e9e451") {
+        Ok(key) => Binary::from(key).to_base64(),
+        Err(e) => panic!("Could not decode signer public key due to error: {}", e),
+    };
+
     dega_minter::msg::InstantiateMsg {
-        init_msg: sg2::msg::CreateMinterInitMsg {
-            params: sg2::MinterParams {
-                allowed_sg721_code_ids: vec![],
-                frozen: false,
-                creation_fee: Coin {
-                    denom: "uinj".into(),
-                    amount: 0u128.into(),
-                },
-                min_mint_price: Coin {
-                    denom: "uinj".into(),
-                    amount: 0u128.into(),
-                },
-                mint_fee_bps: 0u64,
-                max_trading_offset_secs: 0u64,
-                extension: None,
+        minter_params: sg2::MinterParams {
+            allowed_sg721_code_ids: vec![],
+            frozen: false,
+            creation_fee: Coin {
+                denom: "uinj".into(),
+                amount: 0u128.into(),
             },
-            remaining_init_msg: None,
+            min_mint_price: Coin {
+                denom: "uinj".into(),
+                amount: 0u128.into(),
+            },
+            mint_fee_bps: 0u64,
+            max_trading_offset_secs: 0u64,
+            extension: DegaMinterParams {
+                dega_minter_settings: dega_minter::msg::DegaMinterConfigSettings {
+                    signer_pub_key,
+                }
+            },
         },
         collection_params: sg2::msg::CollectionParams {
             code_id,

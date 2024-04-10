@@ -51,6 +51,8 @@ use std::fmt::Debug;
 use std::fs::{create_dir, remove_file, File};
 use std::io::{copy, BufReader};
 use std::path::{Path, PathBuf};
+use std::process::CommandArgs;
+use clap::builder::OsStr;
 
 #[async_recursion(?Send)]
 pub async fn execute_args<C, S>(settings: &WorkspaceSettings, cli: &Cli<C, S>) -> anyhow::Result<()>
@@ -420,9 +422,13 @@ pub async fn build(
 
     // command.spawn()?.wait()?;
 
+    let mut results = vec![];
+
     // Build contracts
     for contract in contracts {
-        Command::new("cargo")
+        //
+        let mut command =    Command::new("cargo");
+        command
             .env("RUSTFLAGS", "-C link-arg=-s")
             .env("RUSTUP_TOOLCHAIN", "1.69.0")
             .arg("build")
@@ -432,8 +438,23 @@ pub async fn build(
             .args(cargo_args)
             .arg("-p")
             .arg(contract.package_id())
+        ;
+
+        println!("Program: {:?}", command.get_program());
+        println!("Cur Dir: {:?}", command.get_current_dir());
+        println!("Args: {:?}", command.get_args().collect::<Vec<_>>());
+        println!("Envs: {:?}", command.get_envs().collect::<Vec<_>>());
+        println!();
+
+        results.push(command
             .spawn()?
-            .wait()?;
+            .wait()?);
+    }
+
+    for result in results {
+        if !result.success() {
+            return Err(DeployError::Generic("Build failed".to_string()).into());
+        }
     }
 
     if !Path::exists(Path::new(settings.artifacts_dir.as_path())) {

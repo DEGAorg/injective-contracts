@@ -1,11 +1,14 @@
 extern crate core;
 use cosmwasm_std::{Binary, Deps, DepsMut, entry_point, Env, MessageInfo, Response, StdResult};
 use cw2::set_contract_version;
-use crate::error::ContractError;
+use crate::{
+    error::ContractError,
+};
 pub mod error;
 pub mod msg;
 pub mod state;
 pub mod contract;
+mod lookup;
 
 // SGBaseMinter Imports
 use base_minter::{
@@ -40,7 +43,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
     use cosmwasm_std::Reply;
-    use crate::msg::{ExecuteMsg, QueryMsg};
+    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
     use super::{
         *
     };
@@ -50,7 +53,7 @@ pub mod entry {
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        msg: SgBaseMinterInstantiateMsg,
+        msg: InstantiateMsg,
     ) -> Result<Response, ContractError> {
 
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;

@@ -3,15 +3,6 @@ use cosmwasm_std::Coin;
 use sg721::{CollectionInfo, RoyaltyInfoResponse};
 use crate::MinterParams;
 
-// DEGA MOD - Added this to pass in the minter parameters to store in the state since they
-// aren't persisted by the factory now.
-// Added using the existing init_msg extendable field to keep the existing schema the same.
-#[cw_serde]
-pub struct CreateMinterInitMsg<P,T> {
-    pub params: MinterParams<P>,
-    pub remaining_init_msg: T,
-}
-
 #[cw_serde]
 pub struct CreateMinterMsg<T> {
     pub init_msg: T,

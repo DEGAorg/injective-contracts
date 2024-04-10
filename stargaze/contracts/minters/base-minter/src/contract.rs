@@ -1,16 +1,15 @@
 use crate::error::ContractError;
 use crate::msg::{ConfigResponse, ExecuteMsg};
-use crate::state::{increment_token_index, Config, COLLECTION_ADDRESS, CONFIG, STATUS, MinterConfigInner};
+use crate::state::{increment_token_index, Config, COLLECTION_ADDRESS, CONFIG, STATUS};
 use sg_mod::base_factory::msg::{BaseMinterCreateMsg}; // DEGA MOD (added sg_mod)
 use sg_mod::base_factory::state::Extension; // DEGA MOD (added sg_mod)
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{
-    to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, // DEGA MOD (removed unused imports)
-    Reply, Response, StdResult, SubMsg, Timestamp, WasmMsg,
-};
+use cosmwasm_std::{to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdResult, SubMsg, Timestamp, WasmMsg, Coin};
 //use cw2::set_contract_version; // DEGA MOD (removed dependency)
-use cw_utils::{nonpayable, parse_reply_instantiate_data}; // DEGA MOD (removed unused imports)
+use cw_utils::{nonpayable, parse_reply_instantiate_data};
+use serde::Serialize;
+// DEGA MOD (removed unused imports)
 //use sg1::checked_fair_burn; // DEGA MOD (removed dependency)
 //use sg2::query::Sg2QueryMsg; // DEGA MOD (removed dependency)
 use sg4::{QueryMsg, Status, StatusResponse, SudoMsg};
@@ -18,6 +17,7 @@ use sg721::{ExecuteMsg as Sg721ExecuteMsg, InstantiateMsg as Sg721InstantiateMsg
 use sg721_base::msg::{CollectionInfoResponse, QueryMsg as Sg721QueryMsg};
 //use sg_mod::sg_std::NATIVE_DENOM; // DEGA MOD (added sg_mod / removed unused import)
 use url::Url;
+use sg2::{CodeId, MinterParams};
 
 const CONTRACT_NAME: &str = "crates.io:sg-base-minter";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -44,23 +44,26 @@ pub fn instantiate(
     //     .querier
     //     .query_wasm_smart(factory.clone(), &Sg2QueryMsg::Params {})?;
 
-    let minter_config_inner = MinterConfigInner {
-        params: msg.init_msg.params.clone(),
-        extension: Empty {},
-    };
-
     let config = Config {
         //factory: factory.clone(), // DEGA MOD (factory concept not used)
         collection_code_id: msg.collection_params.code_id,
         // assume the mint price is the minimum mint price
         // 100% is fair burned
-        mint_price: msg.init_msg.params.min_mint_price, // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
-        extension: minter_config_inner, // DEGA MOD (inject the minter params into the config in the extension slot)
+        mint_price: msg.init_msg.min_mint_price.clone(), // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
+        extension: MinterParams {
+            allowed_sg721_code_ids: msg.init_msg.allowed_sg721_code_ids,
+            frozen: msg.init_msg.frozen,
+            creation_fee: msg.init_msg.creation_fee,
+            min_mint_price: msg.init_msg.min_mint_price,
+            mint_fee_bps: msg.init_msg.mint_fee_bps,
+            max_trading_offset_secs: msg.init_msg.max_trading_offset_secs,
+            extension: Empty {},
+        },
     };
 
     // Use default start trading time if not provided
     let mut collection_info = msg.collection_params.info.clone();
-    let offset = msg.init_msg.params.max_trading_offset_secs; // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
+    let offset = msg.init_msg.max_trading_offset_secs; // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
     let start_trading_time = msg
         .collection_params
         .info

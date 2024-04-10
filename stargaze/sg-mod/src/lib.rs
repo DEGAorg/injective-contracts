@@ -161,21 +161,19 @@ pub mod base_factory {
         use super::{
             *
         };
-        use sg2::MinterParams;
+        pub use sg2::MinterParams;
 
         pub type Extension = Option<Empty>;
 
         pub type BaseMinterParams = MinterParams<Extension>;
     }
     pub mod msg {
-        use sg2::msg::CreateMinterInitMsg;
         use super::{
             *
         };
 
-        use super::state::Extension;
-        //use super::state::BaseMinterParams;
-        pub type BaseMinterCreateMsg = CreateMinterMsg<CreateMinterInitMsg<Extension,Extension>>;
+        use super::state::BaseMinterParams;
+        pub type BaseMinterCreateMsg = CreateMinterMsg<state::MinterParams<Empty>>;
 
         // #[cw_serde]
         // pub struct ParamsResponse {
