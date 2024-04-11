@@ -1,13 +1,7 @@
-use std::ops::Deref;
-use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Empty, StdResult, Storage, Timestamp};
+use cosmwasm_std::{Addr, Empty, StdResult, Storage};
 use cw_storage_plus::Item;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use sg2::MinterParams;
 use sg4::{MinterConfig, Status};
-use sg721::{CollectionInfo, RoyaltyInfo};
-use sg_mod::base_factory::state::Extension;
 
 pub type Config = MinterConfig<MinterParams<Empty>>;
 

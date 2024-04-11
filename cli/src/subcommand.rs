@@ -6,33 +6,14 @@ use clap::{
     Parser,
     Subcommand
 };
-//use log::debug;
-//use serde::Serialize;
-use wasm_deploy::{
-    cli::{
-        Cli,
-        Commands},
-    contract::Deploy,
-};
+use wasm_deploy::{cli::{
+    Cli,
+    Commands}, contract::Deploy, cosm_utils};
 use crate::contract::Contracts;
-// use wasm_deploy::config::{Config, CONFIG};
-// use wasm_deploy::cosm_utils::chain::coin::Coin;
-// use wasm_deploy::cosm_utils::chain::error::ChainError;
-// use wasm_deploy::cosm_utils::chain::msg::IntoAny;
-// use wasm_deploy::cosm_utils::chain::request::TxOptions;
-// use wasm_deploy::cosm_utils::chain::tx::RawTx;
-// use wasm_deploy::cosm_utils::config::cfg::ChainConfig;
-// use wasm_deploy::cosm_utils::modules::auth::error::AccountError;
-// use wasm_deploy::cosm_utils::modules::auth::model::Address;
-// use wasm_deploy::cosm_utils::modules::cosmwasm::model::ExecRequest;
-// use wasm_deploy::cosm_utils::prelude::{ClientAbciQuery, ClientCompat, CosmwasmTxCommit};
-// use wasm_deploy::cosm_utilpub s::signing_key::key::Uspub erKey;
-// use wasm_deploy::cosm_utils::pub tendermint_rpc::HttpClient;
-
 
 use sha2::{
     Digest,
-}; // tpub raitpub  use k256::{
+};
 use k256::{
     ecdsa::{
         Signature,
@@ -43,7 +24,6 @@ use k256::{
 use k256::{
     ecdsa::signature::DigestSigner,
     ecdsa::SigningKey,
-    elliptic_curve::rand_core::OsRng,
 };
 use sha2::{
     Sha256,
@@ -59,18 +39,13 @@ use bech32::{
 use cosmwasm_crypto::secp256k1_verify;
 use wasm_deploy::config::{
     CONFIG,
-    Config
 };
 use wasm_deploy::cosm_utils::chain::error::ChainError;
 
 use cosmrs::{
-    AccountId,
     bip32
 };
 use cosmrs;
-use cosmrs::bip32::{
-    PrivateKey,
-};
 use ecdsa::elliptic_curve::zeroize::Zeroizing;
 use dega_minter::msg::{MintRequest, QueryMsg, SignerSourceType, VerifiableMsg};
 use wasm_deploy::cosm_utils::signing_key::key::Key;
@@ -80,15 +55,7 @@ use wasm_deploy::query::{
 use base64;
 use colored_json::to_colored_json_auto;
 use cosmrs::crypto::{
-    PublicKey,
     secp256k1
-};
-use cosmrs::rpc::HttpClient;
-use cosmrs::tendermint::block::Height;
-use cosmrs::tx::{
-    Body,
-    SignDoc,
-    SignerInfo
 };
 use cosmwasm_std::{Binary, StdError, to_json_binary, Uint128, Uint256};
 use ecdsa::signature::DigestVerifier;
@@ -98,21 +65,23 @@ use ethers::signers::LocalWallet as EthersLocalWallet;
 use ethers::signers::Signer;
 use ethers::utils::hex::ToHexExt;
 use ethers::signers::MnemonicBuilder;
-use log::debug;
 use dega_minter::msg::ExecuteMsg::Mint;
-use wasm_deploy::cosm_utils::chain::coin::Coin;
-use wasm_deploy::cosm_utils::chain::msg::IntoAny;
-use wasm_deploy::cosm_utils::chain::request::TxOptions;
-use wasm_deploy::cosm_utils::modules::auth::model::Address;
-use wasm_deploy::cosm_utils::modules::cosmwasm::model::ExecRequest;
-use wasm_deploy::cosm_utils::prelude::{
-    ClientAbciQuery,
-    ClientCompat,
-};
 
-//use crate::ecdsa::{ECDSA_COMPRESSED_PUBKEY_LEN, ECDSA_UNCOMPRESSED_PUBKEY_LEN};
-//use crate::errors::{CryptoError, CryptoResult};
-//use crate::identity_digest::Identity256;
+
+
+// A custom subcommand for user defined functionality.
+#[derive(Clone, Debug, Subcommand)]
+#[clap(rename_all = "kebab_case")] // , trailing_var_arg=true
+pub enum CustomSubcommand {
+    /// Runs the test-tool with the provided arguments.
+    #[clap(trailing_var_arg=true)]
+    Test(TestArgs),
+
+    SignInfo,
+
+    Mint,
+}
+
 
 // You may need async recursion for your custom subcommand.
 //#[async_recursion(?Send)]
@@ -128,21 +97,13 @@ where
             CustomSubcommand::SignInfo => {
                 sign_from_cosmwasm_crypto().await
             }
+            CustomSubcommand::Mint => {
+                mint().await
+            }
         }
     }
 
     Ok(())
-}
-
-// A custom subcommand for user defined functionality.
-#[derive(Clone, Debug, Subcommand)]
-#[clap(rename_all = "kebab_case")] // , trailing_var_arg=true
-pub enum CustomSubcommand {
-    /// Runs the test-tool with the provided arguments.
-    #[clap(trailing_var_arg=true)]
-    Test(TestArgs),
-
-    SignInfo,
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -152,6 +113,123 @@ pub struct TestArgs {
     additional_args: Vec<String>,
 }
 
+
+fn base_to_wei<N: Into<f32>>(num_in_base: N) -> Uint128 {
+    let converted_num_in_base: f32 = num_in_base.into();
+    let converted_int_in_wei: u128 = (converted_num_in_base * 1_000_000_000_000_000_000f32) as u128;
+    Uint128::from(converted_int_in_wei)
+}
+
+fn _wei_to_base<N: From<f32>>(num_in_wei: Uint128) -> N {
+    let converted_num_in_wei: u128 = num_in_wei.into();
+    let float_in_wei: f32 = converted_num_in_wei as f32;
+    (float_in_wei / 1_000_000_000_000_000_000f32).into()
+}
+
+async fn mint() -> anyhow::Result<()> {
+
+    let price_in_base = 0.5f32;
+    let price_in_wei: u128 = base_to_wei(price_in_base).into();
+
+    let address = get_address().await?;
+
+    let mint_request_msg = MintRequest {
+        to: address.clone(),
+        royalty_recipient: address.clone(),
+        royalty_bps: Uint256::from(0u32),
+        primary_sale_recipient: address.clone(),
+        uri: "https://www.domain.com".to_string(),
+        price: Uint256::from(price_in_wei),
+        currency: "inj".to_string(),
+        validity_start_timestamp: Uint128::from(0u32),
+        validity_end_timestamp: Uint128::from(0u32),
+        uid: 0u32,
+    };
+
+    let sig_base64 = sign_msg_bytes(to_json_binary(&mint_request_msg)?.as_slice()).await?;
+
+    let config = CONFIG.read().await;
+    let minter_contract = config.get_contract_addr(&Contracts::DegaMinter.to_string())?.clone();
+
+    let msg = Mint {
+        request: mint_request_msg,
+        signature: sig_base64,
+    };
+
+    let funds = vec![
+        cosm_utils::chain::coin::Coin {
+            denom: cosm_utils::chain::coin::Denom::from_str("inj")?,
+            amount: price_in_wei,
+        }
+    ];
+
+    wasm_deploy::execute::execute(&config, minter_contract, msg, funds).await
+}
+
+async fn sign_msg_bytes(msg_bytes: &[u8]) -> anyhow::Result<String> {
+
+
+    let msg_digest = Sha256::new().chain(msg_bytes);
+    //let msg_hash = msg_digest.clone().finalize();
+    //let msg_hash_hex_string = hex::encode(msg_hash);
+
+    let seed_bytes = get_seed_bytes().await?;
+
+    // Use this to test an invalid signature
+    //let secret_signing_key = SigningKey::random(&mut OsRng);
+
+    let secret_signing_key = SigningKey::from_slice(seed_bytes.as_slice())?;
+    let signature: Signature = secret_signing_key.sign_digest(msg_digest.clone());
+    let sig_base64 = base64::encode(&signature.to_bytes()).clone();
+
+    Ok(sig_base64)
+}
+
+async fn get_address() -> anyhow::Result<String> {
+
+    let config = CONFIG.read().await;
+    let chain_info = config.get_active_chain_info()?.clone();
+    let seed_bytes = get_seed_bytes().await?;
+
+    let cosmrs_signing_key = secp256k1::SigningKey::from_slice(&seed_bytes)
+        .map_err(|_| StdError::generic_err("Failed to create signing key from seed bytes".to_string()))?;
+    let cosmrs_pubkey = cosmrs_signing_key.public_key();
+
+    let account_id_from_cosmrs = cosmrs_pubkey.account_id(chain_info.cfg.prefix.as_str())
+        .map_err(|_| StdError::generic_err("Cosmrs failed to create account id from public key".to_string()))?;
+
+    Ok(account_id_from_cosmrs.to_string())
+}
+
+async fn get_seed_bytes() -> anyhow::Result<[u8;32]> {
+
+    let config = CONFIG.read().await;
+    let key = config.get_active_key().await?;
+
+    let mut result = [0u8; 32];
+
+    if let Key::Mnemonic(ref mnemonic) = key.key {
+        let wallet_wasm_deploy_uses = MnemonicBuilder::<English>::default()
+            .phrase(mnemonic.as_str())
+            .index(0u32)
+            .unwrap()
+            .build()
+            .unwrap();
+        let cosmrs_signing_key = wallet_wasm_deploy_uses.signer().clone();
+        let cosmrs_seed_bytes = cosmrs_signing_key.to_bytes();
+
+        result.copy_from_slice(cosmrs_seed_bytes.as_slice());
+    } else if let Key::Raw(seed_bytes_from_config) = key.key {
+
+        result.copy_from_slice(seed_bytes_from_config.as_slice());
+    } else if let Key::Keyring(_) = key.key {
+        return Err(anyhow::anyhow!("Keyring not supported"));
+    } else {
+        return Err(anyhow::anyhow!("New unsupported key auth added"));
+    }
+
+    Ok(result)
+}
 
 fn test(args: &TestArgs) -> anyhow::Result<()> {
     Command::new("npx")
@@ -169,6 +247,7 @@ fn test(args: &TestArgs) -> anyhow::Result<()> {
 
     Ok(())
 }
+
 
 
 const MSG: &str = "test message";
@@ -402,189 +481,6 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
 
     let color = to_colored_json_auto(&result)?;
     println!("{color}");
-
-    //send_tx(&secret_signing_key).await?;
-
-    Ok(())
-}
-
-
-
-async fn _send_tx(account_id_from_cosmrs: &AccountId, secret_signing_key: &SigningKey) -> anyhow::Result<()> {
-
-    let _config: &Config;
-    //let addr: &str = "inj1xv9tklw7d82sezh9haa573wufgy59vmwe6xxe5";
-    let msg = Mint {
-        token_uri: "https://domain.com/".to_string(),
-    };
-    let funds: Vec<Coin> = vec![];
-
-    let config = CONFIG.read().await;
-    let minter_contract = config.get_contract_addr(&Contracts::DegaMinter.to_string())?.clone();
-
-    let _original_wasmdeploy_code_user_key = config.get_active_key().await?;
-    let chain_info = config.get_active_chain_info()?.clone();
-
-    let req =
-        ExecRequest {
-            msg,
-            funds,
-            address: Address::from_str(minter_contract.as_ref())?,
-        };
-    let reqs = vec![req.clone()];
-
-    debug!("req: {:?}", reqs);
-
-    let client = HttpClient::get_persistent_compat(chain_info.rpc_endpoint.as_str()).await?;
-    let tx_options = TxOptions::default();
-
-    // redundent
-    // let response = client
-    //     .wasm_execute_commit(&chain_info.cfg, req, &key, &tx_options)
-    //     .await?;
-
-
-    // let sender_addr = key
-    //     .to_addr(&chain_info.cfg.prefix, &chain_info.cfg.derivation_path)
-    //     .await?;
-
-    let sender_address_cosmrs: Address = Address::from(account_id_from_cosmrs.clone());
-    println!("Sender Address Check: {:?}", sender_address_cosmrs.to_string());
-
-    let msgs = reqs
-        .into_iter()
-        .map(|r| r.to_proto(sender_address_cosmrs.clone()))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    //let tx_raw = client.tx_sign(chain_info.cfg, msgs, key, tx_options).await?;
-    // async fn tx_sign<T>(
-    //     &self,
-    //     chain_cfg: &ChainConfig,
-    //     msgs: Vec<T>,
-    //     key: &UserKey,
-    //     tx_options: &TxOptions,
-    // ) -> Result<RawTx, AccountError>
-
-    let timeout_height = tx_options.timeout_height.unwrap_or_default();
-
-    let account = if let Some(ref account) = tx_options.account {
-        account.clone()
-    } else {
-        client.auth_query_account(sender_address_cosmrs).await?.account
-    };
-
-    let fee = if let Some(fee) = &tx_options.fee {
-        fee.clone()
-    } else {
-        client.tx_simulate(
-            &chain_info.cfg.denom,
-            chain_info.cfg.gas_price,
-            chain_info.cfg.gas_adjustment,
-            msgs.iter()
-                .map(|m| m.clone().into_any())
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| ChainError::ProtoEncoding {
-                    message: e.to_string(),
-                })?,
-            &account,
-        )
-            .await?
-    };
-
-    // let tx_raw = original_wasmdeploy_code_user_key
-    //     .sign(
-    //         msgs,
-    //         timeout_height,
-    //         &tx_options.memo,
-    //         account,
-    //         fee,
-    //         &chain_info.cfg.chain_id,
-    //         &chain_info.cfg.derivation_path,
-    //     )
-    //     .await?;
-
-
-    // From inside of sign call above (Will)
-    // let sign_doc = build_sign_doc(
-    //     msgs,
-    //     timeout_height,
-    //     memo,
-    //     &account,
-    //     fee,
-    //     public_key,
-    //     chain_id,
-    // )?;
-
-    let public_key: Option<PublicKey> = if account.pubkey.is_none() {
-        Some(PublicKey::from(secret_signing_key.public_key()))
-    } else {
-        account.pubkey
-    };
-
-    let memo = &tx_options.memo;
-
-    // Begin contents of build_sign_doc
-    let timeout: Height = timeout_height.try_into()?;
-    let tx = Body::new(
-        msgs.into_iter()
-            .map(|m| m.into_any())
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| ChainError::ProtoEncoding {
-                message: e.to_string(),
-            })?,
-        memo,
-        timeout,
-    );
-
-    // NOTE: if we are making requests in parallel with the same key, we need to serialize `account.sequence` to avoid errors
-    let auth_info =
-        SignerInfo::single_direct(public_key, account.sequence).auth_info(fee.try_into()?);
-
-    let sign_doc = SignDoc::new(
-        &tx,
-        &auth_info,
-        &chain_info.cfg.chain_id.parse().map_err(|_| ChainError::ChainId {
-            chain_id: chain_info.cfg.chain_id.to_string(),
-        })?,
-        account.account_number,
-    ).map_err(|e|  {
-        StdError::generic_err(format!("Failed to create sign doc: {:?}", e.to_string()))
-    })?;
-    // End contents of build_sign_doc
-
-
-    //let key = raw_bytes_to_signing_key(bytes)?;
-    let key = cosmrs::crypto::secp256k1::SigningKey::from_slice(&secret_signing_key.to_bytes())
-        .map_err(|_| {
-            StdError::generic_err("Failed to create signing key from mnemonic".to_string())
-        })?;
-
-    let _tx_raw = sign_doc.sign(&key).map_err(|e|  {
-        StdError::generic_err(format!("Failed to sign transaction: {:?}", e.to_string()))
-    })?;
-
-    // let response = cosmrs::tendermint_rpc::Client::broadcast_tx_async(&client, &tx_raw).await?.map_err(|e|  {
-    //     StdError::generic_err(format!("Error in transaction: {:?}", e.to_string()))
-    // })?;
-    //
-    // println!("Transaction broadcast successful, transaction response:");
-    // println!("{:?}", response);
-
-    // let response = client
-    //     .wasm_execute_commit(&chain_info.cfg, req, &key, &TxOptions::default())
-    //
-    // let sender_addr = key
-    //     .to_addr(&chain_cfg.prefix, &chain_cfg.derivation_path)
-    //     .await?;
-    //
-    // let msgs = reqs
-    //     .into_iter()
-    //     .map(|r| r.to_proto(sender_addr.clone()))
-    //     .collect::<Result<Vec<_>, _>>()?;
-    //
-    // let tx_raw = self.tx_sign(chain_cfg, msgs, key, tx_options).await?;
-    //
-    // let res = self.broadcast_tx_commit(&tx_raw).await?;
 
     Ok(())
 }

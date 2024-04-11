@@ -241,8 +241,8 @@ async function refillLocalCommandLine(args: string[]) {
     }
 
     const dstInjectiveAddress = (args[0] == "primary") ? Context.primaryAddress : Context.signerAddress;
-    const gasPrices = Context.gasPricesAmountGwei.toFixed() + "inj";
-    const gas = Context.gasAmountGwei.toFixed() + "inj";
+    const gasPrices = Context.gasPricesAmountWei.toFixed() + "inj";
+    const gas = Context.gasAmountWei.toFixed() + "inj";
     const refillAmount = new BigNumberInBase(0.01).toWei().toFixed();
 
     // Build your command using the variables
@@ -290,8 +290,8 @@ async function store_wasm(wasm_name: string) {
     const response = await Context.primaryBroadcaster.broadcast({
         msgs: storeCodeMsg,
         gas: {
-            gasPrice: Context.gasPricesAmountGwei.toFixed(),
-            gas: Context.gasAmountGwei.toNumber()
+            gasPrice: Context.gasPricesAmountWei.toFixed(),
+            gas: Context.gasAmountWei.toNumber()
         }
     })
 
@@ -335,8 +335,8 @@ async function storeCommandLine(args: string[]) {
     const minterPath = path.resolve(artifactsDir, "dega_minter.wasm");
 
     const payerAddress = Context.primaryAddress;
-    const gasPrices = Context.gasPricesAmountGwei.toFixed();
-    const gas = Context.gasAmountGwei.toFixed();
+    const gasPrices = Context.gasPricesAmountWei.toFixed();
+    const gas = Context.gasAmountWei.toFixed();
 
     // Build your command using the variables
     const command =

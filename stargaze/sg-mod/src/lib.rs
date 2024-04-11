@@ -172,7 +172,7 @@ pub mod base_factory {
             *
         };
 
-        use super::state::BaseMinterParams;
+        //use super::state::BaseMinterParams;
         pub type BaseMinterCreateMsg = CreateMinterMsg<state::MinterParams<Empty>>;
 
         // #[cw_serde]

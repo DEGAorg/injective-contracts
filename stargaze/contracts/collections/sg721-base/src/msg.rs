@@ -3,10 +3,12 @@ use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::{
     coin, Addr, BankMsg, Binary, Empty, Event, StdError, StdResult, Timestamp, Uint128,
 };
+#[cfg(not(target_arch = "wasm32"))] // DEGA MOD (Added to fix warning about unused imports)
 use cw721::{
     AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse, NftInfoResponse,
     NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
 };
+#[cfg(not(target_arch = "wasm32"))] // DEGA MOD (Added to fix warning about unused import)
 use cw721_base::msg::MinterResponse;
 use cw721_base::msg::QueryMsg as Cw721QueryMsg;
 use cw_ownable::cw_ownable_execute;

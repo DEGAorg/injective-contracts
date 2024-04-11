@@ -50,12 +50,12 @@ function initContext() {
     }
 
 
-    const gasPricesAmountGwei = new BigNumberInBase(500000000);
-    const gasAmountGwei = new BigNumberInBase(20000000);
+    const gasPricesAmountWei = new BigNumberInBase(500000000);
+    const gasAmountWei = new BigNumberInBase(20000000);
 
     const gasSettings = {
-        gasPrice: gasPricesAmountGwei.toFixed(),
-        gas: gasAmountGwei.toNumber(),
+        gasPrice: gasPricesAmountWei.toFixed(),
+        gas: gasAmountWei.toNumber(),
     }
 
     return {
@@ -71,8 +71,8 @@ function initContext() {
         primaryBroadcaster: primaryBroadcaster,
         signerBroadcaster: signerBroadcaster,
         localGenesisBroadcaster: localGenesisBroadcaster,
-        gasPricesAmountGwei: gasPricesAmountGwei,
-        gasAmountGwei: gasAmountGwei,
+        gasPricesAmountWei: gasPricesAmountWei,
+        gasAmountWei: gasAmountWei,
         gasSettings: gasSettings
     }
 }

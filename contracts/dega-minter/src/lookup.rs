@@ -1,6 +1,5 @@
-use cosmwasm_std::{BankQuery, Binary, ContractResult, CustomQuery, Deps, Empty, from_json, QueryRequest, StdError, StdResult, SystemResult, to_json_binary, to_json_vec};
+use cosmwasm_std::{Binary, ContractResult, CustomQuery, Deps, from_json, QueryRequest, StdError, StdResult, SystemResult, to_json_vec};
 use serde::{Deserialize, Serialize};
-use crate::msg::QueryMsg;
 
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -34,7 +33,7 @@ impl From<DegaInjectiveQuery> for QueryRequest<DegaInjectiveQuery> {
     }
 }
 
-pub fn query_account(deps: Deps, address: String) -> StdResult<Binary> {
+pub fn _query_account(deps: Deps, address: String) -> StdResult<Binary> {
 
     // let res: GranterGrantsResponse = deps.querier.query(&request.into())?;
     //let res = deps.querier.query(&request.into())?;

@@ -5,10 +5,10 @@ use sg_mod::base_factory::msg::{BaseMinterCreateMsg}; // DEGA MOD (added sg_mod)
 use sg_mod::base_factory::state::Extension; // DEGA MOD (added sg_mod)
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdResult, SubMsg, Timestamp, WasmMsg, Coin};
+use cosmwasm_std::{to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdResult, SubMsg, Timestamp, WasmMsg};
 //use cw2::set_contract_version; // DEGA MOD (removed dependency)
 use cw_utils::{nonpayable, parse_reply_instantiate_data};
-use serde::Serialize;
+//use serde::Serialize; // DEGA MOD (removed dependency)
 // DEGA MOD (removed unused imports)
 //use sg1::checked_fair_burn; // DEGA MOD (removed dependency)
 //use sg2::query::Sg2QueryMsg; // DEGA MOD (removed dependency)
@@ -17,7 +17,10 @@ use sg721::{ExecuteMsg as Sg721ExecuteMsg, InstantiateMsg as Sg721InstantiateMsg
 use sg721_base::msg::{CollectionInfoResponse, QueryMsg as Sg721QueryMsg};
 //use sg_mod::sg_std::NATIVE_DENOM; // DEGA MOD (added sg_mod / removed unused import)
 use url::Url;
-use sg2::{CodeId, MinterParams};
+use sg2::{
+    // CodeId, // DEGA MOD (removed dependency)
+    MinterParams
+};
 
 const CONTRACT_NAME: &str = "crates.io:sg-base-minter";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");

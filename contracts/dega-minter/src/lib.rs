@@ -22,9 +22,9 @@ use base_minter::{
         //InstantiateMsg as SgBaseMinterInstantiateMsg, // Specified in messages but not actually what the base minter uses...
         ExecuteMsg as SgBaseMinterExecuteMsg,
     },
-    error::{
-        ContractError as SgBaseMinterContractError,
-    }
+    // error::{
+    //     ContractError as SgBaseMinterContractError,
+    // }
 };
 
 use sg4::{
@@ -56,7 +56,8 @@ pub mod entry {
         msg: InstantiateMsg,
     ) -> Result<Response, ContractError> {
 
-        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+            .map_err(|e| ContractError::Std("Error setting contract version".to_string(), e))?;
 
         contract::instantiate(deps, env, info, msg)
     }
@@ -68,8 +69,6 @@ pub mod entry {
         info: MessageInfo,
         msg: ExecuteMsg,
     ) -> Result<Response, ContractError> {
-
-        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
         contract::execute(deps, env, info, msg)
     }
@@ -90,7 +89,8 @@ pub mod entry {
         _msg: SgBaseMinterInstantiateMsg,
     ) -> Result<Response, ContractError> {
 
-        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+            .map_err(|e| ContractError::Std("Error setting contract version".to_string(), e))?;
 
         Ok(Response::default())
     }
@@ -102,10 +102,8 @@ pub mod entry {
         msg: Reply
     ) -> Result<Response, ContractError> {
 
-        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-
         sg_base_minter_reply(deps, env, msg)
-            .map_err(| e: SgBaseMinterContractError | e.into())
+            .map_err(| e | ContractError::BaseMinter("Error during deferred reply".to_string(), e))
     }
 
 

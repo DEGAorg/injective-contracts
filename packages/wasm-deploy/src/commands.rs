@@ -51,8 +51,6 @@ use std::fmt::Debug;
 use std::fs::{create_dir, remove_file, File};
 use std::io::{copy, BufReader};
 use std::path::{Path, PathBuf};
-use std::process::CommandArgs;
-use clap::builder::OsStr;
 
 #[async_recursion(?Send)]
 pub async fn execute_args<C, S>(settings: &WorkspaceSettings, cli: &Cli<C, S>) -> anyhow::Result<()>

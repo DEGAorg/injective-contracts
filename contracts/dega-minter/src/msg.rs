@@ -1,22 +1,19 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{BankQuery, Binary, Coin, Deps, DepsMut, Empty, PageRequest, QueryRequest, Timestamp, Uint128, Uint256};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use sg2::{CodeId, MinterParams};
-use sg_mod::base_factory::state::Extension;
+use cosmwasm_std::{Empty, Timestamp, Uint128, Uint256};
+use sg2::{MinterParams};
 use crate::{
     SgBaseMinterInstantiateMsg,
     SgBaseMinterExecuteMsg,
     SgBaseMinterQueryMsg,
 };
-use sg2::msg::{CollectionParams, CreateMinterMsg};
+use sg2::msg::{CollectionParams};
 use sg4::{MinterConfig as BaseMinterConfig, MinterConfigResponse as BaseMinterConfigResponse};
 //pub type InstantiateMsg = SgBaseMinterInstantiateMsg;
 //pub type ExecuteMsg = SgBaseMinterExecuteMsg;
 //pub type QueryMsg = SgBaseMinterQueryMsg;
-use base_minter::state::{
-    Config as MinterBaseConfig
-};
+// use base_minter::state::{
+//     Config as MinterBaseConfig
+// };
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -59,16 +56,16 @@ pub type DegaMinterConfigResponse = BaseMinterConfigResponse<DegaMinterConfigSet
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    Mint { token_uri: String },
-    UpdateStartTradingTime(Option<Timestamp>),
-    SignatureTest { message: String, signature: String, maybe_signer: Option<String> },
+    Mint {
+        request: MintRequest,
+        signature: String,
+    },
+    UpdateStartTradingTime(Option<Timestamp>)
 }
 
 impl From<ExecuteMsg> for SgBaseMinterExecuteMsg {
     fn from(msg: ExecuteMsg) -> SgBaseMinterExecuteMsg {
         match msg {
-            ExecuteMsg::Mint { token_uri } =>
-                SgBaseMinterExecuteMsg::Mint { token_uri },
             ExecuteMsg::UpdateStartTradingTime( maybe_stamp ) =>
                 SgBaseMinterExecuteMsg::UpdateStartTradingTime ( maybe_stamp ),
             _ => unreachable!("cannot convert {:?} to SgBaseMinterQueryMsg", msg),

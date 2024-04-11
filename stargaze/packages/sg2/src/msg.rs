@@ -1,7 +1,6 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Coin;
 use sg721::{CollectionInfo, RoyaltyInfoResponse};
-use crate::MinterParams;
 
 #[cw_serde]
 pub struct CreateMinterMsg<T> {
