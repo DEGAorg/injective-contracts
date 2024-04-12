@@ -9,7 +9,7 @@
 
 export interface DegaMinterInstantiateMsg {
     collection_params: CollectionParams;
-    init_msg:          CreateMinterInitMsgForNullableEmptyAndNullableEmpty;
+    minter_params:     MinterParamsForDegaMinterParams;
 }
 
 export interface CollectionParams {
@@ -37,21 +37,16 @@ export interface RoyaltyInfoResponse {
     share:           string;
 }
 
-export interface CreateMinterInitMsgForNullableEmptyAndNullableEmpty {
-    params:              MinterParamsForNullableEmpty;
-    remaining_init_msg?: { [key: string]: any } | null;
-}
-
 /**
  * Common params for all minters used for storage
  */
-export interface MinterParamsForNullableEmpty {
+export interface MinterParamsForDegaMinterParams {
     /**
      * The minter code id
      */
     allowed_sg721_code_ids:  number[];
     creation_fee:            Coin;
-    extension?:              { [key: string]: any } | null;
+    extension:               DegaMinterParams;
     frozen:                  boolean;
     max_trading_offset_secs: number;
     min_mint_price:          Coin;
@@ -62,6 +57,14 @@ export interface Coin {
     amount: string;
     denom:  string;
     [property: string]: any;
+}
+
+export interface DegaMinterParams {
+    dega_minter_settings: DegaMinterConfigSettings;
+}
+
+export interface DegaMinterConfigSettings {
+    signer_pub_key: string;
 }
 
 // Converts JSON strings to/from your types
@@ -231,7 +234,7 @@ function r(name: string) {
 const typeMap: any = {
     "DegaMinterInstantiateMsg": o([
         { json: "collection_params", js: "collection_params", typ: r("CollectionParams") },
-        { json: "init_msg", js: "init_msg", typ: r("CreateMinterInitMsgForNullableEmptyAndNullableEmpty") },
+        { json: "minter_params", js: "minter_params", typ: r("MinterParamsForDegaMinterParams") },
     ], false),
     "CollectionParams": o([
         { json: "code_id", js: "code_id", typ: 0 },
@@ -252,14 +255,10 @@ const typeMap: any = {
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
     ], false),
-    "CreateMinterInitMsgForNullableEmptyAndNullableEmpty": o([
-        { json: "params", js: "params", typ: r("MinterParamsForNullableEmpty") },
-        { json: "remaining_init_msg", js: "remaining_init_msg", typ: u(undefined, u(m("any"), null)) },
-    ], false),
-    "MinterParamsForNullableEmpty": o([
+    "MinterParamsForDegaMinterParams": o([
         { json: "allowed_sg721_code_ids", js: "allowed_sg721_code_ids", typ: a(0) },
         { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
-        { json: "extension", js: "extension", typ: u(undefined, u(m("any"), null)) },
+        { json: "extension", js: "extension", typ: r("DegaMinterParams") },
         { json: "frozen", js: "frozen", typ: true },
         { json: "max_trading_offset_secs", js: "max_trading_offset_secs", typ: 0 },
         { json: "min_mint_price", js: "min_mint_price", typ: r("Coin") },
@@ -269,4 +268,10 @@ const typeMap: any = {
         { json: "amount", js: "amount", typ: "" },
         { json: "denom", js: "denom", typ: "" },
     ], "any"),
+    "DegaMinterParams": o([
+        { json: "dega_minter_settings", js: "dega_minter_settings", typ: r("DegaMinterConfigSettings") },
+    ], false),
+    "DegaMinterConfigSettings": o([
+        { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
+    ], false),
 };

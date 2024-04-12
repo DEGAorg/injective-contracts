@@ -1,8 +1,9 @@
 import {getNetworkEndpoints} from "@injectivelabs/networks";
-import {ChainGrpcBankApi, ChainGrpcWasmApi, MsgBroadcasterWithPk, PrivateKey} from "@injectivelabs/sdk-ts";
+import {ChainGrpcBankApi, ChainGrpcWasmApi, hexToBase64, MsgBroadcasterWithPk, PrivateKey} from "@injectivelabs/sdk-ts";
 import {Config} from "./config";
 import {BigNumberInBase} from "@injectivelabs/utils";
 import {ChainId} from "@injectivelabs/ts-types";
+import secp256k1 from "secp256k1"
 
 function initContext() {
 
@@ -10,6 +11,13 @@ function initContext() {
     const primaryAddress = primaryPrivateKey.toBech32();
 
     const signerPrivateKey = PrivateKey.fromMnemonic(Config.SIGNER_KEY_MNEMONIC);
+    const signerSigningKey = Buffer.from(signerPrivateKey.toPrivateKeyHex().slice(2), "hex");
+
+    if (!secp256k1.privateKeyVerify(signerSigningKey)) {
+        throw new Error("Invalid signer private key");
+    }
+
+    const signerCompressedPublicKey = Buffer.from(secp256k1.publicKeyCreate(signerSigningKey, true))
     const signerAddress = signerPrivateKey.toBech32();
 
     const localGenesisPrivateKey = PrivateKey.fromMnemonic(Config.LOCAL_GENESIS_MNEMONIC);
@@ -62,6 +70,8 @@ function initContext() {
         primaryPrivateKey: primaryPrivateKey,
         primaryAddress: primaryAddress,
         signerPrivateKey: signerPrivateKey,
+        signerSigningKey: signerSigningKey,
+        signerCompressedPublicKey: signerCompressedPublicKey,
         signerAddress: signerAddress,
         localGenesisPrivateKey: localGenesisPrivateKey,
         localGenesisAddress: localGenesisAddress,

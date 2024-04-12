@@ -16,6 +16,7 @@
     "dotenv": "^16.4.5",
     "quicktype": "^23.0.115",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.3"
+    "typescript": "^5.4.3",
+    "secp256k1": "^5.0.0"
   }
 }

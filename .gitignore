@@ -31,3 +31,5 @@ tarpaulin-report.*
 
 # CLI config file
 .wasm-deploy/config.json
+
+config.json

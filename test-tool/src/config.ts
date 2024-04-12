@@ -11,7 +11,7 @@ function notEmpty(value: any) {
 }
 
 function getContractAddressesFromWasmDeployConfig(useLocal: boolean)
-    : { minterAddress: any, cw721Address: any } | null
+    : { minterCodeId: any, minterAddress: any, cw721CodeId: any, cw721Address: any } | null
 {
 
     // Resolve the path to the JSON file
@@ -37,20 +37,26 @@ function getContractAddressesFromWasmDeployConfig(useLocal: boolean)
     const contracts = envObject["contracts"] as any[];
     if (isEmpty(contracts)) return null;
 
+    let minterCodeId = null;
     let minterAddress = null;
     const minterContract = contracts.find(contract => contract["name"] === 'dega-minter');
     if (notEmpty(minterContract)) {
+        minterCodeId = minterContract["code_id"];
         minterAddress = minterContract["addr"];
     }
 
+    let cw721CodeId = null;
     let cw721Address = null;
     const cw721Contract = contracts.find(contract => contract["name"] === 'dega-cw721');
     if (cw721Contract) {
+        cw721CodeId = cw721Contract["code_id"];
         cw721Address = cw721Contract["addr"];
     }
 
     return {
+        minterCodeId: minterCodeId,
         minterAddress: minterAddress,
+        cw721CodeId: cw721CodeId,
         cw721Address: cw721Address,
     }
 }
@@ -61,20 +67,31 @@ function initConfig() {
 
     let useLocal = process.env.USE_LOCAL as string == "true";
 
+    let minterCodeId = 0;
     let minterAddress = (useLocal ? process.env.MINTER_ADDRESS_LOCAL : process.env.MINTER_ADDRESS) as string
+    let cw721CodeId = 0;
     let cw721Address = (useLocal ? process.env.CW721_ADDRESS_LOCAL : process.env.CW721_ADDRESS) as string
 
-    let minterAndCw721AddressesOrNull =
-        getContractAddressesFromWasmDeployConfig(useLocal) as { minterAddress: string, cw721Address: string };
+    let minterAndCw721CodeIdsAddressesOrNull =
+        getContractAddressesFromWasmDeployConfig(useLocal) as
+            { minterCodeId: number, minterAddress: string, cw721CodeId: number, cw721Address: string };
 
-    if (notEmpty(minterAndCw721AddressesOrNull)) {
-        const minterAddressString = minterAndCw721AddressesOrNull.minterAddress as string;
-        if (notEmpty(minterAddressString) && minterAddressString.length > 0) {
-            minterAddress = minterAndCw721AddressesOrNull.minterAddress;
+    if (notEmpty(minterAndCw721CodeIdsAddressesOrNull)) {
+        const minterCodeIdNumber = minterAndCw721CodeIdsAddressesOrNull.minterCodeId as number;
+        if (notEmpty(minterCodeIdNumber)) {
+            minterCodeId = minterCodeIdNumber;
         }
-        const cw721AddressString = minterAndCw721AddressesOrNull.cw721Address as string;
+        const minterAddressString = minterAndCw721CodeIdsAddressesOrNull.minterAddress as string;
+        if (notEmpty(minterAddressString) && minterAddressString.length > 0) {
+            minterAddress = minterAddressString;
+        }
+        const cw721CodeIdNumber = minterAndCw721CodeIdsAddressesOrNull.cw721CodeId as number;
+        if (notEmpty(cw721CodeIdNumber)) {
+            cw721CodeId = cw721CodeIdNumber;
+        }
+        const cw721AddressString = minterAndCw721CodeIdsAddressesOrNull.cw721Address as string;
         if (notEmpty(cw721AddressString) && cw721AddressString.length > 0) {
-            cw721Address = minterAndCw721AddressesOrNull.cw721Address;
+            cw721Address = cw721AddressString;
         }
     }
 
@@ -87,7 +104,9 @@ function initConfig() {
         PRIVATE_KEY_MNEMONIC: process.env.PRIVATE_KEY_MNEMONIC as string,
         USE_LOCAL: useLocal,
         NETWORK: useLocal ? Network.Local : Network.Testnet,
+        MINTER_CODE_ID: minterCodeId,
         MINTER_ADDRESS: minterAddress,
+        CW721_CODE_ID: cw721CodeId,
         CW721_ADDRESS: cw721Address,
         SIGNER_KEY_MNEMONIC: process.env.SIGNER_KEY_MNEMONIC as string,
         LOCAL_GENESIS_MNEMONIC: process.env.LOCAL_GENESIS_MNEMONIC as string,

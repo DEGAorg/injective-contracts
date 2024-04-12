@@ -1,0 +1,41 @@
+{
+  "active_env": "dev-testnet",
+  "networks": {
+    "injective-local": {
+      "chain_id": "injective-1",
+      "rpc_endpoint": "http://localhost:26657"
+    },
+    "injective-testnet": {
+      "chain_id": "injective-888",
+      "rpc_endpoint": "https://testnet.sentry.tm.injective.network:443"
+    }
+  },
+  "envs": {
+    "local-test": {
+      "network": "injective-local",
+      "contracts": {
+        "dega-minter": {
+          "address": "",
+          "code_id": 0
+        },
+        "dega-cw721": {
+          "address": "",
+          "code_id": 0
+        }
+      }
+    },
+    "testnet-test": {
+      "network": "injective-testnet",
+      "contracts": {
+        "dega-minter": {
+          "address": "",
+          "code_id": 0
+        },
+        "dega-cw721": {
+          "address": "",
+          "code_id": 0
+        }
+      }
+    }
+  }
+}

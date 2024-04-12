@@ -360,6 +360,7 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     let text_signature: Signature = secret_signing_key.sign_digest(message_digest.clone());
 
     println!("Signature hex: {}", hex::encode(&text_signature.to_bytes()));
+    println!("Signature base64: {}", base64::encode(&text_signature.to_bytes()));
     println!("Signature size: {}", text_signature.to_bytes().len());
 
     let ethers_wallet = EthersLocalWallet::from(secret_signing_key.clone());
@@ -388,8 +389,8 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     println!("Uncompressed public key size (bytes): {:?}", uncompressed_pubkey_bytes.len());
 
     let bech32_uncompressed_pubkey: String = bech32::encode("inj", uncompressed_pubkey_bytes.to_base32(), Variant::Bech32)?;
-    println!("Uncompressed public key in bech32: {:?}", bech32_uncompressed_pubkey);
     println!("Uncompressed public key in hex: {:?}", hex::encode(uncompressed_pubkey_bytes));
+    println!("Uncompressed public key in base64: {:?}", base64::encode(uncompressed_pubkey_bytes));
 
     match uncompressed_result {
         Ok(_) => {
@@ -411,10 +412,8 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     );
 
     println!("Compressed public key size (bytes): {:?}",compressed_pubkey_bytes.len());
-
-    let bech32_compressed_pubkey: String = bech32::encode("inj", compressed_pubkey_bytes.to_base32(), Variant::Bech32)?;
-    println!("Compressed public key in bech32: {:?}", bech32_compressed_pubkey);
     println!("Compressed public key in hex: {:?}", hex::encode(compressed_pubkey_bytes));
+    println!("Compressed public key in base64: {:?}", base64::encode(compressed_pubkey_bytes));
 
     match compressed_result {
         Ok(_) => {
@@ -450,11 +449,12 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
 
     let mint_request_signature: Signature = secret_signing_key.sign_digest(mint_request_digest.clone());
 
+    //let base_64_signature_sent = base64::encode(&text_signature.to_bytes()).clone();
+    let base_64_signature_sent = base64::encode(&mint_request_signature.to_bytes());
 
     let query_msg: QueryMsg = QueryMsg::CheckSig {
         message: VerifiableMsg::MintRequest(mint_request_msg),
-        signature: base64::encode(&mint_request_signature.to_bytes()).clone(),
-        //signature: base64::encode(&text_signature.to_bytes()).clone(),
+        signature: base_64_signature_sent.clone(),
         //signer_source: SignerSourceType::Address(account_id_from_cosmrs.to_string()),
         signer_source: SignerSourceType::PubKeyBinary(Binary::from(public_key.to_encoded_point(true).as_bytes()).to_base64()),
         //signer_source: SignerSourceType::ConfigSignerPubKey,
@@ -465,6 +465,8 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     let sent_hash_hex_string = hex::encode(sent_digest_hash);
 
     println!("Hash Being Sent: {}", sent_hash_hex_string);
+    println!("Signature Being Sent: {}", base_64_signature_sent);
+    println!("Sent signature length: {}", base_64_signature_sent.len());
 
     let local_verify_result = public_key.verify_digest(mint_request_digest, &mint_request_signature);
 

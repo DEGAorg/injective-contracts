@@ -1,11 +1,14 @@
 import {Context} from "./context";
 import {Config} from "./config";
-import {fromBase64, toBase64} from "@injectivelabs/sdk-ts";
+import {fromBase64, sha256, toBase64} from "@injectivelabs/sdk-ts";
 import {DegaCw721QueryMsg, DegaMinterQueryMsg} from "./messages";
 import { Wallet } from 'ethers'
+import { SigningKey } from '@ethersproject/signing-key'
 import { Address as EthereumUtilsAddress } from 'ethereumjs-util'
 import secp256k1 from 'secp256k1'
+import { randomBytes } from 'crypto'
 import { bech32 } from 'bech32'
+import {MintRequest, SignerSourceTypeEnum} from "./messages/dega_minter_query";
 
 export async function query(args: string[]) {
 
@@ -78,55 +81,68 @@ export async function info(args: string[]) {
 
 async function sigTest(args: string[]) {
 
-    // let mintRequestMsg = { //: MintRequest = {
-    //     to: Context.primaryAddress,
-    //     royalty_recipient: Context.primaryAddress,
-    //     royalty_bps: "0",
-    //     primary_sale_recipient: Context.primaryAddress,
-    //     uri: "https://www.domain.com",
-    //     price: "0",
-    //     currency: Context.primaryAddress,
-    //     validity_start_timestamp: "0",
-    //     validity_end_timestamp: "0",
-    //     uid: 0,
-    // };
+    let rawTextMessage = "test message";
 
-    let message = "test message";
-    let md5_hash = "3f0a377ba0a4a460ecb616f6507ce0d8cfa3e704025d4fda3ed0c5ca05468728"; // echo -n 'test message' | sha256sum
+    let mintRequestMsg: MintRequest = {
+        to: Context.primaryAddress,
+        royalty_recipient: Context.primaryAddress,
+        royalty_bps: "0",
+        primary_sale_recipient: Context.primaryAddress,
+        uri: "https://www.domain.com",
+        price: "0",
+        currency: "inj",
+        validity_start_timestamp: "0",
+        validity_end_timestamp: "0",
+        uid: 0,
+    };
+
+    //let rawMessage = Buffer.from(rawTextMessage, "utf-8");
+    let rawMessage = Buffer.from(toBase64(mintRequestMsg), "base64");
+
 
     //let mintRequestBase64 = toBase64({md5_hash} );
-    let buffer = Buffer.from(md5_hash, "hex");
-//let uint8Array = new Uint8Array(buffer);
 
-    // sign(messageBytes: Buffer): Promise<Uint8Array>;
-    // signEcda(messageBytes: Buffer): Promise<Uint8Array>;
-    // signHashed(messageHashedBytes: Buffer): Promise<Uint8Array>;
-    // signHashedEcda(messageHashedBytes: Buffer): Promise<Uint8Array>;
+    let msgMd5Hash = Buffer.from(sha256(rawMessage)); // echo -n 'test message' | sha256sum
+    let msgHashHex = msgMd5Hash.toString("hex");
 
-    const signature = await Context.signerPrivateKey.signHashedEcda(buffer);
-    let sigBase64 = toBase64(signature);
+    let signingKey = Context.signerSigningKey;
+    //let signingKey = randomBytes(32);
 
-    console.log("Sig Length: " + sigBase64.length);
+    console.log("Signing Key Hex: " + signingKey.toString("hex"));
+    console.log("Signing Key Base64: " + signingKey.toString("base64"));
+    console.log("Signing Key Length: " + signingKey.length);
+
+    let publicKey = Context.signerCompressedPublicKey;
+
+    console.log("Compressed Pubkey Hex: " + publicKey.toString("hex"));
+    console.log("Compressed Pubkey Base64: " + publicKey.toString("base64"));
+    console.log("Compressed Pubkey Length: " + publicKey.length);
+
+    let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signingKey).signature);
+    let sigHex = signature.toString("hex");
+    let sigBase64 = signature.toString("base64");
 
     console.log("Message Hash: ");
-    console.log(md5_hash);
+    console.log(msgHashHex);
     console.log();
-    console.log("Signature: " + sigBase64);
+    console.log("Signature Hex: " + sigHex);
+    console.log("Signature Base64: " + sigBase64);
+    console.log("Signature Length: " + signature.length);
     console.log();
     console.log("Address: " + Context.signerAddress);
     console.log();
 
     let checkSigQuery: DegaMinterQueryMsg = {
-        // check_sig: {
-        //     //mint_request: mintRequestBase64,
-        //     signature: sigBase64,
-        //     //maybe_signer: null,
-        // }
-        check_msg_sig: {
-            message: message,
+        check_sig: {
+            message: {
+                mint_request: mintRequestMsg
+                //string: rawTextMessage
+            },
             signature: sigBase64,
-            maybe_signer: null,
-            maybe_pub_key: null,
+            signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
+            // signer_source: {
+            //     pub_key_binary: Buffer.from(Context.signerCompressedPublicKey).toString("base64")
+            // }
         }
     };
 

@@ -10,17 +10,24 @@
 export interface DegaMinterExecuteMsg {
     mint?:                      Mint;
     update_start_trading_time?: null | string;
-    signature_test?:            SignatureTest;
 }
 
 export interface Mint {
-    token_uri: string;
+    request:   MintRequest;
+    signature: string;
 }
 
-export interface SignatureTest {
-    maybe_signer?: null | string;
-    message:       string;
-    signature:     string;
+export interface MintRequest {
+    currency:                 string;
+    price:                    string;
+    primary_sale_recipient:   string;
+    royalty_bps:              string;
+    royalty_recipient:        string;
+    to:                       string;
+    uid:                      number;
+    uri:                      string;
+    validity_end_timestamp:   string;
+    validity_start_timestamp: string;
 }
 
 // Converts JSON strings to/from your types
@@ -191,14 +198,21 @@ const typeMap: any = {
     "DegaMinterExecuteMsg": o([
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
         { json: "update_start_trading_time", js: "update_start_trading_time", typ: u(undefined, u(null, "")) },
-        { json: "signature_test", js: "signature_test", typ: u(undefined, r("SignatureTest")) },
     ], false),
     "Mint": o([
-        { json: "token_uri", js: "token_uri", typ: "" },
-    ], false),
-    "SignatureTest": o([
-        { json: "maybe_signer", js: "maybe_signer", typ: u(undefined, u(null, "")) },
-        { json: "message", js: "message", typ: "" },
+        { json: "request", js: "request", typ: r("MintRequest") },
         { json: "signature", js: "signature", typ: "" },
+    ], false),
+    "MintRequest": o([
+        { json: "currency", js: "currency", typ: "" },
+        { json: "price", js: "price", typ: "" },
+        { json: "primary_sale_recipient", js: "primary_sale_recipient", typ: "" },
+        { json: "royalty_bps", js: "royalty_bps", typ: "" },
+        { json: "royalty_recipient", js: "royalty_recipient", typ: "" },
+        { json: "to", js: "to", typ: "" },
+        { json: "uid", js: "uid", typ: 0 },
+        { json: "uri", js: "uri", typ: "" },
+        { json: "validity_end_timestamp", js: "validity_end_timestamp", typ: "" },
+        { json: "validity_start_timestamp", js: "validity_start_timestamp", typ: "" },
     ], false),
 };
