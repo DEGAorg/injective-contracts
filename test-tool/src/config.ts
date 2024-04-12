@@ -17,6 +17,8 @@ function getContractAddressesFromWasmDeployConfig(useLocal: boolean)
     // Resolve the path to the JSON file
     const jsonFilePath = path.resolve(__dirname, '../../.wasm-deploy/config.json');
 
+    if (!fs.existsSync(jsonFilePath)) return null;
+
     // Read the JSON file
     const jsonData = fs.readFileSync(jsonFilePath, 'utf-8');
 
@@ -26,7 +28,7 @@ function getContractAddressesFromWasmDeployConfig(useLocal: boolean)
     // Get the env_id from the config
     const envId = useLocal ? process.env.CONFIG_LOCAL_ENV : process.env.CONFIG_TESTNET_ENV;
 
-    if (isEmpty(jsonObject) || process.env.USE_WASM_DEPLOY_CONFIG as string != "true") return null;
+    if (isEmpty(jsonObject)) return null;
 
     const envs = jsonObject["envs"] as any[];
     if (isEmpty(envs)) return null;
@@ -42,7 +44,9 @@ function getContractAddressesFromWasmDeployConfig(useLocal: boolean)
     const minterContract = contracts.find(contract => contract["name"] === 'dega-minter');
     if (notEmpty(minterContract)) {
         minterCodeId = minterContract["code_id"];
-        minterAddress = minterContract["addr"];
+        if (process.env.USE_WASM_DEPLOY_CONFIG as string == "true") {
+            minterAddress = minterContract["addr"];
+        }
     }
 
     let cw721CodeId = null;
@@ -50,7 +54,9 @@ function getContractAddressesFromWasmDeployConfig(useLocal: boolean)
     const cw721Contract = contracts.find(contract => contract["name"] === 'dega-cw721');
     if (cw721Contract) {
         cw721CodeId = cw721Contract["code_id"];
-        cw721Address = cw721Contract["addr"];
+        if (process.env.USE_WASM_DEPLOY_CONFIG as string == "true") {
+            cw721Address = cw721Contract["addr"];
+        }
     }
 
     return {
