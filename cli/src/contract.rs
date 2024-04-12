@@ -16,9 +16,9 @@ pub enum Contracts {
         package_id = "dega-cw721",
         bin_name = "dega_cw721",
         rename = "dega-cw721",
-        instantiate = dega_cw721::msg::InstantiateMsg,
-        execute = dega_cw721::msg::ExecuteMsg,
-        query = dega_cw721::msg::QueryMsg,
+        instantiate = dega_inj::cw721::InstantiateMsg,
+        execute = dega_inj::cw721::ExecuteMsg,
+        query = dega_inj::cw721::QueryMsg,
         // cw20_send = ...             
         // migrate = ...
         // path = "contracts/cw20_base"  // | layout.
@@ -31,9 +31,9 @@ pub enum Contracts {
     package_id = "dega-minter",
     bin_name = "dega_minter",
     rename = "dega-minter",
-    instantiate = dega_minter::msg::InstantiateMsg,
-    execute = dega_minter::msg::ExecuteMsg,
-    query = dega_minter::msg::QueryMsg,
+    instantiate = dega_inj::minter::InstantiateMsg,
+    execute = dega_inj::minter::ExecuteMsg,
+    query = dega_inj::minter::QueryMsg,
     // cw20_send = ...
     // migrate = ...
     // path = "contracts/cw20_base"  // | layout.

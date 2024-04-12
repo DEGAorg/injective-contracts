@@ -1,13 +1,45 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Empty, Timestamp, Uint128, Uint256};
 use sg2::{MinterParams};
-use crate::{
-    SgBaseMinterInstantiateMsg,
-    SgBaseMinterExecuteMsg,
-    SgBaseMinterQueryMsg,
-};
+
 use sg2::msg::{CollectionParams};
-use sg4::{MinterConfig as BaseMinterConfig, MinterConfigResponse as BaseMinterConfigResponse};
+use sg4::{
+    //MinterConfig as BaseMinterConfig,
+    MinterConfigResponse as BaseMinterConfigResponse,
+};
+
+// SGBaseMinter Imports
+use base_minter::{
+    //contract::{
+        //instantiate as sg_base_minter_instantiate,
+        //execute as sg_base_minter_execute,
+        //query as sg_base_minter_query,
+        //reply as sg_base_minter_reply
+    //},
+    msg::{
+        //InstantiateMsg as SgBaseMinterInstantiateMsg, // Specified in messages but not actually what the base minter uses...
+        ExecuteMsg as SgBaseMinterExecuteMsg,
+    },
+    state::{
+        Config as MinterConfigBase,
+    }
+    // error::{
+    //     ContractError as SgBaseMinterContractError,
+    // }
+};
+
+use sg4::{
+    QueryMsg as SgBaseMinterQueryMsg,
+};
+
+use sg_mod::base_factory::{
+    msg::{
+        BaseMinterCreateMsg as SgBaseMinterInstantiateMsg,
+    }
+};
+
+
+
 //pub type InstantiateMsg = SgBaseMinterInstantiateMsg;
 //pub type ExecuteMsg = SgBaseMinterExecuteMsg;
 //pub type QueryMsg = SgBaseMinterQueryMsg;
@@ -42,16 +74,25 @@ impl From<InstantiateMsg> for SgBaseMinterInstantiateMsg {
 #[cw_serde]
 pub struct DegaMinterParams {
     pub dega_minter_settings: DegaMinterConfigSettings,
+    pub initial_admin: String,
 }
 
 #[cw_serde]
 pub struct DegaMinterConfigSettings {
     pub signer_pub_key: String,
+    pub minting_paused: bool,
+    pub transferring_paused: bool,
+    pub burning_paused: bool,
 }
 
+pub type Test = BaseMinterConfigResponse<DegaMinterConfigSettings>;
 
-pub type DegaMinterConfig = BaseMinterConfig<DegaMinterConfigSettings>;
-pub type DegaMinterConfigResponse = BaseMinterConfigResponse<DegaMinterConfigSettings>;
+#[cw_serde]
+pub struct DegaMinterConfigResponse {
+    pub base_minter_config: MinterConfigBase,
+    pub dega_minter_settings: DegaMinterConfigSettings,
+    pub collection_address: String,
+}
 
 
 #[cw_serde]
@@ -59,6 +100,9 @@ pub enum ExecuteMsg {
     Mint {
         request: MintRequest,
         signature: String,
+    },
+    UpdateSettings {
+        settings: DegaMinterConfigSettings,
     },
     UpdateStartTradingTime(Option<Timestamp>)
 }
@@ -97,7 +141,7 @@ pub struct CheckSigResponse {
 
 #[cw_serde]
 pub enum QueryMsg {
-    /// Returns `MinterConfigResponse<T>`
+    /// Returns `DegaMinterConfigResponse`
     Config {},
     /// Returns `StatusResponse`
     Status {},

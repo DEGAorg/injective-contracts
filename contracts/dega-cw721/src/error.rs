@@ -4,15 +4,24 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ContractError {
-    #[error("StdError in Collection Contract: {0}")]
-    Std(#[from] StdError),
+    #[error("( Error in DEGA CW721: ({0}) | Caused by Standard Error: ({1}) )")]
+    Std(String, StdError),
 
-    #[error("PaymentError in Collection Contract: {0}")]
-    Payment(#[from] PaymentError),
+    #[error("( Error in DEGA CW721: ( {0} ) | Caused by Payment Error: ( {1} ) )")]
+    Payment(String, PaymentError),
 
-    #[error("CW720Error in Collection Contract: {0}")]
-    Cw721Base(#[from] cw721_base::ContractError),
+    #[error("( Error in DEGA CW721: ( {0} ) | Caused by CW721 Error: ( {1} ) )")]
+    Cw721(String, cw721_base::ContractError),
 
-    #[error("BaseError in Collection Contract: {0}")]
-    Base721(#[from] sg721_base::ContractError),
+    #[error("( Error in DEGA CW721: ( {0} ) | Caused by Base721 Error: ( {1} ) )")]
+    Base721(String, sg721_base::ContractError),
+
+    #[error("( Error initializing DEGA CW721: ( {0} ) )")]
+    InitializationError(String),
+
+    #[error("( Error during execution of DEGA CW721: ( {0} ) )")]
+    GenericError(String),
+
+    #[error("( The requested operation is paused. )")]
+    OperationPaused,
 }

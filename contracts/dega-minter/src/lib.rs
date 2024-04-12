@@ -5,7 +5,6 @@ use crate::{
     error::ContractError,
 };
 pub mod error;
-pub mod msg;
 pub mod state;
 pub mod contract;
 mod lookup;
@@ -18,18 +17,18 @@ use base_minter::{
         //query as sg_base_minter_query,
         reply as sg_base_minter_reply
     },
-    msg::{
-        //InstantiateMsg as SgBaseMinterInstantiateMsg, // Specified in messages but not actually what the base minter uses...
-        ExecuteMsg as SgBaseMinterExecuteMsg,
-    },
+    // msg::{
+    //     //InstantiateMsg as SgBaseMinterInstantiateMsg, // Specified in messages but not actually what the base minter uses...
+    //     //ExecuteMsg as SgBaseMinterExecuteMsg,
+    // },
     // error::{
     //     ContractError as SgBaseMinterContractError,
     // }
 };
 
-use sg4::{
-    QueryMsg as SgBaseMinterQueryMsg,
-};
+// use sg4::{
+//     QueryMsg as SgBaseMinterQueryMsg,
+// };
 
 use sg_mod::base_factory::{
     msg::{
@@ -43,7 +42,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
     use cosmwasm_std::Reply;
-    use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+    use dega_inj::minter::{ExecuteMsg, InstantiateMsg, QueryMsg};
     use super::{
         *
     };

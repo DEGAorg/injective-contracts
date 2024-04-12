@@ -29,6 +29,7 @@ library = []
 
 [dependencies]
 cosmwasm-std            = { workspace = true }
+cosmwasm-schema         = { workspace = true }
 cw-storage-plus         = { workspace = true }
 cw2                     = { workspace = true }
 cw721                   = { workspace = true }
@@ -42,6 +43,11 @@ serde                   = { workspace = true }
 serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
+sg2                     = { workspace = true }
+sg4                     = { workspace = true }
+base-minter             = { workspace = true, features = ["library"] }
+sg-mod                  = { workspace = true }
+sg721                   = { workspace = true }
+sg721-base              = { workspace = true, features = ["library"] }
 
 [dev-dependencies]
-cosmwasm-schema         = { workspace = true }

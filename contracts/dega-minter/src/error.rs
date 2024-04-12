@@ -18,4 +18,7 @@ pub enum ContractError {
 
     #[error("( Error during execution of DEGA Minter: ( {0} ) )")]
     GenericError(String),
+
+    #[error("( Operation unauthorized: ( {0} ) )")]
+    Unauthorized(String),
 }

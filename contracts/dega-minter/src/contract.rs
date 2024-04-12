@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, to_json_binary, Uint128, Uint256};
+use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, Event, MessageInfo, Response, StdError, StdResult, to_json_binary, Uint128, Uint256};
 //use injective_std::types::cosmos::auth::v1beta1::{AuthQuerier, BaseAccount};
 //use crate::inj_address::{AuthQuerier};
 
@@ -9,6 +9,7 @@ use base_minter::{
         instantiate as sg_base_minter_instantiate,
         execute as sg_base_minter_execute,
         query as sg_base_minter_query,
+        query_config as query_config_base,
     },
     error::{
         ContractError as SgBaseMinterContractError
@@ -25,10 +26,7 @@ use base_minter::{
 // };
 
 //use base_minter::contract::query_status;
-use crate::{msg::{
-    QueryMsg
-}};
-use crate::msg::{CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg};
+use dega_inj::minter::{QueryMsg, CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg, DegaMinterConfigResponse, DegaMinterConfigSettings};
 
 use sha2::{Digest, Sha256};
 use base_minter::state::COLLECTION_ADDRESS;
@@ -37,7 +35,7 @@ use sg721_base::msg::{
     QueryMsg as Sg721BaseQueryMsg,
 };
 use crate::error::ContractError;
-use crate::state::DEGA_MINTER_SETTINGS;
+use crate::state::{ADMIN_LIST, DEGA_MINTER_SETTINGS};
 
 pub fn instantiate(
     mut deps: DepsMut,
@@ -55,6 +53,9 @@ pub fn instantiate(
 
     DEGA_MINTER_SETTINGS.save(deps.storage, &dega_minter_settings)
         .map_err(|e| ContractError::Std("Error while saving dega minter settings".to_string(), e))?;
+
+    ADMIN_LIST.save(deps.storage, msg.minter_params.extension.initial_admin, &Empty {})
+        .map_err(|e| ContractError::Std("Error while saving initial admin".to_string(), e))?;
 
     Ok(base_instantiate_response
         .add_attribute("signer", dega_minter_settings.signer_pub_key)
@@ -82,12 +83,26 @@ pub fn query(
                 )?
             )
         },
+        QueryMsg::Config {} => to_json_binary(&query_config(deps, env)?),
         _ => sg_base_minter_query(deps.into(), env, msg.into()),
     }
 }
+fn query_config(deps: Deps, _env: Env) -> StdResult<DegaMinterConfigResponse> {
+    let base_config_query_result = query_config_base(deps)
+        .map_err(|e| StdError::generic_err(format!("Error during base config query: {}", e)))?;
+
+    let dega_minter_settings = DEGA_MINTER_SETTINGS.load(deps.storage)
+        .map_err(|e| StdError::generic_err(format!("Error during dega minter settings query: {}", e)))?;
+
+    Ok(DegaMinterConfigResponse {
+        base_minter_config: base_config_query_result.config,
+        dega_minter_settings,
+        collection_address: base_config_query_result.collection_address,
+    })
+}
 
 pub fn execute(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
@@ -97,6 +112,9 @@ pub fn execute(
         ExecuteMsg::Mint { request, signature } => {
             execute_mint(deps, env, info, request, signature)
         }
+        ExecuteMsg::UpdateSettings { settings} => {
+            execute_update_settings(&mut deps, &env, &info, &settings)
+        }
         _ => {
             sg_base_minter_execute(deps, env, info, msg.into())
                 .map_err(| e | ContractError::BaseMinter("Error during pass-thru base execution".to_string(), e))
@@ -104,6 +122,32 @@ pub fn execute(
     }
 
 
+}
+
+pub fn execute_update_settings(
+    deps: &mut DepsMut,
+    _env: &Env,
+    info: &MessageInfo,
+    settings: &DegaMinterConfigSettings
+) -> Result<Response, ContractError> {
+
+    if ! ADMIN_LIST.has(deps.storage, info.sender.to_string()) {
+        return Err(ContractError::Unauthorized("Only admins can update settings".to_string()));
+    }
+
+    DEGA_MINTER_SETTINGS.save(deps.storage, &settings)
+        .map_err(|e| ContractError::Std("Error while saving dega minter settings".to_string(), e))?;
+
+    Ok(Response::new()
+        .add_attribute("action", "update_settings")
+        .add_attribute("sender", info.sender.clone())
+        .add_event(Event::new("DegaMinter.UpdateSettings.NewSettings")
+            .add_attribute("signer_pub_key", settings.signer_pub_key.clone())
+            .add_attribute("transferring_paused", format!("{}",settings.transferring_paused))
+            .add_attribute("minting_paused", format!("{}",settings.minting_paused))
+            .add_attribute("burning_paused", format!("{}",settings.burning_paused))
+        )
+    )
 }
 
 

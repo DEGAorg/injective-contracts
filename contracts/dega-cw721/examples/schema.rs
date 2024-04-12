@@ -2,9 +2,9 @@ use std::env::current_dir;
 use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
-use dega_cw721::msg::InstantiateMsg;
-use dega_cw721::msg::ExecuteMsg;
-use dega_cw721::msg::QueryMsg;
+use dega_inj::cw721::InstantiateMsg;
+use dega_inj::cw721::ExecuteMsg;
+use dega_inj::cw721::QueryMsg;
 
 fn main() {
     let mut out_dir = current_dir().unwrap();

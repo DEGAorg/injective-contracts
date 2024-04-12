@@ -1624,6 +1624,7 @@ dependencies = [
 name = "dega-inj"
 version = "1.0.0"
 dependencies = [
+ "base-minter",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-storage-plus 0.15.1",
@@ -1637,6 +1638,11 @@ dependencies = [
  "schemars",
  "serde",
  "serde_repr",
+ "sg-mod",
+ "sg2",
+ "sg4",
+ "sg721",
+ "sg721-base",
  "subtle-encoding",
  "thiserror",
 ]

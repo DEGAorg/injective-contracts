@@ -1,32 +1,26 @@
 pub mod error;
 pub mod state;
-pub mod msg;
+mod contract;
 
 use cosmwasm_std::{
-    entry_point,
     DepsMut,
+    entry_point,
     Env,
     MessageInfo,
     Response,
 };
-use cw2::{
-    set_contract_version
-};
-use crate::error::{
-    ContractError
-};
+use cw2::set_contract_version;
+use crate::error::ContractError;
 use cosmwasm_std::{
     Binary,
     Deps,
     //StdError,
-    StdResult,
-    Empty
+    Empty,
+    StdResult
 };
 
 // CW721 BASE IMPORTS
-use cw721_base::{
-    Extension,
-};
+use cw721_base::Extension;
 use cw721_base::{
     // entry::{
     //     instantiate as base_cw721_instantiate,
@@ -34,8 +28,8 @@ use cw721_base::{
     //     query as base_cw721_query
     // },
     msg::{
-        InstantiateMsg as Cw721BaseInstantiateMsg,
         ExecuteMsg as Cw721BaseExecuteMsgTemplate,
+        InstantiateMsg as Cw721BaseInstantiateMsg,
         QueryMsg as Cw721BaseQueryMsgTemplate,
     }
 };
@@ -50,26 +44,16 @@ pub type Cw721BaseContract<'a> = Cw721Contract<'a,Extension,Empty,Empty,Empty>;
 
 
 // SG721 BASE IMPORTS
-use sg721::{
-    InstantiateMsg as Sg721BaseInstantiateMsg,
-};
+use sg721::InstantiateMsg as Sg721BaseInstantiateMsg;
 use sg721_base::{
-    entry::{
-        instantiate as base_sg721_instantiate,
-        execute as base_sg721_execute,
-        query as base_sg721_query
-    },
+    ExecuteMsg as Sg721BaseExecuteMsg,
     msg::{
         //ExecuteMsg as Sg721BaseExecuteMsgTemplate,
         QueryMsg as Sg721BaseQueryMsg,
     },
-    ExecuteMsg as Sg721BaseExecuteMsg,
 };
 
-use sg721_base::{
-    Sg721Contract,
-    ContractError as Sg721BaseContractError,
-};
+use sg721_base::Sg721Contract;
 
 pub type Sg721BaseContract<'a> = Sg721Contract<'a,Extension>;
 
@@ -78,10 +62,7 @@ const CONTRACT_NAME: &str = "DEGA CW721";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
-
-    use super::{
-        *
-    };
+    use super::*;
 
     #[entry_point]
     pub fn instantiate(
@@ -91,10 +72,10 @@ pub mod entry {
         msg: Sg721BaseInstantiateMsg,
     ) -> Result<Response, ContractError> {
 
-        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+            .map_err(|e| ContractError::Std("Error setting contract version".to_string(), e))?;
 
-        base_sg721_instantiate(deps, env, info, msg)
-            .map_err(| e: Sg721BaseContractError | e.into())
+        contract::_instantiate(deps, env, info, msg)
     }
 
     #[entry_point]
@@ -105,10 +86,10 @@ pub mod entry {
         msg: Sg721BaseExecuteMsg,
     ) -> Result<Response, ContractError> {
 
-        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+            .map_err(|e| ContractError::Std("Error setting contract version".to_string(), e))?;
 
-        base_sg721_execute(deps, env, info, msg)
-            .map_err(| e: Sg721BaseContractError | e.into())
+        contract::_execute(deps, env, info, msg)
     }
 
     #[entry_point]
@@ -118,7 +99,7 @@ pub mod entry {
         msg: Sg721BaseQueryMsg
     ) -> StdResult<Binary> {
 
-        base_sg721_query(deps, env, msg.into())
+        contract::_query(deps, env, msg)
     }
 
     #[entry_point]
@@ -128,7 +109,8 @@ pub mod entry {
         _msg: Cw721BaseInstantiateMsg,
     ) -> Result<Response, ContractError> {
 
-        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+        set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+            .map_err(|e| ContractError::Std("Error setting contract version".to_string(), e))?;
 
         Ok(Response::default())
     }

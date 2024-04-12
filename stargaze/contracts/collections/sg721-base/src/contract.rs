@@ -433,7 +433,8 @@ pub fn share_validate(share: Decimal) -> Result<Decimal, ContractError> {
     Ok(share)
 }
 
-pub fn get_owner_minter(storage: &mut dyn Storage) -> Result<Addr, ContractError> {
+// DEGA MOD - only take const reference to storage, not mutable reference
+pub fn get_owner_minter(storage: &dyn Storage) -> Result<Addr, ContractError> {
     let ownership = cw_ownable::get_ownership(storage)?;
     match ownership.owner {
         Some(owner_value) => Ok(owner_value),

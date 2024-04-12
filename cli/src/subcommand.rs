@@ -47,7 +47,7 @@ use cosmrs::{
 };
 use cosmrs;
 use ecdsa::elliptic_curve::zeroize::Zeroizing;
-use dega_minter::msg::{MintRequest, QueryMsg, SignerSourceType, VerifiableMsg};
+use dega_inj::minter::{MintRequest, QueryMsg, SignerSourceType, VerifiableMsg};
 use wasm_deploy::cosm_utils::signing_key::key::Key;
 use wasm_deploy::query::{
     query,
@@ -65,7 +65,7 @@ use ethers::signers::LocalWallet as EthersLocalWallet;
 use ethers::signers::Signer;
 use ethers::utils::hex::ToHexExt;
 use ethers::signers::MnemonicBuilder;
-use dega_minter::msg::ExecuteMsg::Mint;
+use dega_inj::minter::ExecuteMsg::Mint;
 
 
 
@@ -388,7 +388,7 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
 
     println!("Uncompressed public key size (bytes): {:?}", uncompressed_pubkey_bytes.len());
 
-    let bech32_uncompressed_pubkey: String = bech32::encode("inj", uncompressed_pubkey_bytes.to_base32(), Variant::Bech32)?;
+    let _bech32_uncompressed_pubkey: String = bech32::encode("inj", uncompressed_pubkey_bytes.to_base32(), Variant::Bech32)?;
     println!("Uncompressed public key in hex: {:?}", hex::encode(uncompressed_pubkey_bytes));
     println!("Uncompressed public key in base64: {:?}", base64::encode(uncompressed_pubkey_bytes));
 
