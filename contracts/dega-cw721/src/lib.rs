@@ -45,13 +45,6 @@ pub type Cw721BaseContract<'a> = Cw721Contract<'a,Extension,Empty,Empty,Empty>;
 
 // SG721 BASE IMPORTS
 use sg721::InstantiateMsg as Sg721BaseInstantiateMsg;
-use sg721_base::{
-    ExecuteMsg as Sg721BaseExecuteMsg,
-    // msg::{
-    //     //ExecuteMsg as Sg721BaseExecuteMsgTemplate,
-    //     //QueryMsg as Sg721BaseQueryMsg,
-    // },
-};
 
 use sg721_base::Sg721Contract;
 
@@ -62,7 +55,7 @@ const CONTRACT_NAME: &str = "DEGA CW721";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
-    use dega_inj::cw721::QueryMsg;
+    use dega_inj::cw721::{ExecuteMsg, QueryMsg};
     use super::*;
 
     #[entry_point]
@@ -84,7 +77,7 @@ pub mod entry {
         deps: DepsMut,
         env: Env,
         info: MessageInfo,
-        msg: Sg721BaseExecuteMsg,
+        msg: ExecuteMsg,
     ) -> Result<Response, ContractError> {
 
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)

@@ -1,31 +1,14 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, to_json_binary, Uint128};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, to_json_binary, Uint128};
 use cw2981_royalties::msg::Cw2981QueryMsg;
-use cw721_base::Extension;
-use dega_inj::cw721::QueryMsg;
+use cw_utils::nonpayable;
+use dega_inj::cw721::{DegaCW721Contract, ExecuteMsg, QueryMsg};
 use dega_inj::minter::{DegaMinterConfigResponse};
 use crate::error::ContractError;
 
 use sg721::{InstantiateMsg as Sg721BaseInstantiateMsg};
-use sg721_base::{
-    // entry::{
-    //     instantiate as base_sg721_instantiate,
-    //     execute as base_sg721_execute,
-    //     query as base_sg721_query
-    // },
-    // msg::{
-    //     //ExecuteMsg as Sg721BaseExecuteMsgTemplate,
-    //     //QueryMsg as Sg721BaseQueryMsg,
-    // },
-    ExecuteMsg as Sg721BaseExecuteMsg,
-};
 
-use sg721_base::{
-    Sg721Contract,
-    //ContractError as Sg721BaseContractError,
-};
 use sg721_base::contract::get_owner_minter;
-
-pub type DegaCW721Contract<'a> = Sg721Contract<'a, Extension>;
+use sg721_base::msg::CollectionInfoResponse;
 
 
 pub fn _instantiate(
@@ -45,25 +28,24 @@ pub fn _execute(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
-    msg: Sg721BaseExecuteMsg,
+    msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
 
-
     match msg {
-        Sg721BaseExecuteMsg::TransferNft { .. } |
-        Sg721BaseExecuteMsg::SendNft { .. } => {
+        ExecuteMsg::TransferNft { .. } |
+        ExecuteMsg::SendNft { .. } => {
             let minter_config = load_dega_minter_settings(&deps.as_ref())?;
             if minter_config.dega_minter_settings.transferring_paused {
                 return Err(ContractError::OperationPaused)
             }
         },
-        Sg721BaseExecuteMsg::Mint { .. } => {
+        ExecuteMsg::Mint { .. } => {
             let minter_config = load_dega_minter_settings(&deps.as_ref())?;
             if minter_config.dega_minter_settings.minting_paused {
                 return Err(ContractError::OperationPaused)
             }
         },
-        Sg721BaseExecuteMsg::Burn { .. } => {
+        ExecuteMsg::Burn { .. } => {
             let minter_config = load_dega_minter_settings(&deps.as_ref())?;
             if minter_config.dega_minter_settings.burning_paused {
                 return Err(ContractError::OperationPaused)
@@ -72,8 +54,16 @@ pub fn _execute(
         _ => {}
     }
 
-    DegaCW721Contract::default().execute(deps, env, info, msg)
-        .map_err(| e | ContractError::Base721("Error during base execution".to_string(), e))
+    match msg {
+        ExecuteMsg::UpdateTokenMetadata { token_id, token_uri} => {
+            execute_update_token_metadata(deps, env, info, token_id, token_uri)
+        },
+        _ => {
+            DegaCW721Contract::default().execute(deps, env, info, msg.into())
+                .map_err(| e | ContractError::Base721("Error during base execution".to_string(), e))
+        }
+    }
+
 }
 
 
@@ -141,4 +131,45 @@ pub fn query_check_royalties(_deps: Deps) -> StdResult<cw2981_royalties::msg::Ch
     Ok(cw2981_royalties::msg::CheckRoyaltiesResponse {
         royalty_payments: true,
     })
+}
+
+pub fn execute_update_token_metadata(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    token_id: String,
+    token_uri: Option<String>,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)
+        .map_err(|e| ContractError::Payment("Payment not allowed during update token.".to_string(), e))?;
+    // Check if sender is minter
+    let owner = deps.api.addr_validate(info.sender.as_ref())
+        .map_err(|e| ContractError::Std("Could not validate sender address.".to_string(), e))?;
+    let collection_info: CollectionInfoResponse =
+        DegaCW721Contract::default().query_collection_info(deps.as_ref())
+            .map_err(|e| ContractError::Std("Unable to query collection info.".to_string(), e))?;
+    if owner != collection_info.creator {
+        return Err(ContractError::Unauthorized("Sender is not creator.".to_string()));
+    }
+
+    // Update token metadata
+    DegaCW721Contract::default().tokens.update(
+        deps.storage,
+        &token_id,
+        |token| match token {
+            Some(mut token_info) => {
+                token_info.token_uri = token_uri.clone();
+                Ok(token_info)
+            }
+            None => Err(StdError::generic_err(format!("Token ID not found. Token ID: {}", token_id))),
+        },
+    ).map_err(|e| ContractError::Std("Error updating token metadata".to_string(), e))?;
+
+    let mut event = Event::new("update_update_token_metadata")
+        .add_attribute("sender", info.sender)
+        .add_attribute("token_id", token_id);
+    if let Some(token_uri) = token_uri {
+        event = event.add_attribute("token_uri", token_uri);
+    }
+    Ok(Response::new().add_event(event))
 }

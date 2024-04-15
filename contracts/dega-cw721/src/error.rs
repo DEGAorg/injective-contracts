@@ -24,4 +24,7 @@ pub enum ContractError {
 
     #[error("( The requested operation is paused. )")]
     OperationPaused,
+
+    #[error("( Operation unauthorized: ( {0} ) )")]
+    Unauthorized(String),
 }
