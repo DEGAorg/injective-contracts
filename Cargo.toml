@@ -77,6 +77,8 @@ url                        = { version = "2.2.2" }
 
 sg-mod                     = { version = "3.5.0", path = "stargaze/sg-mod" }
 
+cw2981-royalties           = { version = "0.18.0" }
+
 # DEGA packages
 dega-inj                = { version = "1.0.0", path = "packages/dega-inj" }
 dega-cw721              = { version = "1.0.0", path = "contracts/dega-cw721" }

@@ -3,7 +3,7 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "Returns `MinterConfigResponse<T>`",
+      "description": "Returns `DegaMinterConfigResponse`",
       "type": "object",
       "required": [
         "config"

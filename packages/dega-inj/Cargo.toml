@@ -35,6 +35,8 @@ cw2                     = { workspace = true }
 cw721                   = { workspace = true }
 cw721-base              = { workspace = true }
 cw-utils                = { workspace = true }
+cw-ownable              = { workspace = true }
+cw2981-royalties        = { workspace = true, features = ["library"] }
 injective-cosmwasm      = { workspace = true }
 injective-math          = { workspace = true }
 ethereum-types          = { workspace = true }

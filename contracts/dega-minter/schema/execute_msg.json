@@ -30,6 +30,27 @@
     {
       "type": "object",
       "required": [
+        "update_settings"
+      ],
+      "properties": {
+        "update_settings": {
+          "type": "object",
+          "required": [
+            "settings"
+          ],
+          "properties": {
+            "settings": {
+              "$ref": "#/definitions/DegaMinterConfigSettings"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "update_start_trading_time"
       ],
       "properties": {
@@ -48,6 +69,30 @@
     }
   ],
   "definitions": {
+    "DegaMinterConfigSettings": {
+      "type": "object",
+      "required": [
+        "burning_paused",
+        "minting_paused",
+        "signer_pub_key",
+        "transferring_paused"
+      ],
+      "properties": {
+        "burning_paused": {
+          "type": "boolean"
+        },
+        "minting_paused": {
+          "type": "boolean"
+        },
+        "signer_pub_key": {
+          "type": "string"
+        },
+        "transferring_paused": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
     "MintRequest": {
       "type": "object",
       "required": [

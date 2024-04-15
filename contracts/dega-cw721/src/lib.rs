@@ -47,10 +47,10 @@ pub type Cw721BaseContract<'a> = Cw721Contract<'a,Extension,Empty,Empty,Empty>;
 use sg721::InstantiateMsg as Sg721BaseInstantiateMsg;
 use sg721_base::{
     ExecuteMsg as Sg721BaseExecuteMsg,
-    msg::{
-        //ExecuteMsg as Sg721BaseExecuteMsgTemplate,
-        QueryMsg as Sg721BaseQueryMsg,
-    },
+    // msg::{
+    //     //ExecuteMsg as Sg721BaseExecuteMsgTemplate,
+    //     //QueryMsg as Sg721BaseQueryMsg,
+    // },
 };
 
 use sg721_base::Sg721Contract;
@@ -62,6 +62,7 @@ const CONTRACT_NAME: &str = "DEGA CW721";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
+    use dega_inj::cw721::QueryMsg;
     use super::*;
 
     #[entry_point]
@@ -96,7 +97,7 @@ pub mod entry {
     pub fn query(
         deps: Deps,
         env: Env,
-        msg: Sg721BaseQueryMsg
+        msg: QueryMsg
     ) -> StdResult<Binary> {
 
         contract::_query(deps, env, msg)

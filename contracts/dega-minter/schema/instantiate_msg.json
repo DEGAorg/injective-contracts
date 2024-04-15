@@ -117,11 +117,23 @@
     "DegaMinterConfigSettings": {
       "type": "object",
       "required": [
-        "signer_pub_key"
+        "burning_paused",
+        "minting_paused",
+        "signer_pub_key",
+        "transferring_paused"
       ],
       "properties": {
+        "burning_paused": {
+          "type": "boolean"
+        },
+        "minting_paused": {
+          "type": "boolean"
+        },
         "signer_pub_key": {
           "type": "string"
+        },
+        "transferring_paused": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false
@@ -129,11 +141,15 @@
     "DegaMinterParams": {
       "type": "object",
       "required": [
-        "dega_minter_settings"
+        "dega_minter_settings",
+        "initial_admin"
       ],
       "properties": {
         "dega_minter_settings": {
           "$ref": "#/definitions/DegaMinterConfigSettings"
+        },
+        "initial_admin": {
+          "type": "string"
         }
       },
       "additionalProperties": false
