@@ -3,7 +3,6 @@ import {query} from "./query";
 import {tx} from "./tx";
 import {Context} from "./context";
 import {Config} from "./config";
-import {BigNumberInBase} from "@injectivelabs/utils";
 import {toBase64} from "@injectivelabs/sdk-ts";
 
 

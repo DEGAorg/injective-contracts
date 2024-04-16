@@ -43,8 +43,9 @@ use cw721_base::msg::MinterResponse;
 use cosmwasm_std::Empty;
 use cw_utils::Expiration;
 use sg721_base::Sg721Contract;
+use sg_mod::base_factory::state::Extension;
 
-pub type DegaCW721Contract<'a> = Sg721Contract<'a, Empty>;
+pub type DegaCW721Contract<'a> = Sg721Contract<'a, Extension>;
 
 pub type InstantiateMsg = Sg721BaseInstantiateMsg;
 
@@ -90,7 +91,7 @@ pub enum ExecuteMsg {
         /// Metadata JSON Schema
         token_uri: Option<String>,
         /// Any custom extension used by this contract
-        extension: Empty,
+        extension: Extension,
     },
 
     /// Burn an NFT the sender has access to
@@ -106,8 +107,8 @@ pub enum ExecuteMsg {
     },
 }
 
-impl From<ExecuteMsg> for sg721::ExecuteMsg<Empty, Empty> {
-    fn from(msg: ExecuteMsg) -> sg721::ExecuteMsg<Empty, Empty> {
+impl From<ExecuteMsg> for sg721::ExecuteMsg<Extension, Empty> {
+    fn from(msg: ExecuteMsg) -> sg721::ExecuteMsg<Extension, Empty> {
         match msg {
             ExecuteMsg::TransferNft { recipient, token_id } => {
                 sg721::ExecuteMsg::TransferNft { recipient, token_id }
@@ -277,6 +278,7 @@ impl From<QueryMsg> for sg721_base::msg::QueryMsg {
             }
             QueryMsg::Minter {} => sg721_base::msg::QueryMsg::Minter {},
             QueryMsg::Ownership {} => sg721_base::msg::QueryMsg::Ownership {},
+            QueryMsg::CollectionInfo {} => sg721_base::msg::QueryMsg::CollectionInfo {},
             _ => unreachable!("cannot convert {:?} to Base 721 QueryMsg", msg),
         }
     }

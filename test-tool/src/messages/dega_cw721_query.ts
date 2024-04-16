@@ -23,6 +23,7 @@ export interface DegaCw721QueryMsg {
     all_tokens?:      AllTokens;
     minter?:          Minter;
     collection_info?: CollectionInfo;
+    extension?:       Extension;
     ownership?:       Ownership;
 }
 
@@ -58,6 +59,31 @@ export interface CollectionInfo {
 }
 
 export interface ContractInfo {
+}
+
+export interface Extension {
+    msg: Cw2981QueryMsg;
+}
+
+/**
+ * Should be called on sale to see if royalties are owed by the marketplace selling the NFT,
+ * if CheckRoyalties returns true See https://eips.ethereum.org/EIPS/eip-2981
+ *
+ * Called against contract to determine if this NFT implements royalties. Should return a
+ * boolean as part of CheckRoyaltiesResponse - default can simply be true if royalties are
+ * implemented at token level (i.e. always check on sale)
+ */
+export interface Cw2981QueryMsg {
+    royalty_info?:    RoyaltyInfo;
+    check_royalties?: CheckRoyalties;
+}
+
+export interface CheckRoyalties {
+}
+
+export interface RoyaltyInfo {
+    sale_price: string;
+    token_id:   string;
 }
 
 export interface Minter {
@@ -262,6 +288,7 @@ const typeMap: any = {
         { json: "all_tokens", js: "all_tokens", typ: u(undefined, r("AllTokens")) },
         { json: "minter", js: "minter", typ: u(undefined, r("Minter")) },
         { json: "collection_info", js: "collection_info", typ: u(undefined, r("CollectionInfo")) },
+        { json: "extension", js: "extension", typ: u(undefined, r("Extension")) },
         { json: "ownership", js: "ownership", typ: u(undefined, r("Ownership")) },
     ], false),
     "AllNftInfo": o([
@@ -290,6 +317,19 @@ const typeMap: any = {
     "CollectionInfo": o([
     ], false),
     "ContractInfo": o([
+    ], false),
+    "Extension": o([
+        { json: "msg", js: "msg", typ: r("Cw2981QueryMsg") },
+    ], false),
+    "Cw2981QueryMsg": o([
+        { json: "royalty_info", js: "royalty_info", typ: u(undefined, r("RoyaltyInfo")) },
+        { json: "check_royalties", js: "check_royalties", typ: u(undefined, r("CheckRoyalties")) },
+    ], false),
+    "CheckRoyalties": o([
+    ], false),
+    "RoyaltyInfo": o([
+        { json: "sale_price", js: "sale_price", typ: "" },
+        { json: "token_id", js: "token_id", typ: "" },
     ], false),
     "Minter": o([
     ], false),

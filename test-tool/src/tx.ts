@@ -48,9 +48,6 @@ export async function tx(args: string[]) {
         case "mint":
             await mint(args);
             break;
-        case "sign":
-            await sign(args);
-            break;
         case "s":
         case "store":
             await store(args);
@@ -64,6 +61,19 @@ export async function tx(args: string[]) {
     }
 }
 
+
+// Private Key based Transaction example: (Also includes details on signing a message with the cosmos library)
+// https://github.com/InjectiveLabs/injective-ts/blob/ce8f591ea66e15f3a620734146a342ecb94bb2d6/.gitbook/transactions/private-key.md
+
+// https://github.com/CosmWasm/cosmwasm/tree/main/packages/crypto
+// https://github.com/CosmWasm/cosmwasm/blob/main/packages/crypto/src/secp256k1.rs
+
+// See:
+// fn secp256k1_verify
+// fn ed25519_verify
+// fn ed25519_batch_verify
+//
+// from DepsMut.Api in the smart contract parameters.
 async function mint(args: string[]) {
 
     let nft_price_base = new BigNumberInBase (0.5);
@@ -148,76 +158,6 @@ async function mint(args: string[]) {
 
     //await sleep(3000);
     //await backupPromiseCall(() => counterStore.fetchCount());
-}
-
-
-// Private Key based Transaction example: (Also includes details on signing a message with the cosmos library)
-// https://github.com/InjectiveLabs/injective-ts/blob/ce8f591ea66e15f3a620734146a342ecb94bb2d6/.gitbook/transactions/private-key.md
-
-// https://github.com/CosmWasm/cosmwasm/tree/main/packages/crypto
-// https://github.com/CosmWasm/cosmwasm/blob/main/packages/crypto/src/secp256k1.rs
-
-// See:
-// fn secp256k1_verify
-// fn ed25519_verify
-// fn ed25519_batch_verify
-//
-// from DepsMut.Api in the smart contract parameters.
-
-export async function sign(args: string[]) {
-
-    let mintRequestMsg: MintRequest = {
-        to: Context.primaryAddress,
-        royalty_recipient: Context.primaryAddress,
-        royalty_bps: "0",
-        primary_sale_recipient: Context.primaryAddress,
-        uri: "https://www.domain.com",
-        price: "0",
-        currency: Context.primaryAddress,
-        validity_start_timestamp: "0",
-        validity_end_timestamp: "0",
-        uid: 0,
-    };
-
-    let mintRequestBase64 = toBase64(mintRequestMsg);
-    let buffer = Buffer.from(mintRequestBase64, "base64");
-    //let uint8Array = new Uint8Array(buffer);
-
-    const signature = await Context.signerPrivateKey.sign(buffer);
-    let sigBase64 = toBase64(signature);
-
-    console.log("Sig Length: " + sigBase64.length);
-
-    console.log("Tx: ");
-    console.log(mintRequestMsg);
-    console.log();
-    console.log("Signature: " + sigBase64);
-    console.log();
-    console.log("Address: " + Context.signerAddress);
-    console.log();
-
-    const checkSigQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
-        Config.MINTER_ADDRESS,
-        toBase64({
-            // check_sig: {
-            //     //mint_request: mintRequestBase64,
-            //     signature: sigBase64,
-            //     //maybe_signer: null,
-            // }
-            check_sig: {
-                maybe_signer: null,
-                mint_request: mintRequestMsg,
-                signature: sigBase64,
-            }
-
-        }) // as DegaMinterQueryMsg),
-    );
-
-    const checkSigQueryResponseObject: object = fromBase64(
-        Buffer.from(checkSigQueryResponse.data).toString("base64")
-    );
-
-    console.log(checkSigQueryResponseObject);
 }
 
 
@@ -311,6 +251,11 @@ async function instantiate(args: string[]) {
 
 async function instantiate_minter() {
 
+    const signerCompressedPubKeyBase64 = Context.signerCompressedPublicKey.toString("base64")
+
+    console.log("Compressed Pub key Base64: " + signerCompressedPubKeyBase64)
+    console.log()
+
     const instantiateMinterMsg: DegaMinterInstantiateMsg = {
         collection_params: {
             code_id: Config.CW721_CODE_ID,
@@ -330,9 +275,12 @@ async function instantiate_minter() {
             },
             extension: {
                 dega_minter_settings: {
-                    signer_pub_key:
-                        Context.signerCompressedPublicKey.toString("base64"),
-                }
+                    signer_pub_key: Context.signerCompressedPublicKey.toString("base64"),
+                    burning_paused: false,
+                    minting_paused: false,
+                    transferring_paused: false
+                },
+                initial_admin: Context.primaryAddress,
             },
             frozen: false,
             max_trading_offset_secs: 0,
@@ -342,8 +290,12 @@ async function instantiate_minter() {
             },
             mint_fee_bps: 0
         }
-
     };
+
+
+    console.log("InstantiateMsg : ")
+    console.log(instantiateMinterMsg)
+    console.log()
 
     const instantiateContractMsg = MsgInstantiateContract.fromJSON({
         sender: Context.primaryAddress,

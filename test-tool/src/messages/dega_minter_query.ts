@@ -8,7 +8,7 @@
 // match the expected interface, even if the JSON is valid.
 
 /**
- * Returns `MinterConfigResponse<T>`
+ * Returns `DegaMinterConfigResponse`
  *
  * Returns `StatusResponse`
  */

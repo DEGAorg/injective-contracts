@@ -24,8 +24,11 @@ export async function query(args: string[]) {
         case "info":
             await info(args);
             break;
-        case "sig-test":
-            await sigTest(args);
+        case "check-sig":
+            await checkSig(args);
+            break;
+        case "sig-info":
+            await sigInfo(args);
             break;
         case "derive-eth":
             await deriveEthBasedAddress();
@@ -79,7 +82,74 @@ export async function info(args: string[]) {
 
 }
 
-async function sigTest(args: string[]) {
+
+
+export async function checkSig(args: string[]) {
+
+    let mintRequestMsg: MintRequest = {
+        to: Context.primaryAddress,
+        royalty_recipient: Context.primaryAddress,
+        royalty_bps: "0",
+        primary_sale_recipient: Context.primaryAddress,
+        uri: "https://www.domain.com",
+        price: "0",
+        currency: Context.primaryAddress,
+        validity_start_timestamp: "0",
+        validity_end_timestamp: "0",
+        uid: 0,
+    };
+
+    let mintRequestBase64 = toBase64(mintRequestMsg);
+
+
+    let rawMessage = Buffer.from(mintRequestBase64, "base64");
+    let msgMd5Hash = Buffer.from(sha256(rawMessage))
+    //let uint8Array = new Uint8Array(buffer);
+
+
+    let signingKey = Context.signerSigningKey
+    let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signingKey).signature)
+
+    let sigBase64 = signature.toString("base64");
+
+    console.log("Sig Length: " + sigBase64.length);
+
+    console.log("Tx: ");
+    console.log(mintRequestMsg);
+    console.log();
+    console.log("Signature: " + sigBase64);
+    console.log();
+    console.log("Address: " + Context.signerAddress);
+    console.log();
+
+    let checkSigQuery: DegaMinterQueryMsg = {
+        check_sig: {
+            message: {
+                mint_request: mintRequestMsg
+                //string: rawTextMessage // Uncomment to test with a string instead of the mint request
+            },
+            signature: sigBase64,
+            //signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
+            // Uncomment below to test validating with a local public key using on chain logic
+            signer_source: {
+                pub_key_binary: Buffer.from(Context.signerCompressedPublicKey).toString("base64")
+            }
+        }
+    };
+
+    const checkSigQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
+        Config.MINTER_ADDRESS,
+        toBase64(checkSigQuery) // as DegaMinterQueryMsg),
+    );
+
+    const checkSigQueryResponseObject: object = fromBase64(
+        Buffer.from(checkSigQueryResponse.data).toString("base64")
+    );
+
+    console.log(checkSigQueryResponseObject);
+}
+
+async function sigInfo(args: string[]) {
 
     let rawTextMessage = "test message";
 

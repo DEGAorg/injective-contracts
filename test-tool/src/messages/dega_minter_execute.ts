@@ -9,6 +9,7 @@
 
 export interface DegaMinterExecuteMsg {
     mint?:                      Mint;
+    update_settings?:           UpdateSettings;
     update_start_trading_time?: null | string;
 }
 
@@ -28,6 +29,17 @@ export interface MintRequest {
     uri:                      string;
     validity_end_timestamp:   string;
     validity_start_timestamp: string;
+}
+
+export interface UpdateSettings {
+    settings: DegaMinterConfigSettings;
+}
+
+export interface DegaMinterConfigSettings {
+    burning_paused:      boolean;
+    minting_paused:      boolean;
+    signer_pub_key:      string;
+    transferring_paused: boolean;
 }
 
 // Converts JSON strings to/from your types
@@ -197,6 +209,7 @@ function r(name: string) {
 const typeMap: any = {
     "DegaMinterExecuteMsg": o([
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
+        { json: "update_settings", js: "update_settings", typ: u(undefined, r("UpdateSettings")) },
         { json: "update_start_trading_time", js: "update_start_trading_time", typ: u(undefined, u(null, "")) },
     ], false),
     "Mint": o([
@@ -214,5 +227,14 @@ const typeMap: any = {
         { json: "uri", js: "uri", typ: "" },
         { json: "validity_end_timestamp", js: "validity_end_timestamp", typ: "" },
         { json: "validity_start_timestamp", js: "validity_start_timestamp", typ: "" },
+    ], false),
+    "UpdateSettings": o([
+        { json: "settings", js: "settings", typ: r("DegaMinterConfigSettings") },
+    ], false),
+    "DegaMinterConfigSettings": o([
+        { json: "burning_paused", js: "burning_paused", typ: true },
+        { json: "minting_paused", js: "minting_paused", typ: true },
+        { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
+        { json: "transferring_paused", js: "transferring_paused", typ: true },
     ], false),
 };

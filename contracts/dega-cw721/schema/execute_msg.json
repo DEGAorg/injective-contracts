@@ -184,16 +184,18 @@
         "mint": {
           "type": "object",
           "required": [
-            "extension",
             "owner",
             "token_id"
           ],
           "properties": {
             "extension": {
               "description": "Any custom extension used by this contract",
-              "allOf": [
+              "anyOf": [
                 {
                   "$ref": "#/definitions/Empty"
+                },
+                {
+                  "type": "null"
                 }
               ]
             },
