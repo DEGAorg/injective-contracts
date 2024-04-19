@@ -98,5 +98,6 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) ->
                 }),
             }
         },
+        cw721_contract_label: "DEGA Collection - Test".to_string(),
     }
 }

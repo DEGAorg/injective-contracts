@@ -2,7 +2,11 @@
 
 This repository contains the smart contracts for the DEGA platform on Injective.
 
-## Workspace Setup
+## Workspace Setup for Deployment
+
+### Pre-requisite Requirements
+- Node / NPM (for deploy tool)
+- Docker (for rust-optimizer)
 
 ### Install Rust
 
@@ -20,9 +24,16 @@ rustup target add wasm32-unknown-unknown
 cargo update
 ```
 
-### Install needed tools for the workspace
+### Install Cargo Make
+
 ```bash
 cargo install --no-default-features --force cargo-make
+```
+
+## Further Workspace Setup for Development
+
+### Install Wasm Opt
+```bash
 npm i wasm-opt -g
 ```
 - You will need to install npm on your system if you don't have it to install wasm-opt
@@ -56,3 +67,48 @@ dega-inj store-code -c dega-cw721
 dega-inj instantiate -c dega-cw721
 dega-inj execute dega-cw721
 ```
+- Call `cargo update-cli` whenever you need to rebuild and relink the CLI for the dega-inj command
+
+## Schemas / Messages and Typescript Message Classes
+
+### Typescript Message classes
+
+Typescript classes that are in the structure of the the instantiate, execute and query messages for the minter and
+collection contracts can be found in the `deploy/tool/src/messages` or `test-tool/src/messages` directories.
+
+Simply copy these classes into your typescript project to be able to use them.
+
+See [./deploy/tool/src/deploy.ts](./deploy/tool/src/deploy.ts), [./test-tool/src/tx.ts](./test-tool/src/tx.ts), and
+[./test-tool/src/query.ts](./test-tool/src/query.ts), for examples on using the classes in transactions and queries
+to the Injective chain through a network node's gRPC endpoint.
+
+### Generating schemas / typescript messages
+
+- To generate schemas: `dega-inj schema`
+- To generate typescript messages `dega-inj test generate`. The built classes will be output to the 
+`test-tool/generated-ts` directory.
+
+## Deplyment Tool
+
+The `/deploy` directory has a typescript deployment tool to deploy the smart contracts based on a deployment spec.
+
+See the [deploy README.md](./deploy/README.md) in that directory for info / help.
+
+- `dega-inj test <command>` is a shorthand which calls the test tool with the remaining arguments
+- `dega-inj sign`
+
+## Development CLI
+
+The `/cli` directory has a rust based development CLI to do extensive querying, deployment and interacting with
+the smart contracts via the command line.
+
+See the [cli README.md](./cli/README.md) in that directory for info / help.
+
+The [wasm-deploy repo github page](https://github.com/cryptechdev/wasm-deploy), which the CLI is created from, has
+more background information on the CLI.
+
+## Test Tool
+
+The `/test-tool` directory has a simple typescript tool to help with testing the contracts with typescript.
+
+See the [test-tool README.md](./test-tool/README.md) in that directory for info / help.

@@ -1,7 +1,7 @@
 import {getNetworkEndpoints} from "@injectivelabs/networks";
 import {ChainGrpcBankApi, ChainGrpcWasmApi, hexToBase64, MsgBroadcasterWithPk, PrivateKey} from "@injectivelabs/sdk-ts";
 import {Config} from "./config";
-import {BigNumberInBase} from "@injectivelabs/utils";
+import {BigNumberInWei} from "@injectivelabs/utils";
 import {ChainId} from "@injectivelabs/ts-types";
 import secp256k1 from "secp256k1"
 
@@ -58,8 +58,8 @@ function initContext() {
     }
 
 
-    const gasPricesAmountWei = new BigNumberInBase(500000000);
-    const gasAmountWei = new BigNumberInBase(20000000);
+    const gasPricesAmountWei = new BigNumberInWei(500000000);
+    const gasAmountWei = new BigNumberInWei(20000000);
 
     const gasSettings = {
         gasPrice: gasPricesAmountWei.toFixed(),

@@ -51,6 +51,7 @@ use sg_mod::base_factory::{
 pub struct InstantiateMsg {
     pub minter_params: MinterParams<DegaMinterParams>,
     pub collection_params: CollectionParams,
+    pub cw721_contract_label: String,
 }
 
 impl From<InstantiateMsg> for SgBaseMinterInstantiateMsg {
@@ -66,6 +67,7 @@ impl From<InstantiateMsg> for SgBaseMinterInstantiateMsg {
                 extension: Empty {},
             },
             collection_params: msg.collection_params,
+            cw721_contract_label: msg.cw721_contract_label,
         }
     }
 }

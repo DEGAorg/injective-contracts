@@ -289,7 +289,8 @@ async function instantiate_minter() {
                 denom: "inj"
             },
             mint_fee_bps: 0
-        }
+        },
+        cw721_contract_label: "DEGA Collection - Test Collection"
     };
 
 
@@ -301,7 +302,7 @@ async function instantiate_minter() {
         sender: Context.primaryAddress,
         admin: Context.primaryAddress,
         codeId: Config.MINTER_CODE_ID,
-        label: "dega-minter",
+        label: "DEGA Minter - Test Collection",
         msg: instantiateMinterMsg,
     });
 

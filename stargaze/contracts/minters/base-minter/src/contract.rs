@@ -90,11 +90,7 @@ pub fn instantiate(
                 .addr_validate(&msg.collection_params.info.creator)?
                 .to_string(),
         ),
-        label: format!(
-            "SG721-{}-{}",
-            msg.collection_params.code_id,
-            msg.collection_params.name.trim()
-        ),
+        label: msg.cw721_contract_label,
     };
 
     let submsg = SubMsg::reply_on_success(wasm_msg, INSTANTIATE_SG721_REPLY_ID);

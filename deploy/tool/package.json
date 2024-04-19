@@ -1,11 +1,11 @@
 {
-  "name": "test-tool",
+  "name": "deploy-tool",
   "version": "1.0.0",
-  "description": "A typescript testing tool for the dega inj contracts",
-  "main": "dist/test.js",
+  "description": "A typescript deployment tool for the dega inj contracts",
+  "main": "dist/deploy.js",
   "scripts": {
     "tsc": "npx tsc",
-    "test": "npm run tsc && node src/test.ts"
+    "deploy": "npm run tsc && node dist/deploy.js"
   },
   "author": "Unamint Studios, Will Stahl <will@stahl.cc>",
   "license": "None (all rights reserved)",
@@ -16,6 +16,7 @@
     "quicktype": "^23.0.115",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.3",
-    "secp256k1": "^5.0.0"
+    "secp256k1": "^5.0.0",
+    "io-ts": "^2.2.21"
   }
 }

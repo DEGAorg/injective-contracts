@@ -4,11 +4,15 @@
   "type": "object",
   "required": [
     "collection_params",
+    "cw721_contract_label",
     "minter_params"
   ],
   "properties": {
     "collection_params": {
       "$ref": "#/definitions/CollectionParams"
+    },
+    "cw721_contract_label": {
+      "type": "string"
     },
     "minter_params": {
       "$ref": "#/definitions/MinterParams_for_DegaMinterParams"

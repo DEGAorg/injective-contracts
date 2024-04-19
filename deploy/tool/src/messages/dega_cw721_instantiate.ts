@@ -1,26 +1,17 @@
 // To parse this data:
 //
-//   import { Convert, DegaMinterInstantiateMsg } from "./file";
+//   import { Convert, DegaCw721InstantiateMsg } from "./file";
 //
-//   const degaMinterInstantiateMsg = Convert.toDegaMinterInstantiateMsg(json);
+//   const degaCw721InstantiateMsg = Convert.toDegaCw721InstantiateMsg(json);
 //
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
 
-export interface DegaMinterInstantiateMsg {
-    collection_params:    CollectionParams;
-    cw721_contract_label: string;
-    minter_params:        MinterParamsForDegaMinterParams;
-}
-
-export interface CollectionParams {
-    /**
-     * The collection code id
-     */
-    code_id: number;
-    info:    CollectionInfoForRoyaltyInfoResponse;
-    name:    string;
-    symbol:  string;
+export interface DegaCw721InstantiateMsg {
+    collection_info: CollectionInfoForRoyaltyInfoResponse;
+    minter:          string;
+    name:            string;
+    symbol:          string;
 }
 
 export interface CollectionInfoForRoyaltyInfoResponse {
@@ -38,49 +29,15 @@ export interface RoyaltyInfoResponse {
     share:           string;
 }
 
-/**
- * Common params for all minters used for storage
- */
-export interface MinterParamsForDegaMinterParams {
-    /**
-     * The minter code id
-     */
-    allowed_sg721_code_ids:  number[];
-    creation_fee:            Coin;
-    extension:               DegaMinterParams;
-    frozen:                  boolean;
-    max_trading_offset_secs: number;
-    min_mint_price:          Coin;
-    mint_fee_bps:            number;
-}
-
-export interface Coin {
-    amount: string;
-    denom:  string;
-    [property: string]: any;
-}
-
-export interface DegaMinterParams {
-    dega_minter_settings: DegaMinterConfigSettings;
-    initial_admin:        string;
-}
-
-export interface DegaMinterConfigSettings {
-    burning_paused:      boolean;
-    minting_paused:      boolean;
-    signer_pub_key:      string;
-    transferring_paused: boolean;
-}
-
 // Converts JSON strings to/from your types
 // and asserts the results of JSON.parse at runtime
 export class Convert {
-    public static toDegaMinterInstantiateMsg(json: string): DegaMinterInstantiateMsg {
-        return cast(JSON.parse(json), r("DegaMinterInstantiateMsg"));
+    public static toDegaCw721InstantiateMsg(json: string): DegaCw721InstantiateMsg {
+        return cast(JSON.parse(json), r("DegaCw721InstantiateMsg"));
     }
 
-    public static degaMinterInstantiateMsgToJson(value: DegaMinterInstantiateMsg): string {
-        return JSON.stringify(uncast(value, r("DegaMinterInstantiateMsg")), null, 2);
+    public static degaCw721InstantiateMsgToJson(value: DegaCw721InstantiateMsg): string {
+        return JSON.stringify(uncast(value, r("DegaCw721InstantiateMsg")), null, 2);
     }
 }
 
@@ -237,14 +194,9 @@ function r(name: string) {
 }
 
 const typeMap: any = {
-    "DegaMinterInstantiateMsg": o([
-        { json: "collection_params", js: "collection_params", typ: r("CollectionParams") },
-        { json: "cw721_contract_label", js: "cw721_contract_label", typ: "" },
-        { json: "minter_params", js: "minter_params", typ: r("MinterParamsForDegaMinterParams") },
-    ], false),
-    "CollectionParams": o([
-        { json: "code_id", js: "code_id", typ: 0 },
-        { json: "info", js: "info", typ: r("CollectionInfoForRoyaltyInfoResponse") },
+    "DegaCw721InstantiateMsg": o([
+        { json: "collection_info", js: "collection_info", typ: r("CollectionInfoForRoyaltyInfoResponse") },
+        { json: "minter", js: "minter", typ: "" },
         { json: "name", js: "name", typ: "" },
         { json: "symbol", js: "symbol", typ: "" },
     ], false),
@@ -260,28 +212,5 @@ const typeMap: any = {
     "RoyaltyInfoResponse": o([
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
-    ], false),
-    "MinterParamsForDegaMinterParams": o([
-        { json: "allowed_sg721_code_ids", js: "allowed_sg721_code_ids", typ: a(0) },
-        { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
-        { json: "extension", js: "extension", typ: r("DegaMinterParams") },
-        { json: "frozen", js: "frozen", typ: true },
-        { json: "max_trading_offset_secs", js: "max_trading_offset_secs", typ: 0 },
-        { json: "min_mint_price", js: "min_mint_price", typ: r("Coin") },
-        { json: "mint_fee_bps", js: "mint_fee_bps", typ: 0 },
-    ], false),
-    "Coin": o([
-        { json: "amount", js: "amount", typ: "" },
-        { json: "denom", js: "denom", typ: "" },
-    ], "any"),
-    "DegaMinterParams": o([
-        { json: "dega_minter_settings", js: "dega_minter_settings", typ: r("DegaMinterConfigSettings") },
-        { json: "initial_admin", js: "initial_admin", typ: "" },
-    ], false),
-    "DegaMinterConfigSettings": o([
-        { json: "burning_paused", js: "burning_paused", typ: true },
-        { json: "minting_paused", js: "minting_paused", typ: true },
-        { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
-        { json: "transferring_paused", js: "transferring_paused", typ: true },
     ], false),
 };

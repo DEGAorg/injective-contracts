@@ -1,0 +1,4 @@
+artifacts
+private-keys
+/specs/*
+!/specs/versioned
