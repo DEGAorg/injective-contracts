@@ -4,6 +4,20 @@
 
 This **deploy** directory contains the deployment tool, and all the directories relating to it.
 
+## Usage
+
+The primary way the tool is meant to be run is via the `./deploy.sh` script at the root of the workspace.
+
+The calling paradigm is 
+```bash
+./deploy.sh <spec-file>
+```
+With `<spec-file>` relative to deploy/specs directory.
+
+The tool could also be called either via npm using `npm run deploy <spec-file>` from inside the deploy directory,
+
+or directly through node using `node deploy/dist/deploy.js <spec-file>`.
+
 ## Sub-directories
 
 ### artifacts
@@ -36,7 +50,32 @@ stores all of it's artifacts in it's own distinct artifacts directory inside the
 it moves the checksum and binary files from the workspace artifacts directory output by rust optimizer into the deploy
 artifacts directory.
 
-## Build Spec
+### private-keys
+
+The **private-keys** directory contains the private key mnemonic or seed hash files used for deployment transactions.
+
+The directory contains two versioned example private keys to show the format of a mnemonic key and seed hash key.
+
+The directory by default is ignored in version control.
+
+These keys can be referenced in the **privateKeyFilename** property of the build spec. That property specifies a file
+name (and if desired a path) relative to this private-keys subdirectory.
+
+### specs
+
+This is a directory intended to hold both versioned and unversioned build specs.
+
+Unversioned build specs can be put directly in the directory and will be ignored.
+
+Version build specs should be put in the "versioned" directory, and will be detected by version control.
+
+The first argument to the deployment tool specifies the relative path to the desired spec file inside this directory.
+
+### tool
+
+Contains the typescript source of the deployment script and project. All the code is put in a single deploy.ts file.
+
+## Build Specs
 
 The build spec via a build-spec file acts as the arguments for the deployment, and are limited to specification through the spec
 file for simplicity. For each deployment a single spec-file is specified.

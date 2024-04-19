@@ -92,7 +92,7 @@ to the Injective chain through a network node's gRPC endpoint.
 
 The `/deploy` directory has a typescript deployment tool to deploy the smart contracts based on a deployment spec.
 
-See the [deploy README.md](./deploy/README.md) in that directory for info / help.
+See the [deploy README.md](./deploy/) in the **./deploy** directory for info / help.
 
 - `dega-inj test <command>` is a shorthand which calls the test tool with the remaining arguments
 - `dega-inj sign`
@@ -102,7 +102,7 @@ See the [deploy README.md](./deploy/README.md) in that directory for info / help
 The `/cli` directory has a rust based development CLI to do extensive querying, deployment and interacting with
 the smart contracts via the command line.
 
-See the [cli README.md](./cli/README.md) in that directory for info / help.
+See the [cli README.md](./cli/) in the **./cli** directory for info / help.
 
 The [wasm-deploy repo github page](https://github.com/cryptechdev/wasm-deploy), which the CLI is created from, has
 more background information on the CLI.
@@ -111,4 +111,4 @@ more background information on the CLI.
 
 The `/test-tool` directory has a simple typescript tool to help with testing the contracts with typescript.
 
-See the [test-tool README.md](./test-tool/README.md) in that directory for info / help.
+See the [test-tool README.md](./test-tool/) in the **./test-tool** directory for info / help.
