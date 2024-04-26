@@ -33,8 +33,6 @@ export interface MintRequest {
     currency:                 string;
     price:                    string;
     primary_sale_recipient:   string;
-    royalty_bps:              string;
-    royalty_recipient:        string;
     to:                       string;
     uid:                      number;
     uri:                      string;
@@ -239,8 +237,6 @@ const typeMap: any = {
         { json: "currency", js: "currency", typ: "" },
         { json: "price", js: "price", typ: "" },
         { json: "primary_sale_recipient", js: "primary_sale_recipient", typ: "" },
-        { json: "royalty_bps", js: "royalty_bps", typ: "" },
-        { json: "royalty_recipient", js: "royalty_recipient", typ: "" },
         { json: "to", js: "to", typ: "" },
         { json: "uid", js: "uid", typ: 0 },
         { json: "uri", js: "uri", typ: "" },

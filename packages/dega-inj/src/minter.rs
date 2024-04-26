@@ -138,8 +138,6 @@ impl From<ExecuteMsg> for SgBaseMinterExecuteMsg {
 #[cw_serde]
 pub struct MintRequest {
     pub to: String, // Address
-    pub royalty_recipient: String,  // Address
-    pub royalty_bps: Uint256,  // uint256
     pub primary_sale_recipient: String, // Address
     pub uri: String, // string (URI)
     pub price: Uint256, // uint256

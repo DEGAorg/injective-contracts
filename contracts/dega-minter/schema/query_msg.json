@@ -67,8 +67,6 @@
         "currency",
         "price",
         "primary_sale_recipient",
-        "royalty_bps",
-        "royalty_recipient",
         "to",
         "uid",
         "uri",
@@ -83,12 +81,6 @@
           "$ref": "#/definitions/Uint256"
         },
         "primary_sale_recipient": {
-          "type": "string"
-        },
-        "royalty_bps": {
-          "$ref": "#/definitions/Uint256"
-        },
-        "royalty_recipient": {
           "type": "string"
         },
         "to": {

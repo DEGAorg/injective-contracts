@@ -81,8 +81,6 @@ async function mint(args: string[]) {
 
     let mintRequestMsg: MintRequest = {
         to: Context.primaryAddress,
-        royalty_recipient: Context.primaryAddress,
-        royalty_bps: "0",
         primary_sale_recipient: Context.primaryAddress,
         uri: "https://example.com",
         price: nft_price_wei.toFixed(),

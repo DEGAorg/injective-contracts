@@ -135,8 +135,6 @@ async fn mint() -> anyhow::Result<()> {
 
     let mint_request_msg = MintRequest {
         to: address.clone(),
-        royalty_recipient: address.clone(),
-        royalty_bps: Uint256::from(0u32),
         primary_sale_recipient: address.clone(),
         uri: "https://www.domain.com".to_string(),
         price: Uint256::from(price_in_wei),
@@ -428,8 +426,6 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
 
     let mint_request_msg = MintRequest {
         to: account_id_from_cosmrs.to_string(),
-        royalty_recipient: account_id_from_cosmrs.to_string(),
-        royalty_bps: Uint256::from(0u32),
         primary_sale_recipient: account_id_from_cosmrs.to_string(),
         uri: "https://www.domain.com".to_string(),
         price: Uint256::from(0u32),

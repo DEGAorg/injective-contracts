@@ -261,8 +261,6 @@ fn execute_mint(
             .add_attribute("sender", info.sender)
             .add_attribute("signature", signature)
             .add_attribute("request.to", request.to)
-            .add_attribute("request.royalty_recipient", request.royalty_recipient)
-            .add_attribute("request.royalty_bps", request.royalty_bps)
             .add_attribute("request.primary_sale_recipient", request.primary_sale_recipient)
             .add_attribute("request.uri", request.uri)
             .add_attribute("request.price", request.price)
