@@ -8,9 +8,10 @@
 // match the expected interface, even if the JSON is valid.
 
 export interface DegaMinterInstantiateMsg {
-    collection_params:    CollectionParams;
-    cw721_contract_label: string;
-    minter_params:        MinterParamsForDegaMinterParams;
+    collection_params:     CollectionParams;
+    cw721_contract_admin?: null | string;
+    cw721_contract_label:  string;
+    minter_params:         MinterParamsForDegaMinterParams;
 }
 
 export interface CollectionParams {
@@ -42,12 +43,11 @@ export interface RoyaltyInfoResponse {
  * Common params for all minters used for storage
  */
 export interface MinterParamsForDegaMinterParams {
+    creation_fee: Coin;
+    extension:    DegaMinterParams;
     /**
      * The minter code id
      */
-    allowed_sg721_code_ids:  number[];
-    creation_fee:            Coin;
-    extension:               DegaMinterParams;
     frozen:                  boolean;
     max_trading_offset_secs: number;
     min_mint_price:          Coin;
@@ -239,6 +239,7 @@ function r(name: string) {
 const typeMap: any = {
     "DegaMinterInstantiateMsg": o([
         { json: "collection_params", js: "collection_params", typ: r("CollectionParams") },
+        { json: "cw721_contract_admin", js: "cw721_contract_admin", typ: u(undefined, u(null, "")) },
         { json: "cw721_contract_label", js: "cw721_contract_label", typ: "" },
         { json: "minter_params", js: "minter_params", typ: r("MinterParamsForDegaMinterParams") },
     ], false),
@@ -262,7 +263,6 @@ const typeMap: any = {
         { json: "share", js: "share", typ: "" },
     ], false),
     "MinterParamsForDegaMinterParams": o([
-        { json: "allowed_sg721_code_ids", js: "allowed_sg721_code_ids", typ: a(0) },
         { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
         { json: "extension", js: "extension", typ: r("DegaMinterParams") },
         { json: "frozen", js: "frozen", typ: true },

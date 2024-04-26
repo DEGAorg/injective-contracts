@@ -6,7 +6,8 @@ use sg721::{CollectionInfo, RoyaltyInfoResponse};
 pub struct CreateMinterMsg<T> {
     pub init_msg: T,
     pub collection_params: CollectionParams,
-    pub cw721_contract_label: String,
+    pub cw721_contract_label: String, // DEGA MOD
+    pub cw721_contract_admin: Option<String>, // DEGA MOD
 }
 
 #[cw_serde]

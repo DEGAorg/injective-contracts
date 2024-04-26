@@ -63,6 +63,12 @@ export async function generate(args: string[]) {
     );
 
     await compileFile(
+        "../../contracts/dega-minter/schema/migrate_msg.json",
+        "../generated-ts/messages/dega_minter_migrate.ts",
+        "DegaMinterMigrateMsg",
+    );
+
+    await compileFile(
         "../../contracts/dega-minter/schema/execute_msg.json",
         "../generated-ts/messages/dega_minter_execute.ts",
         "DegaMinterExecuteMsg",
@@ -80,6 +86,12 @@ export async function generate(args: string[]) {
         "../../contracts/dega-cw721/schema/instantiate_msg.json",
         "../generated-ts/messages/dega_cw721_instantiate.ts",
         "DegaCw721InstantiateMsg",
+    );
+
+    await compileFile(
+        "../../contracts/dega-cw721/schema/migrate_msg.json",
+        "../generated-ts/messages/dega_cw721_migrate.ts",
+        "DegaCw721MigrateMsg",
     );
 
     await compileFile(

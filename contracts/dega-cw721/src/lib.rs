@@ -29,7 +29,7 @@ use cw721_base::{
     // },
     msg::{
         ExecuteMsg as Cw721BaseExecuteMsgTemplate,
-        InstantiateMsg as Cw721BaseInstantiateMsg,
+        //InstantiateMsg as Cw721BaseInstantiateMsg,
         QueryMsg as Cw721BaseQueryMsgTemplate,
     }
 };
@@ -55,7 +55,7 @@ const CONTRACT_NAME: &str = "DEGA CW721";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
-    use dega_inj::cw721::{ExecuteMsg, QueryMsg};
+    use dega_inj::cw721::{ExecuteMsg, MigrateMsg, QueryMsg};
     use super::*;
 
     #[entry_point]
@@ -100,7 +100,7 @@ pub mod entry {
     pub fn migrate(
         deps: DepsMut,
         _env: Env,
-        _msg: Cw721BaseInstantiateMsg,
+        _msg: MigrateMsg,
     ) -> Result<Response, ContractError> {
 
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)

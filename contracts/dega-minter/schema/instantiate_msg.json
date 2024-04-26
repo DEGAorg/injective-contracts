@@ -11,6 +11,12 @@
     "collection_params": {
       "$ref": "#/definitions/CollectionParams"
     },
+    "cw721_contract_admin": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "cw721_contract_label": {
       "type": "string"
     },
@@ -162,7 +168,6 @@
       "description": "Common params for all minters used for storage",
       "type": "object",
       "required": [
-        "allowed_sg721_code_ids",
         "creation_fee",
         "extension",
         "frozen",
@@ -171,15 +176,6 @@
         "mint_fee_bps"
       ],
       "properties": {
-        "allowed_sg721_code_ids": {
-          "description": "The minter code id",
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint64",
-            "minimum": 0.0
-          }
-        },
         "creation_fee": {
           "$ref": "#/definitions/Coin"
         },
@@ -187,6 +183,7 @@
           "$ref": "#/definitions/DegaMinterParams"
         },
         "frozen": {
+          "description": "The minter code id",
           "type": "boolean"
         },
         "max_trading_offset_secs": {

@@ -163,6 +163,10 @@ async function mint(args: string[]) {
 
 async function refillLocal(args: string[]) {
 
+    if (Context.localGenesisAddress == undefined || Context.localGenesisBroadcaster == undefined) {
+        throw new Error("Local Genesis Address required for refilling local")
+    }
+
     if (args.length < 1 || (args[0] != "primary" && args[0] != "signer" && args[0] != "other")) {
         throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
     }
@@ -268,7 +272,6 @@ async function instantiate_minter() {
             symbol: "TEST"
         },
         minter_params: {
-            allowed_sg721_code_ids: [],
             creation_fee: {
                 amount: "0",
                 denom: "inj"

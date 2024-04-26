@@ -2,7 +2,13 @@ import path from "node:path"
 //import {exec} from "child_process"
 import * as fs from "fs"
 import {spawn} from 'child_process'
-import {MsgBroadcasterWithPk, MsgInstantiateContract, MsgStoreCode, PrivateKey} from "@injectivelabs/sdk-ts"
+import {
+    MsgBroadcasterWithPk,
+    MsgInstantiateContract,
+    MsgMigrateContract,
+    MsgStoreCode,
+    PrivateKey
+} from "@injectivelabs/sdk-ts"
 import * as t from 'io-ts'
 import { isLeft } from 'fp-ts/lib/Either'
 import {Network, getNetworkEndpoints} from "@injectivelabs/networks"
@@ -10,6 +16,8 @@ import {BigNumberInWei} from "@injectivelabs/utils"
 import {ChainId} from "@injectivelabs/ts-types"
 import {DegaMinterInstantiateMsg} from "./messages"
 import * as util from 'util';
+import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
+import {DegaCw721MigrateMsg} from "./messages/dega_cw721_migrate";
 
 
 // Paths
@@ -23,6 +31,14 @@ const pathsOutputFile = path.join(pathsDeployArtifacts, 'deploy-output.json')
 const pathsLogFile = path.join(pathsDeployArtifacts, 'deploy-log.txt')
 const pathsErrorFile = path.join(pathsDeployArtifacts, 'deploy-error.txt')
 
+class ScriptError {
+    constructor(message: string) {
+        this.message = "Deploy Script Error: " + message
+    }
+
+    message: string
+}
+
 function main() {
 
     (async () => {
@@ -32,7 +48,12 @@ function main() {
         } catch (e) {
 
             console.error("Error while deploying: ")
-            console.error(e)
+
+            if (e instanceof ScriptError) {
+                console.error(e.message)
+            } else {
+                console.error(e)
+            }
 
             fs.writeFileSync(pathsErrorFile, util.inspect(e))
 
@@ -106,7 +127,7 @@ async function runMain() {
         }
 
     } else {
-        exitWithError("Missing filename argument")
+        throw new ScriptError("Missing filename argument")
     }
 
     if (useCommand) {
@@ -120,14 +141,13 @@ async function runMain() {
     if (args.length > 0) {
         specPath = args[0]
     } else {
-        exitWithError("Missing spec file argument")
+        throw new ScriptError("Missing spec file argument")
     }
 
     let deploySpecResult = loadSpec(specPath)
 
     if (isLeft(deploySpecResult)) {
-        exitWithError('Invalid data:' + deploySpecResult.left)
-        return
+        throw new ScriptError('Invalid data:' + deploySpecResult.left)
     }
 
     const spec: DeploySpec = deploySpecResult.right
@@ -160,25 +180,37 @@ const deploySpec = t.type({
         Mainnet: null
     }),
     grpcEndpoint: t.union([t.string, t.undefined, t.null]),
-    optionsBuild: t.boolean,
-    optionsOptimize: t.boolean,
+    optionsBuildAndOptimize: t.boolean,
     optionsStoreCodeForMinter: t.boolean,
     preExistingMinterCodeId: t.union([t.number, t.undefined, t.null]),
     optionsStoreCodeForCw721: t.boolean,
     preExistingCw721CodeId: t.union([t.number, t.undefined, t.null]),
     optionsInstantiate: t.boolean,
+    optionsMigrateMinter: t.boolean,
+    optionsMigrateCw721: t.boolean,
     collectionName: t.string,
     collectionSymbol: t.string,
     collectionCreator: t.string,
     collectionDescription: t.string,
     collectionImageURL: t.string,
+    collectionExternalLinkURL: t.string,
+    collectionExplicitContent: t.union([t.boolean, t.undefined, t.null]),
+    collectionStartTradingTime: t.union([t.string, t.undefined, t.null]),
+    collectionSecondaryRoyaltyPaymentAddress: t.string,
+    collectionSecondaryRoyaltyShare: t.string,
     cw721ContractLabel: t.string,
+    cw721ContractMigratable: t.boolean,
+    cw721MigrateAdmin: t.union([t.string, t.undefined, t.null]),
+    cw721AddressForMigration: t.union([t.string, t.undefined, t.null]),
     minterSignerPubKeyBase64: t.string,
     minterBurningPaused: t.boolean,
     minterMintingPaused: t.boolean,
     minterTransferringPaused: t.boolean,
     minterInitialAdmin: t.string,
     minterContractLabel: t.string,
+    minterContractMigratable: t.boolean,
+    minterMigrateAdmin: t.union([t.string, t.undefined, t.null]),
+    minterAddressForMigration: t.union([t.string, t.undefined, t.null]),
 })
 
 type DeploySpec = t.TypeOf<typeof deploySpec>
@@ -228,7 +260,7 @@ async function makeContext(spec: DeploySpec): Promise<DeployContext> {
     } else if (spec.network === "Mainnet") {
         network = Network.Mainnet
     } else {
-        throw new Error("Invalid network")
+        throw new ScriptError("Invalid network")
     }
 
     let endpoints = getNetworkEndpoints(network)
@@ -256,8 +288,12 @@ async function makeContext(spec: DeploySpec): Promise<DeployContext> {
     return {
         spec: spec,
         output: {
-            minterCodeId: null,
-            cw721CodeId: null,
+            minterCodeIdStored: null,
+            cw721CodeIdStored: null,
+            minterCodeIdInstantiated: null,
+            cw721CodeIdInstantiated: null,
+            minterCodeIdMigrated: null,
+            cw721CodeIdMigrated: null,
             minterAddress: null,
             cw721Address: null,
         },
@@ -296,39 +332,105 @@ async function loadPrivateKey(spec: DeploySpec): Promise<PrivateKey> {
 
 // Use only null and not undefined so that it's always clear when output values are absent
 const deployOutput = t.type({
-    minterCodeId: t.union([t.number, t.null]),
-    cw721CodeId: t.union([t.number, t.null]),
+    minterCodeIdStored: t.union([t.number, t.null]),
+    cw721CodeIdStored: t.union([t.number, t.null]),
+    minterCodeIdInstantiated: t.union([t.number, t.null]),
+    cw721CodeIdInstantiated: t.union([t.number, t.null]),
+    minterCodeIdMigrated: t.union([t.number, t.null]),
+    cw721CodeIdMigrated: t.union([t.number, t.null]),
     minterAddress: t.union([t.string, t.null]),
     cw721Address: t.union([t.string, t.null]),
 })
 
 type DeployOutput = t.TypeOf<typeof deployOutput>
 
+function getMinterAddressForMigrate(context: DeployContext) {
+
+        if (context.spec.minterAddressForMigration == undefined) {
+            throw new ScriptError("If migrating must specify a minter address for migration with minterAddressForMigration option")
+        }
+
+        return context.spec.minterAddressForMigration
+}
+
+function getCw721AddressForMigrate(context: DeployContext) {
+
+        if (context.spec.cw721AddressForMigration == undefined) {
+            throw new ScriptError("If migrating must specify a cw721 address for migration with cw721AddressForMigration option")
+        }
+
+        return context.spec.cw721AddressForMigration
+
+}
+
+async function migrate(context: DeployContext) {
+    if (context.spec.optionsMigrateMinter) {
+
+        const minterCodeId = getMinterCodeIdForInstantiateOrMigrate(context);
+        const migrateMinterMsg: DegaMinterMigrateMsg = {};
+        const minterAddress = getMinterAddressForMigrate(context);
+
+        await migrateContract(
+            context,
+            minterCodeId,
+            migrateMinterMsg,
+            minterAddress,
+            "DEGA Minter"
+        );
+
+        context.output.minterCodeIdMigrated = minterCodeId;
+        context.output.minterAddress = minterAddress;
+    }
+
+    if (context.spec.optionsMigrateCw721) {
+
+        const migrateCw721Msg: DegaCw721MigrateMsg = {};
+        let cw721CodeId = getCw721CodeIdForInstantiateOrMigrate(context);
+        const cw721Address = getCw721AddressForMigrate(context);
+
+        await migrateContract(
+            context,
+            cw721CodeId,
+            migrateCw721Msg,
+            cw721Address,
+            "DEGA CW721"
+        );
+
+        context.output.cw721CodeIdMigrated = cw721CodeId;
+        context.output.cw721Address = cw721Address;
+    }
+}
+
 async function deploy(context: DeployContext) {
 
-    if (context.spec.optionsBuild) {
-        await build(context)
+    const hasMigration = context.spec.optionsMigrateMinter || context.spec.optionsMigrateCw721;
+
+    if (context.spec.optionsInstantiate && hasMigration) {
+        throw new ScriptError("Cannot instantiate and migrate in the same deployment")
     }
 
-    if (context.spec.optionsOptimize) {
-        await optimize(context)
+    if (context.spec.optionsBuildAndOptimize) {
+        await buildAndOptimize(context)
     }
 
-    await store(context)
+    if (context.spec.optionsStoreCodeForMinter) {
+        await store_wasm(context, "dega_minter.wasm")
+    }
+
+    if (context.spec.optionsStoreCodeForCw721) {
+        await store_wasm(context, "dega_cw721.wasm")
+    }
 
     if (context.spec.optionsInstantiate) {
         await instantiate(context)
+    } else {
+        await migrate(context);
     }
 
     await output(context)
 }
 
-async function build(context: DeployContext) {
-
-    await run(context, "cargo", ["make", "build"])
-}
-
-async function optimize(context: DeployContext) {
+async function buildAndOptimize(context: DeployContext) {
 
     // Delete any binaries that may have been left over by the CLI
     if (fs.existsSync(pathsWorkspaceArtifacts)) {
@@ -349,17 +451,6 @@ async function optimize(context: DeployContext) {
 
     // Move the optimized binaries to a distinct artifacts directory for deployments
     await run(context, "mv", [`${pathsWorkspaceArtifacts}/*`, `${pathsDeployArtifacts}`])
-}
-
-async function store(context: DeployContext) {
-
-    if (context.spec.optionsStoreCodeForMinter) {
-        await store_wasm(context, "dega_minter.wasm")
-    }
-
-    if (context.spec.optionsStoreCodeForCw721) {
-        await store_wasm(context, "dega_cw721.wasm")
-    }
 }
 
 
@@ -397,9 +488,9 @@ async function store_wasm(context: DeployContext, wasm_name: string) {
                     console.log(key + ": " + value)
                     if (key == "code_id") {
                         if (wasm_name == "dega_minter.wasm") {
-                            context.output.minterCodeId = parseInt(stripQuotes(value))
+                            context.output.minterCodeIdStored = parseInt(stripQuotes(value))
                         } else if (wasm_name == "dega_cw721.wasm") {
-                            context.output.cw721CodeId = parseInt(stripQuotes(value))
+                            context.output.cw721CodeIdStored = parseInt(stripQuotes(value))
                         }
                     }
                 })
@@ -411,32 +502,72 @@ async function store_wasm(context: DeployContext, wasm_name: string) {
 }
 
 
+function getCw721CodeIdForInstantiateOrMigrate(context: DeployContext) {
+
+    if (context.spec.optionsStoreCodeForCw721) {
+        if (context.output.cw721CodeIdStored == undefined) {
+            throw new ScriptError("Missing cw721 code_id after storing")
+        }
+
+        return context.output.cw721CodeIdStored;
+
+    } else if (context.spec.preExistingCw721CodeId == undefined) {
+        throw new ScriptError("Must specify a pre-existing cw721 code_id if not storing cw721 code")
+    } else {
+        return context.spec.preExistingCw721CodeId;
+    }
+}
+
+function getMinterCodeIdForInstantiateOrMigrate(context: DeployContext) {
+
+    if (context.spec.optionsStoreCodeForMinter) {
+        if (context.output.minterCodeIdStored == undefined) {
+            throw new ScriptError("Missing minter code_id after storing")
+        }
+
+        return context.output.minterCodeIdStored;
+
+    } else if (context.spec.preExistingMinterCodeId == undefined) {
+        throw new ScriptError("Must specify a pre-existing minter code_id if not storing minter code")
+    } else {
+        return context.spec.preExistingMinterCodeId;
+    }
+}
+
 
 async function instantiate(context: DeployContext) {
 
-    if (!context.spec.optionsStoreCodeForMinter && context.spec.preExistingMinterCodeId == undefined) {
-        exitWithError("Must specify a pre-existing minter code_id if not storing minter code")
-        return
+    const minterCodeId = getMinterCodeIdForInstantiateOrMigrate(context);
+    const cw721CodeId = getCw721CodeIdForInstantiateOrMigrate(context);
+
+    let cw721MigrateAdmin: string | null | undefined = null;
+
+    if (context.spec.cw721ContractMigratable) {
+
+        cw721MigrateAdmin = context.spec.cw721MigrateAdmin;
+
+        if (cw721MigrateAdmin == undefined) {
+            throw new ScriptError("Must specify a cw721 migrate admin to make cw721 contract migratable")
+        }
+    } else if (context.spec.cw721MigrateAdmin != undefined) {
+        throw new ScriptError("Specified cw721 migrate admin when cw721 contract is not migratable")
     }
 
-    if (!context.spec.optionsStoreCodeForCw721 && context.spec.preExistingCw721CodeId == undefined) {
-        exitWithError("Must specify a pre-existing cw721 code_id if not storing cw721 code")
-        return
-    }
 
-    const minterCodeId =
-        context.spec.optionsStoreCodeForMinter ?
-        context.output.minterCodeId :
-        context.spec.preExistingMinterCodeId
+    // collectionExternalLinkURL: t.string,
+    //     collectionExplicitContent: t.union([t.boolean, t.undefined, t.null]),
+    //     collectionStartTradingTime: t.union([t.number, t.undefined, t.null]),
+    //     collectionSecondaryRoyaltyPaymentAddress: t.string,
+    //     collectionSecondaryRoyaltyShare: t.number,
 
-    const cw721CodeId =
-        context.spec.optionsStoreCodeForCw721 ?
-            context.output.cw721CodeId :
-            context.spec.preExistingCw721CodeId
+    let royalty_info = null;
 
-    if (minterCodeId == undefined || cw721CodeId == undefined) {
-        exitWithError("Missing minter or cw721 code_id")
-        return
+    if (context.spec.collectionSecondaryRoyaltyPaymentAddress != undefined &&
+        context.spec.collectionSecondaryRoyaltyShare != undefined) {
+        royalty_info = {
+            payment_address: context.spec.collectionSecondaryRoyaltyPaymentAddress,
+            share: context.spec.collectionSecondaryRoyaltyShare,
+        };
     }
 
     const instantiateMinterMsg: DegaMinterInstantiateMsg = {
@@ -447,11 +578,15 @@ async function instantiate(context: DeployContext) {
             info: {
                 creator: context.spec.collectionCreator,
                 description: context.spec.collectionDescription,
-                image: context.spec.collectionImageURL
+                image: context.spec.collectionImageURL,
+                external_link: context.spec.collectionExternalLinkURL,
+                explicit_content: context.spec.collectionExplicitContent,
+                start_trading_time: context.spec.collectionStartTradingTime,
+                royalty_info: royalty_info,
             },
+
         },
         minter_params: {
-            allowed_sg721_code_ids: [],
             creation_fee: {
                 amount: "0",
                 denom: "inj"
@@ -473,7 +608,8 @@ async function instantiate(context: DeployContext) {
             },
             mint_fee_bps: 0
         },
-        cw721_contract_label: context.spec.cw721ContractLabel
+        cw721_contract_label: context.spec.cw721ContractLabel,
+        cw721_contract_admin: cw721MigrateAdmin,
     }
 
 
@@ -481,9 +617,22 @@ async function instantiate(context: DeployContext) {
     console.log(instantiateMinterMsg)
     console.log("")
 
+    let minterMigrateAdmin: string = "";
+
+    if (context.spec.minterContractMigratable) {
+
+        if (context.spec.minterMigrateAdmin == undefined) {
+            throw new ScriptError("Must specify a minter migrate admin to make minter contract migratable")
+        } else {
+            minterMigrateAdmin = context.spec.minterMigrateAdmin;
+        }
+    } else if (context.spec.minterMigrateAdmin != undefined) {
+        throw new ScriptError("Specified minter migrate admin when minter contract is not migratable")
+    }
+
     const instantiateContractMsg = MsgInstantiateContract.fromJSON({
         sender: context.deployTxAddress,
-        admin: context.spec.minterInitialAdmin,
+        admin: minterMigrateAdmin,
         codeId: minterCodeId,
         label: context.spec.minterContractLabel,
         msg: instantiateMinterMsg,
@@ -501,6 +650,10 @@ async function instantiate(context: DeployContext) {
 
     console.log("Successfully Instantiated Minter and Collection contracts")
     console.log("TX: " + response.txHash)
+
+
+    context.output.minterCodeIdInstantiated = minterCodeId;
+    context.output.cw721CodeIdInstantiated = cw721CodeId;
 
     if (response.events != undefined) {
         let decoder = new TextDecoder()
@@ -541,6 +694,37 @@ async function instantiate(context: DeployContext) {
         })
         console.log("")
     }
+}
+
+
+async function migrateContract(
+    context: DeployContext,
+    codeId: number,
+    migrateMessage: object,
+    contractAddress: string,
+    contractName: string,
+) {
+
+    const migrateContractMsg = MsgMigrateContract.fromJSON({
+        sender: context.deployTxAddress,
+        codeId: codeId,
+        msg: migrateMessage,
+        contract: contractAddress,
+    });
+
+    console.log(`Migrating code for ${contractName}`);
+    console.log("");
+
+    const response = await context.deployTxBroadcaster.broadcast({
+        msgs: migrateContractMsg,
+        gas: context.gasSettings
+    });
+
+    console.log(`Successfully Migrated ${contractName}`)
+
+    console.log("TX: " + response.txHash)
+    console.log("");
+
 }
 
 async function output(context: DeployContext) {
@@ -604,10 +788,6 @@ async function run(context: DeployContext, command: string, args: string[] = [])
     })
 }
 
-function exitWithError(error: string) {
-    console.error(error)
-    process.exit(1)
-}
 
 interface TxEvent {
     type: string,

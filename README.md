@@ -94,18 +94,23 @@ The `/deploy` directory has a typescript deployment tool to deploy the smart con
 
 See the [deploy README.md](./deploy/) in the **./deploy** directory for info / help.
 
-- `dega-inj test <command>` is a shorthand which calls the test tool with the remaining arguments
-- `dega-inj sign`
-
 ## Development CLI
 
 The `/cli` directory has a rust based development CLI to do extensive querying, deployment and interacting with
 the smart contracts via the command line.
 
+Run `cargo update-cli` to install and update the CLI.
+
+Run `dega-inj <command>` to use the CLI.
+
+See `dega-inj help` for help on the commands available.
+
 See the [cli README.md](./cli/) in the **./cli** directory for info / help.
 
 The [wasm-deploy repo github page](https://github.com/cryptechdev/wasm-deploy), which the CLI is created from, has
 more background information on the CLI.
+
+As an important note, `dega-inj test <command>` is a shorthand which calls the test tool with the remaining arguments
 
 ## Test Tool
 

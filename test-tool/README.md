@@ -15,8 +15,14 @@ The test tool can either be called:
 ## Important commands
 
 - `dega-inj test generate` - Generates the typescript messages from the rust messages
+- `dega-inj test sig-info` - Get the signature information for the provided signature mnemonic.
+Critically the "compressed pubkey (base64)" line is what is needed for the signer pubkey variable
+of the minter contract.
 - `dega-inj test q <call>` - Call one of the query commands / tests from query.ts
 - `dega-inj test tx <call>` - Call one of the transaction commands / tests from tx.ts
+- `dega-inj test tx store` (or "tx s") - Store the codes for the minter and collection contracts
+- `dega-inj test tx instantiate` (or "tx i") - Instantiate the minter and collection contracts
+- `dega-inj test tx mint` - Do a mint call to the minter contract with signature verification
 
 ## Typescript Message Class Generation
 

@@ -54,7 +54,7 @@ pub fn instantiate(
         // 100% is fair burned
         mint_price: msg.init_msg.min_mint_price.clone(), // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
         extension: MinterParams {
-            allowed_sg721_code_ids: msg.init_msg.allowed_sg721_code_ids,
+            //allowed_sg721_code_ids: msg.init_msg.allowed_sg721_code_ids,
             frozen: msg.init_msg.frozen,
             creation_fee: msg.init_msg.creation_fee,
             min_mint_price: msg.init_msg.min_mint_price,
@@ -76,6 +76,12 @@ pub fn instantiate(
 
     CONFIG.save(deps.storage, &config)?;
 
+    // DEGA MOD
+    let cw721_admin_addr = match msg.cw721_contract_admin {
+        Some(admin) => Some(deps.api.addr_validate(&admin)?.to_string()),
+        None => None,
+    };
+
     let wasm_msg = WasmMsg::Instantiate {
         code_id: msg.collection_params.code_id,
         msg: to_json_binary(&Sg721InstantiateMsg {
@@ -85,11 +91,7 @@ pub fn instantiate(
             collection_info,
         })?,
         funds: info.funds,
-        admin: Some(
-            deps.api
-                .addr_validate(&msg.collection_params.info.creator)?
-                .to_string(),
-        ),
+        admin: cw721_admin_addr,
         label: msg.cw721_contract_label,
     };
 

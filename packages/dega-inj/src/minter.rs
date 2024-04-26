@@ -52,13 +52,14 @@ pub struct InstantiateMsg {
     pub minter_params: MinterParams<DegaMinterParams>,
     pub collection_params: CollectionParams,
     pub cw721_contract_label: String,
+    pub cw721_contract_admin: Option<String>,
 }
 
 impl From<InstantiateMsg> for SgBaseMinterInstantiateMsg {
     fn from(msg: InstantiateMsg) -> SgBaseMinterInstantiateMsg {
         SgBaseMinterInstantiateMsg {
             init_msg: MinterParams {
-                allowed_sg721_code_ids: msg.minter_params.allowed_sg721_code_ids,
+                //allowed_sg721_code_ids: msg.minter_params.allowed_sg721_code_ids,
                 frozen: msg.minter_params.frozen,
                 creation_fee: msg.minter_params.creation_fee,
                 min_mint_price: msg.minter_params.min_mint_price,
@@ -68,8 +69,13 @@ impl From<InstantiateMsg> for SgBaseMinterInstantiateMsg {
             },
             collection_params: msg.collection_params,
             cw721_contract_label: msg.cw721_contract_label,
+            cw721_contract_admin: msg.cw721_contract_admin,
         }
     }
+}
+
+#[cw_serde]
+pub struct MigrateMsg {
 }
 
 
@@ -106,7 +112,17 @@ pub enum ExecuteMsg {
     UpdateSettings {
         settings: DegaMinterConfigSettings,
     },
+    UpdateAdmin {
+        address: String,
+        command: UpdateAdminCommand,
+    },
     UpdateStartTradingTime(Option<Timestamp>)
+}
+
+#[cw_serde]
+pub enum UpdateAdminCommand {
+    Add,
+    Remove,
 }
 
 impl From<ExecuteMsg> for SgBaseMinterExecuteMsg {

@@ -1,6 +1,4 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, Event, MessageInfo, Response, StdError, StdResult, to_json_binary, Uint128, Uint256};
-//use injective_std::types::cosmos::auth::v1beta1::{AuthQuerier, BaseAccount};
-//use crate::inj_address::{AuthQuerier};
+use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, Event, MessageInfo, Order, Response, StdError, StdResult, to_json_binary, Uint128, Uint256};
 
 use hex;
 
@@ -19,14 +17,7 @@ use base_minter::{
     }
 };
 
-// use sg_mod::base_factory::{
-//     msg::{
-//         BaseMinterCreateMsg as SgBaseMinterInstantiateMsg,
-//     }
-// };
-
-//use base_minter::contract::query_status;
-use dega_inj::minter::{QueryMsg, CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg, DegaMinterConfigResponse, DegaMinterConfigSettings};
+use dega_inj::minter::{QueryMsg, CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg, DegaMinterConfigResponse, DegaMinterConfigSettings, UpdateAdminCommand};
 
 use sha2::{Digest, Sha256};
 use base_minter::state::COLLECTION_ADDRESS;
@@ -115,6 +106,9 @@ pub fn execute(
         ExecuteMsg::UpdateSettings { settings} => {
             execute_update_settings(&mut deps, &env, &info, &settings)
         }
+        ExecuteMsg::UpdateAdmin { address, command } => {
+            execute_update_admin(&mut deps, &env, &info, address, command)
+        }
         _ => {
             sg_base_minter_execute(deps, env, info, msg.into())
                 .map_err(| e | ContractError::BaseMinter("Error during pass-thru base execution".to_string(), e))
@@ -147,6 +141,51 @@ pub fn execute_update_settings(
             .add_attribute("minting_paused", format!("{}",settings.minting_paused))
             .add_attribute("burning_paused", format!("{}",settings.burning_paused))
         )
+    )
+}
+
+fn execute_update_admin(
+    deps: &mut DepsMut,
+    _env: &Env,
+    info: &MessageInfo,
+    address: String,
+    command: UpdateAdminCommand
+) -> Result<Response, ContractError> {
+
+    if ! ADMIN_LIST.has(deps.storage, info.sender.to_string()) {
+        return Err(ContractError::Unauthorized("Only admins can update admins.".to_string()))
+    }
+
+    let address_is_admin = ADMIN_LIST.has(deps.storage, address.clone());
+
+    match command {
+        UpdateAdminCommand::Add => {
+
+            if address_is_admin {
+                Err(ContractError::GenericError("Address to add as admin is already an admin.".to_string()))?
+            }
+
+            ADMIN_LIST.save(deps.storage, address.clone(), &Empty {})
+                .map_err(|e| ContractError::Std("Error while saving new admin.".to_string(), e))?
+        },
+        UpdateAdminCommand::Remove => {
+
+            if ADMIN_LIST.keys(deps.storage, None, None, Order::Ascending).count() >= 1 {
+                Err(ContractError::GenericError("Cannot remove admin when one or none exists.".to_string()))?
+            }
+
+            if !address_is_admin {
+                Err(ContractError::GenericError("Address to remove as admin is not an admin.".to_string()))?
+            }
+
+            ADMIN_LIST.remove(deps.storage, address.clone())
+        }
+    };
+
+    Ok(Response::new()
+        .add_attribute("action", "update_admin")
+        .add_attribute("address", address)
+        .add_attribute("command", format!("{:?}", command))
     )
 }
 

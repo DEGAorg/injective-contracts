@@ -3,6 +3,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{export_schema, export_schema_with_title, remove_schemas, schema_for};
 use dega_inj::minter::InstantiateMsg;
+use dega_inj::minter::MigrateMsg;
 use dega_inj::minter::ExecuteMsg;
 use dega_inj::minter::QueryMsg;
 
@@ -13,6 +14,7 @@ fn main() {
     remove_schemas(&out_dir).unwrap();
 
     export_schema_with_title(&schema_for!(InstantiateMsg), &out_dir, "instantiate_msg");
+    export_schema(&schema_for!(MigrateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg), &out_dir);
     export_schema(&schema_for!(QueryMsg), &out_dir);
 }

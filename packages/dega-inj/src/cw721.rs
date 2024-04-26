@@ -49,6 +49,9 @@ pub type DegaCW721Contract<'a> = Sg721Contract<'a, Extension>;
 
 pub type InstantiateMsg = Sg721BaseInstantiateMsg;
 
+#[cw_serde]
+pub struct MigrateMsg {
+}
 
 #[cw_ownable_execute]
 #[cw_serde]

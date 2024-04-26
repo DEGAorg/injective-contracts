@@ -178,9 +178,9 @@ async function sigInfo(args: string[]) {
     let signingKey = Context.signerSigningKey;
     //let signingKey = randomBytes(32);
 
-    console.log("Signing Key Hex: " + signingKey.toString("hex"));
-    console.log("Signing Key Base64: " + signingKey.toString("base64"));
-    console.log("Signing Key Length: " + signingKey.length);
+    //console.log("Signing Key Hex: " + signingKey.toString("hex"));
+    //console.log("Signing Key Base64: " + signingKey.toString("base64"));
+    //console.log("Signing Key Length: " + signingKey.length);
 
     let publicKey = Context.signerCompressedPublicKey;
 

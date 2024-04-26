@@ -12,7 +12,7 @@ pub type CodeId = u64;
 pub struct MinterParams<T> {
     /// The minter code id
     //pub code_id: u64, // DEGA MOD (no need for this since the minters are not created dynamically)
-    pub allowed_sg721_code_ids: Vec<CodeId>,
+    //pub allowed_sg721_code_ids: Vec<CodeId>, // DEGA MOD Also note needed
     pub frozen: bool,
     pub creation_fee: Coin,
     pub min_mint_price: Coin,

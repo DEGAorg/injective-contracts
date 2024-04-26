@@ -59,7 +59,7 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) ->
 
     dega_inj::minter::InstantiateMsg {
         minter_params: sg2::MinterParams {
-            allowed_sg721_code_ids: vec![],
+            //allowed_sg721_code_ids: vec![],
             frozen: false,
             creation_fee: Coin {
                 denom: "uinj".into(),
@@ -99,5 +99,6 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) ->
             }
         },
         cw721_contract_label: "DEGA Collection - Test".to_string(),
+        cw721_contract_admin: Some(ADMIN.to_string()),
     }
 }

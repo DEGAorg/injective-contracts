@@ -10,6 +10,7 @@
 export interface DegaMinterExecuteMsg {
     mint?:                      Mint;
     update_settings?:           UpdateSettings;
+    update_admin?:              UpdateAdmin;
     update_start_trading_time?: null | string;
 }
 
@@ -29,6 +30,16 @@ export interface MintRequest {
     uri:                      string;
     validity_end_timestamp:   string;
     validity_start_timestamp: string;
+}
+
+export interface UpdateAdmin {
+    address: string;
+    command: UpdateAdminCommand;
+}
+
+export enum UpdateAdminCommand {
+    Add = "add",
+    Remove = "remove",
 }
 
 export interface UpdateSettings {
@@ -210,6 +221,7 @@ const typeMap: any = {
     "DegaMinterExecuteMsg": o([
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
         { json: "update_settings", js: "update_settings", typ: u(undefined, r("UpdateSettings")) },
+        { json: "update_admin", js: "update_admin", typ: u(undefined, r("UpdateAdmin")) },
         { json: "update_start_trading_time", js: "update_start_trading_time", typ: u(undefined, u(null, "")) },
     ], false),
     "Mint": o([
@@ -228,6 +240,10 @@ const typeMap: any = {
         { json: "validity_end_timestamp", js: "validity_end_timestamp", typ: "" },
         { json: "validity_start_timestamp", js: "validity_start_timestamp", typ: "" },
     ], false),
+    "UpdateAdmin": o([
+        { json: "address", js: "address", typ: "" },
+        { json: "command", js: "command", typ: r("UpdateAdminCommand") },
+    ], false),
     "UpdateSettings": o([
         { json: "settings", js: "settings", typ: r("DegaMinterConfigSettings") },
     ], false),
@@ -237,4 +253,8 @@ const typeMap: any = {
         { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
         { json: "transferring_paused", js: "transferring_paused", typ: true },
     ], false),
+    "UpdateAdminCommand": [
+        "add",
+        "remove",
+    ],
 };

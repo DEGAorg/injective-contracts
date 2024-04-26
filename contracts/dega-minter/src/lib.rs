@@ -30,11 +30,11 @@ use base_minter::{
 //     QueryMsg as SgBaseMinterQueryMsg,
 // };
 
-use sg_mod::base_factory::{
-    msg::{
-        BaseMinterCreateMsg as SgBaseMinterInstantiateMsg,
-    }
-};
+// use sg_mod::base_factory::{
+//     msg::{
+//         BaseMinterCreateMsg as SgBaseMinterInstantiateMsg,
+//     }
+// };
 
 
 const CONTRACT_NAME: &str = "DEGA Minter";
@@ -42,7 +42,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub mod entry {
     use cosmwasm_std::Reply;
-    use dega_inj::minter::{ExecuteMsg, InstantiateMsg, QueryMsg};
+    use dega_inj::minter::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
     use super::{
         *
     };
@@ -85,7 +85,7 @@ pub mod entry {
     pub fn migrate(
         deps: DepsMut,
         _env: Env,
-        _msg: SgBaseMinterInstantiateMsg,
+        _msg: MigrateMsg,
     ) -> Result<Response, ContractError> {
 
         set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
