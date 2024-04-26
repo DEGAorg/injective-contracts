@@ -5,12 +5,14 @@
   "grpcEndpoint": null,
   "optionsBuildAndOptimize": true,
   "optionsStoreCodeForMinter": true,
-  "optionsStoreCodeForCw721": true,
   "preExistingMinterCodeId": null,
+  "optionsStoreCodeForCw721": true,
   "preExistingCw721CodeId": null,
   "optionsInstantiate": true,
   "optionsMigrateMinter": false,
+  "minterAddressForMigration": null,
   "optionsMigrateCw721": false,
+  "cw721AddressForMigration": null,
   "collectionName": "Test collection",
   "collectionSymbol": "TEST",
   "collectionCreator": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
@@ -24,7 +26,6 @@
   "cw721ContractLabel": "DEGA Collection - Test Collection",
   "cw721ContractMigratable": false,
   "cw721MigrateAdmin": null,
-  "cw721AddressForMigration": null,
   "minterSignerPubKeyBase64": "A9tu/MCgtgLwbz+UcyIc/kPB38+6k3BP895SShKV6eRR",
   "minterBurningPaused": false,
   "minterMintingPaused": false,
@@ -33,6 +34,5 @@
   "minterInitialAdmin": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
   "minterContractLabel": "DEGA Minter - Test Collection",
   "minterContractMigratable": false,
-  "minterMigrateAdmin": null,
-  "minterAddressForMigration": null
+  "minterMigrateAdmin": null
 }

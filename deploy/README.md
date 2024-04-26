@@ -111,27 +111,31 @@ and submitting transactions. See more information here in the Injective
 If not specified the tool will use a default gRPC endpoint for the given network that is configured in the 
 injective typescript library.
 
-
-`"optionsBuild": true,` - Use this to specify whether to build the wasm binaries, or use the pre-existing binaries from
-the last build already in the target directory.
-
-`"optionsOptimize": true,` - Use this to determine whether to run the optimizer and process fresh wasm files to the
-deploy/artifacts directory, or to use the binaries from the previous build (for example for testing, or to deploy
-a specific set of final binaries that are already finalized).
+`"optionsBuildAndOptimize": true,` - Use this to determine whether to run the optimizer to build and optimize fresh 
+wasm files to the deploy/artifacts directory, or to use the binaries from the previous build (for example for testing, 
+or to deploy a specific set of final binaries that are already finalized).
 
 `"optionsStoreCodeForMinter": true,` - Whether to upload the minter contract binary, or use an already uploaded binary on the chain.
 If set to false, the **preExistingMinterCodeId** property below **must** be specified.
 
-`"preExistingMinterCodeId": null,` (Optional) - If not storing code for the minter - specify the code id for the binary
+`"preExistingMinterCodeId": 12345 or null,` (Optional) - If not storing code for the minter - specify the code id for the binary
 already on the chain to use for instantiating the minter smart contract instance.
 
 `"optionsStoreCodeForCw721": true,` - Whether to upload the CW721 / collection contract binary, or use an already uploaded binary on the chain.
 If set to false, the **preExistingCW721CodeId** property below **must** be specified.
 
-`"preExistingCw721CodeId": null,` (Optional) - If not storing code for the CW721 collection contract - specify the code id for the binary
+`"preExistingCw721CodeId": 12345 or null,` (Optional) - If not storing code for the CW721 collection contract - specify the code id for the binary
 already on the chain to use for instantiating the minter smart contract instance.
 
 `"optionsInstantiate": true,` - Whether to instantiate the minter and cw721 contracts after storing the code binaries.
+
+`"optionsMigrateMinter": false,` - Whether to migrate the minter contract. If set to true, the **minterAddressForMigration** property below **must** be specified.
+
+`"minterAddressForMigration": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` (Optional) - The injective address of the minter contract to migrate.
+
+`"optionsMigrateCw721": false,` - Whether to migrate the cw721 contract. If set to true, the **cw721AddressForMigration** property below **must** be specified.
+
+`"cw721AddressForMigration": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` (Optional) - The injective address of the cw721 contract to migrate.
 
 `"collectionName": "Test collection",` - The name of the collection in the collection properties of the CW721 contract.
 
@@ -147,9 +151,23 @@ smart contract.
 `"collectionImageURL": "https://storage.googleapis.com/dega-banner/banner.png",` - An image for the collection 
 stored and queryable in the smart contract.
 
+`"collectionExternalLinkURL": "https://realms.degaplatform.com/",` - An external link for the collection stored and queryable in the smart contract.
+
+`"collectionExplicitContent": null,` (Optional) - Whether the collection contains explicit content. Stored and queryable in the smart contract.
+
+`"collectionStartTradingTime": null,` (Optional) - A holdover from the Stargaze CW721 contract, does not work outside the stargaze chain but could be implemented.
+
+`"collectionSecondaryRoyaltyPaymentAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` - The injective address of the secondary royalty payment address for the collection.
+
+`"collectionSecondaryRoyaltyShare": "0.05",` - The secondary market royalty share to use across the collection. .05 = 5%
+
 `"cw721ContractLabel": "DEGA Collection - Test Collection",` - A label for the instantiated collection smart contract. 
 This shows up at the top of the page in the finder when you browse to the collection contract's address as the name of 
 the contract.
+
+`"cw721ContractMigratable": false,` - Whether the CW721 contract should be migratable. If set to true, the **cw721MigrateAdmin** property below **must** be specified.
+
+`"cw721MigrateAdmin": null or "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` (Optional) - The injective address of the **root** admin to give permission to migrate the code ID of the CW721 contract being instantiated.
 
 `"minterSignerPubKeyBase64": "A9tu/MCgtgLwbz+UcyIc/kPB38+6k3BP895SShKV6eRR",` - The compressed ECDSA public "Verification"
 key for the mint transaction signer. Stored in the minter contract to verify mint signatures. This is the binary
@@ -166,6 +184,10 @@ verification key encoded as a Base64 string, which is also how it is stored on t
 `"minterContractLabel": "DEGA Minter - Test Collection"` - A label for the instantiated minter smart contract.
 This shows up at the top of the page in the finder when you browse to the minter contract's address as the name of
 the contract.
+
+`"minterContractMigratable": false,` - Whether the minter contract should be migratable. If set to true, the **minterMigrateAdmin** property below **must** be specified.
+
+`"minterMigrateAdmin": null or "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6"` (Optional) - The injective address of the **root** admin to give permission to migrate the code ID of the minter contract being instantiated.
 
 ## CosmWasm Rust Optimizer
 
