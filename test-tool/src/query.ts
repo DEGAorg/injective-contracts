@@ -88,8 +88,6 @@ export async function checkSig(args: string[]) {
 
     let mintRequestMsg: MintRequest = {
         to: Context.primaryAddress,
-        royalty_recipient: Context.primaryAddress,
-        royalty_bps: "0",
         primary_sale_recipient: Context.primaryAddress,
         uri: "https://www.domain.com",
         price: "0",
@@ -155,8 +153,6 @@ async function sigInfo(args: string[]) {
 
     let mintRequestMsg: MintRequest = {
         to: Context.primaryAddress,
-        royalty_recipient: Context.primaryAddress,
-        royalty_bps: "0",
         primary_sale_recipient: Context.primaryAddress,
         uri: "https://www.domain.com",
         price: "0",
