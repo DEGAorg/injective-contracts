@@ -94,7 +94,7 @@ export async function checkSig(args: string[]) {
         currency: Context.primaryAddress,
         validity_start_timestamp: "0",
         validity_end_timestamp: "0",
-        uid: 0,
+        uuid: "00000000-0000-0000-0000-000000000000",
     };
 
     let mintRequestBase64 = toBase64(mintRequestMsg);
@@ -159,7 +159,7 @@ async function sigInfo(args: string[]) {
         currency: "inj",
         validity_start_timestamp: "0",
         validity_end_timestamp: "0",
-        uid: 0,
+        uuid: "00000000-0000-0000-0000-000000000000",
     };
 
     //let rawMessage = Buffer.from(rawTextMessage, "utf-8");

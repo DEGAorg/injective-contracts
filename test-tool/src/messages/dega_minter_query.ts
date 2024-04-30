@@ -34,8 +34,8 @@ export interface MintRequest {
     price:                    string;
     primary_sale_recipient:   string;
     to:                       string;
-    uid:                      number;
     uri:                      string;
+    uuid:                     string;
     validity_end_timestamp:   string;
     validity_start_timestamp: string;
 }
@@ -238,8 +238,8 @@ const typeMap: any = {
         { json: "price", js: "price", typ: "" },
         { json: "primary_sale_recipient", js: "primary_sale_recipient", typ: "" },
         { json: "to", js: "to", typ: "" },
-        { json: "uid", js: "uid", typ: 0 },
         { json: "uri", js: "uri", typ: "" },
+        { json: "uuid", js: "uuid", typ: "" },
         { json: "validity_end_timestamp", js: "validity_end_timestamp", typ: "" },
         { json: "validity_start_timestamp", js: "validity_start_timestamp", typ: "" },
     ], false),

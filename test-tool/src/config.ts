@@ -78,26 +78,37 @@ function initConfig() {
     let cw721CodeId = 0;
     let cw721Address = (useLocal ? process.env.CW721_ADDRESS_LOCAL : process.env.CW721_ADDRESS) as string
 
-    let minterAndCw721CodeIdsAddressesOrNull =
-        getContractAddressesFromWasmDeployConfig(useLocal) as
-            { minterCodeId: number, minterAddress: string, cw721CodeId: number, cw721Address: string };
+    if (process.env.USE_WASM_DEPLOY_CONFIG as string == "true") {
 
-    if (notEmpty(minterAndCw721CodeIdsAddressesOrNull)) {
-        const minterCodeIdNumber = minterAndCw721CodeIdsAddressesOrNull.minterCodeId as number;
-        if (notEmpty(minterCodeIdNumber)) {
-            minterCodeId = minterCodeIdNumber;
+        let minterAndCw721CodeIdsAddressesOrNull =
+            getContractAddressesFromWasmDeployConfig(useLocal) as
+                { minterCodeId: number, minterAddress: string, cw721CodeId: number, cw721Address: string };
+
+        if (notEmpty(minterAndCw721CodeIdsAddressesOrNull)) {
+            const minterCodeIdNumber = minterAndCw721CodeIdsAddressesOrNull.minterCodeId as number;
+            if (notEmpty(minterCodeIdNumber)) {
+                minterCodeId = minterCodeIdNumber;
+            }
+            const minterAddressString = minterAndCw721CodeIdsAddressesOrNull.minterAddress as string;
+            if (notEmpty(minterAddressString) && minterAddressString.length > 0) {
+                minterAddress = minterAddressString;
+            }
+            const cw721CodeIdNumber = minterAndCw721CodeIdsAddressesOrNull.cw721CodeId as number;
+            if (notEmpty(cw721CodeIdNumber)) {
+                cw721CodeId = cw721CodeIdNumber;
+            }
+            const cw721AddressString = minterAndCw721CodeIdsAddressesOrNull.cw721Address as string;
+            if (notEmpty(cw721AddressString) && cw721AddressString.length > 0) {
+                cw721Address = cw721AddressString;
+            }
         }
-        const minterAddressString = minterAndCw721CodeIdsAddressesOrNull.minterAddress as string;
-        if (notEmpty(minterAddressString) && minterAddressString.length > 0) {
-            minterAddress = minterAddressString;
-        }
-        const cw721CodeIdNumber = minterAndCw721CodeIdsAddressesOrNull.cw721CodeId as number;
-        if (notEmpty(cw721CodeIdNumber)) {
-            cw721CodeId = cw721CodeIdNumber;
-        }
-        const cw721AddressString = minterAndCw721CodeIdsAddressesOrNull.cw721Address as string;
-        if (notEmpty(cw721AddressString) && cw721AddressString.length > 0) {
-            cw721Address = cw721AddressString;
+    } else {
+        if (useLocal) {
+            minterCodeId = parseInt(process.env.MINTER_CODE_ID_LOCAL as string);
+            cw721CodeId = parseInt(process.env.CW721_CODE_ID_LOCAL as string);
+        } else {
+            minterCodeId = parseInt(process.env.MINTER_CODE_ID as string);
+            cw721CodeId = parseInt(process.env.CW721_CODE_ID as string);
         }
     }
 

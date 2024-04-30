@@ -125,8 +125,8 @@
         "price",
         "primary_sale_recipient",
         "to",
-        "uid",
         "uri",
+        "uuid",
         "validity_end_timestamp",
         "validity_start_timestamp"
       ],
@@ -143,12 +143,10 @@
         "to": {
           "type": "string"
         },
-        "uid": {
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
-        },
         "uri": {
+          "type": "string"
+        },
+        "uuid": {
           "type": "string"
         },
         "validity_end_timestamp": {

@@ -144,7 +144,7 @@ pub struct MintRequest {
     pub currency: String, // Address
     pub validity_start_timestamp: Uint128, // uint128
     pub validity_end_timestamp: Uint128, // uint128
-    pub uid: u32, // bytes32
+    pub uuid: String, // UUIDv4
 }
 
 #[cw_serde]

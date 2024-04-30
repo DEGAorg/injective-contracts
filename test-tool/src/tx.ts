@@ -1,4 +1,5 @@
 import {
+    DegaCw721ExecuteMsg,
     DegaMinterExecuteMsg,
     DegaMinterInstantiateMsg, DegaMinterQueryMsg
 } from "./messages";
@@ -17,7 +18,7 @@ import {
     MsgSend,
     ChainRestAuthApi,
     BaseAccount,
-    ChainGrpcAuthApi, MsgStoreCode, MsgInstantiateContract, sha256,
+    ChainGrpcAuthApi, MsgStoreCode, MsgInstantiateContract, sha256, MsgExecuteContract, TxResponse,
 } from "@injectivelabs/sdk-ts";
 import { BigNumberInBase } from '@injectivelabs/utils'
 import { exec } from 'child_process';
@@ -25,10 +26,12 @@ import path from "node:path";
 import fs from "fs";
 import secp256k1 from "secp256k1";
 import {SignerSourceTypeEnum} from "./messages/dega_minter_query";
-
+import {Network} from "@injectivelabs/networks";
+import { v4 as uuidv4 } from 'uuid';
 
 // Transaction Exec example:
 // https://github.com/InjectiveLabs/injective-create-app-template-nuxt-sc-counter/blob/c94c68de41cb0292c6df27dcd4354d64906ca901/store/counter.ts#L21
+
 
 export async function tx(args: string[]) {
 
@@ -52,6 +55,15 @@ export async function tx(args: string[]) {
         case "store":
             await store(args);
             break;
+        case "transfer":
+            await transferToken(args);
+            break;
+        case "send":
+            await sendToken(args);
+            break;
+        case "send-talis-sell":
+            await sendTalisSale(args);
+            break;
         case "refill-local":
             await refillLocal(args);
             break;
@@ -73,21 +85,37 @@ export async function tx(args: string[]) {
 // fn ed25519_verify
 // fn ed25519_batch_verify
 //
+async function sleep(seconds: number) {
+    return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+}
+
 // from DepsMut.Api in the smart contract parameters.
 async function mint(args: string[]) {
 
     let nft_price_base = new BigNumberInBase (0.5);
     let nft_price_wei = nft_price_base.toWei();
 
+    const nowInSeconds: number = Math.floor(Date.now() / 1000);
+
+    const startTimeInSeconds: number = nowInSeconds - 5; // 5 seconds ago
+    //const startTimeInSeconds: number = nowInSeconds + 60; // 60 seconds from now (intentional error)
+
+    const endTimeInSeconds: number = nowInSeconds + 60 * 5; // 5 minutes from now
+
+    //const endTimeInSeconds: number = nowInSeconds + 8; // 8 seconds from now (intentional error)
+    //await sleep(12); // wait 12 seconds
+
     let mintRequestMsg: MintRequest = {
-        to: Context.primaryAddress,
+        to: Context.signerAddress,
         primary_sale_recipient: Context.primaryAddress,
         uri: "https://example.com",
         price: nft_price_wei.toFixed(),
         currency: "inj",
-        validity_start_timestamp: "0",
-        validity_end_timestamp: "0",
-        uid: 0,
+        //currency: "other",
+        validity_start_timestamp: startTimeInSeconds.toString(),
+        validity_end_timestamp: endTimeInSeconds.toString(),
+        uuid: uuidv4(),
+        //uuid: "8c288b70-dc7b-47d6-9412-1840f8c25a57"
     };
 
     //let rawTextMessage = "test message";
@@ -143,6 +171,8 @@ async function mint(args: string[]) {
             {
                 denom: "inj",
                 amount: nft_price_wei.toFixed()
+                //amount: (nft_price_wei.plus(100)).toFixed() // slight overpayment
+                //amount: (nft_price_wei.minus(100)).toFixed() // slight underpayment
             }
         ],
     })
@@ -152,10 +182,140 @@ async function mint(args: string[]) {
         gas: Context.gasSettings,
     })
 
-    console.log(response);
+    logResponse(response);
+}
 
-    //await sleep(3000);
-    //await backupPromiseCall(() => counterStore.fetchCount());
+async function transferToken(args: string[]) {
+
+    if (args.length < 2) {
+        throw new Error("Missing arguments. send usage: transfer <token_id> <recipient>");
+    }
+
+    const tokenId = args[0];
+    const recipient = args[1];
+
+    const contractMsg: DegaCw721ExecuteMsg = {
+        transfer_nft: {
+            recipient: recipient,
+            token_id: tokenId
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.CW721_ADDRESS,
+        msg: contractMsg,
+        funds: []
+    })
+
+    // const execMsgVanilla = MsgExecuteContract.fromJSON({
+    //     sender: Context.primaryAddress,
+    //     contractAddress: Config.CW721_ADDRESS,
+    //     msg: contractMsg,
+    //     funds: []
+    // })
+
+    //execMsgVanilla.toData()["@type"]
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+
+async function sendToken(args: string[]) {
+
+    if (args.length < 2) {
+        throw new Error("Missing arguments. send usage: send <token_id> <recipient_contract> <receive_message>");
+    }
+
+    const tokenId = args[0];
+    const recipient_contract = args[1];
+    const receiveMsg = args[2];
+
+    const contractMsg: DegaCw721ExecuteMsg = {
+        send_nft: {
+            contract: recipient_contract,
+            token_id: tokenId,
+            msg: toBase64(JSON.parse(receiveMsg))
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.CW721_ADDRESS,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+
+async function sendTalisSale(args: string[]) {
+
+    if (args.length < 2) {
+        throw new Error("Missing arguments. send-talis-sell usage: send-talis-sell <token_id> <price>");
+    }
+
+    let market_address = ""
+
+    if (Config.NETWORK == Network.Testnet) {
+        market_address = "inj1n8n0p5l48g7xy9y7k4hu694jl4c82ej4mwqmfz"
+    } else if (Config.NETWORK == Network.Mainnet) {
+        throw new Error("Mainnet address not known")
+    } else {
+        throw new Error("Cannot send to Talis when in Localnet")
+    }
+
+    const tokenId = args[0];
+    const price = new BigNumberInBase(args[1]).toWei().toFixed()
+
+    const sellTokenMsg = {
+        sell_token: {
+            token_id: tokenId,
+            contract_address: Config.CW721_ADDRESS,
+            class_id: "injective",
+            price: {
+                native: [
+                    {
+                        amount: price,
+                        denom: "inj"
+                    }
+                ]
+            }
+        }
+    };
+
+    const contractMsg: DegaCw721ExecuteMsg = {
+        send_nft: {
+            contract: market_address,
+            token_id: tokenId,
+            msg: toBase64(sellTokenMsg)
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.CW721_ADDRESS,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
 }
 
 
@@ -207,10 +367,7 @@ async function refillLocal(args: string[]) {
         }
     })
 
-    console.log(response);
-
-    //await sleep(3000);
-    //await backupPromiseCall(() => counterStore.fetchCount());
+    logResponse(response);
 }
 
 // Note used now but keeping as a reference
@@ -320,8 +477,10 @@ async function instantiate_minter() {
 
     //console.log(response);
 
+    logResponse(response);
+
     console.log("Successfully Instantiated Contract")
-    console.log("TX: " + response.txHash)
+
 
     if (response.events != undefined) {
         let decoder = new TextDecoder();
@@ -413,7 +572,7 @@ async function store_wasm(wasm_name: string) {
         }
     })
 
-    //console.log(response);
+    logResponse(response);
 
     console.log("Successfully Stored Code")
 
@@ -475,4 +634,40 @@ async function storeCommandLine(args: string[]) {
         }
         console.log(`stdout: ${stdout}`);
     });
+}
+
+function logResponse(response: TxResponse) {
+
+    if (response.code !== 0) {
+        console.log(`Transaction failed: ${response.rawLog}`);
+        throw new Error("Transaction failed");
+    } else {
+        console.log("txHash: " + response.txHash);
+        console.log("Logs:");
+        console.log(response.logs);
+
+        console.log("==========");
+        console.log("==Events==");
+        console.log("==========");
+
+        if (response.events == undefined) return;
+        const eventsTyped = response.events as TxEvent[];
+
+        let decoder = new TextDecoder();
+
+        eventsTyped.forEach((event) => {
+
+            if (event.type == undefined || event.attributes == undefined) return;
+
+            const eventTypeString = "Event: " + event.type;
+            console.log()
+            console.log(eventTypeString);
+            console.log("-".repeat(eventTypeString.length));
+            event.attributes.forEach((attr) => {
+
+                if (attr.key == undefined || attr.value == undefined) return;
+                console.log(decoder.decode(attr.key) + ": " + decoder.decode(attr.value));
+            });
+        });
+    }
 }

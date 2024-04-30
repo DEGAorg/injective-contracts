@@ -141,7 +141,7 @@ async fn mint() -> anyhow::Result<()> {
         currency: "inj".to_string(),
         validity_start_timestamp: Uint128::from(0u32),
         validity_end_timestamp: Uint128::from(0u32),
-        uid: 0u32,
+        uuid: "00000000-0000-0000-0000-000000000000".to_string(),
     };
 
     let sig_base64 = sign_msg_bytes(to_json_binary(&mint_request_msg)?.as_slice()).await?;
@@ -432,7 +432,7 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
         currency: account_id_from_cosmrs.to_string(),
         validity_start_timestamp: Uint128::from(0u32),
         validity_end_timestamp: Uint128::from(0u32),
-        uid: 0u32,
+        uuid: "00000000-0000-0000-0000-000000000000".to_string(),
     };
 
     let mint_msg_binary = to_json_binary(&mint_request_msg).map_err(

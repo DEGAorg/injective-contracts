@@ -14,8 +14,9 @@
     "@injectivelabs/wallet-ts": "^1.14.7",
     "dotenv": "^16.4.5",
     "quicktype": "^23.0.115",
+    "secp256k1": "^5.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.3",
-    "secp256k1": "^5.0.0"
+    "uuid": "^9.0.1"
   }
 }

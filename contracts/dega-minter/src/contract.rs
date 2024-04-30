@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Empty, Env, Event, MessageInfo, Order, Response, StdError, StdResult, to_json_binary, Uint128, Uint256};
+use cosmwasm_std::{BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, Event, MessageInfo, Order, Response, StdError, StdResult, to_json_binary, Uint128, Uint256, WasmMsg};
 
 use hex;
 
@@ -12,21 +12,15 @@ use base_minter::{
     error::{
         ContractError as SgBaseMinterContractError
     },
-    msg::{
-        ExecuteMsg as SgBaseMinterExecuteMsg,
-    }
 };
 
 use dega_inj::minter::{QueryMsg, CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg, DegaMinterConfigResponse, DegaMinterConfigSettings, UpdateAdminCommand};
 
 use sha2::{Digest, Sha256};
-use base_minter::state::COLLECTION_ADDRESS;
-use sg721_base::msg::{
-    CollectionInfoResponse,
-    QueryMsg as Sg721BaseQueryMsg,
-};
+use base_minter::state::{COLLECTION_ADDRESS, increment_token_index};
+use url::Url;
 use crate::error::ContractError;
-use crate::state::{ADMIN_LIST, DEGA_MINTER_SETTINGS};
+use crate::state::{ADMIN_LIST, DEGA_MINTER_SETTINGS, UUID_REGISTRY};
 
 pub fn instantiate(
     mut deps: DepsMut,
@@ -191,7 +185,7 @@ fn execute_update_admin(
 
 
 fn execute_mint(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     request: MintRequest,
@@ -210,65 +204,106 @@ fn execute_mint(
         return Err(ContractError::GenericError("Signature is invalid".to_string()));
     }
 
-    let mut paid = false;
-    let mut provided_currencies = vec![];
+    let epoch_time_128 = Uint128::from(env.block.time.seconds());
 
-    for coin in &info.funds {
-        if coin.denom == request.currency {
-            if Uint256::from(coin.amount) >= request.price {
-                paid = true;
-            } else {
-                return Err(ContractError::GenericError(format!("Insufficient payment - price: {} - paid: {}", request.price, coin.amount)));
-            }
-        } else {
-            provided_currencies.push(coin.denom.clone());
-        }
-    }
-
-    if !paid {
+    if epoch_time_128 < request.validity_start_timestamp {
         return Err(ContractError::GenericError(
-            format!("Missing requested payment currency: {} - currencies provided: {}",
-                    request.currency, provided_currencies.join(", ")
-            )
+            format!("Request is not valid yet. Execution time: {} | Validity start: {}",
+                    epoch_time_128,
+                    request.validity_start_timestamp
+            ).to_string()
         ));
     }
 
-    let base_message = SgBaseMinterExecuteMsg::Mint {
-        token_uri: request.uri.to_string(),
+    if epoch_time_128 > request.validity_end_timestamp {
+        return Err(ContractError::GenericError(
+            format!("Request is no longer valid. Execution time: {} | Validity end: {}",
+            epoch_time_128,
+            request.validity_end_timestamp
+        ).to_string()));
+    }
+
+    if UUID_REGISTRY.has(deps.storage, request.uuid.clone()) {
+        return Err(ContractError::GenericError("UUID already registered.".to_string()));
+    }
+
+    UUID_REGISTRY.save(deps.storage, request.uuid.clone(), &Empty {})
+        .map_err(|e| ContractError::Std("Error while registering UUID".to_string(), e))?;
+
+
+    if info.funds.iter().count() > 1 {
+        return Err(ContractError::GenericError("Must only provide one payment currency".to_string()));
+    }
+
+    let funds = match info.funds.get(0) {
+        Some(funds) => funds,
+        None => return Err(ContractError::GenericError("No payment provided".to_string())),
     };
+
+    if funds.denom != request.currency {
+        return Err(ContractError::GenericError(
+            format!("Payment currency does not match requested currency. Payment: {} | Requested: {}",
+                    funds.denom,
+                    request.currency
+            ).to_string()
+        ));
+    }
+
+    if Uint256::from(funds.amount) < request.price {
+        return Err(ContractError::GenericError(format!("Insufficient payment - price: {} - paid: {}", request.price, funds.amount)));
+    }
+
+    if Uint256::from(funds.amount) > request.price {
+        return Err(ContractError::GenericError(format!("Overpayment - price: {} - paid: {}", request.price, funds.amount)));
+    }
+
+    Url::parse(&request.uri.to_string()).map_err(|_| ContractError::GenericError("Invalid URI".to_string()))?;
 
     let collection_address = COLLECTION_ADDRESS.load(deps.storage)
         .map_err(|e| ContractError::Std("Error while loading collection address".to_string(), e))?;
-    let collection_info: CollectionInfoResponse = deps.querier.query_wasm_smart(
-        collection_address.clone(),
-        &Sg721BaseQueryMsg::CollectionInfo {},
-    ).map_err(|e| ContractError::Std("Error while querying collection info".to_string(), e))?;
 
+    let token_id = increment_token_index(deps.storage)
+        .map_err(|e| ContractError::Std("Error while incrementing token index".to_string(), e))?;
 
-    let base_message_info = MessageInfo {
-        // Only will allow us to mint if minter is creator
-        sender: deps.api.addr_validate(collection_info.creator.as_str())
-            .map_err(|e| ContractError::Std("Error while validating creator address".to_string(), e))?,
-        funds: info.funds.clone(),
+    // Create mint msg
+    let mint_exec_msg = dega_inj::cw721::ExecuteMsg::Mint {
+        token_id: token_id.to_string(),
+        owner: request.to.clone(),
+        token_uri: Some(request.uri.clone()),
+        extension: None,
     };
+    let mint_wasm_msg = CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: collection_address.to_string(),
+        msg: to_json_binary(&mint_exec_msg)
+            .map_err(|e| ContractError::Std("Error during conversion of mint exec message to binary".to_string(), e))?,
+        funds: vec![],
+    });
 
-    let execute_response = sg_base_minter_execute(deps.branch(), env.clone(), base_message_info, base_message)
-        .map_err(| e | ContractError::BaseMinter("Error during base minting".to_string(), e))?;
+    // Create transfer proceeds msg
+    let sale_recipient_addr = deps.api.addr_validate(request.primary_sale_recipient.as_str())
+        .map_err(|e| ContractError::Std("Error validating primary sale recipient address".to_string(), e))?;
 
-    Ok(execute_response
-        .add_event(Event::new("DegaMinter::Mint")
-            .add_attribute("action", "mint")
-            .add_attribute("sender", info.sender)
-            .add_attribute("signature", signature)
-            .add_attribute("request.to", request.to)
-            .add_attribute("request.primary_sale_recipient", request.primary_sale_recipient)
-            .add_attribute("request.uri", request.uri)
-            .add_attribute("request.price", request.price)
-            .add_attribute("request.currency", request.currency)
-            .add_attribute("request.validity_start_timestamp", request.validity_start_timestamp)
-            .add_attribute("request.validity_end_timestamp", request.validity_end_timestamp)
-            .add_attribute("request.uid", Uint128::from(request.uid))
-        ))
+    let transfer_proceeds_msg = CosmosMsg::Bank(BankMsg::Send {
+        to_address: sale_recipient_addr.to_string(),
+        amount: vec![funds.clone()],
+    });
+
+    Ok(Response::new()
+        .add_message(mint_wasm_msg)
+        .add_message(transfer_proceeds_msg)
+        .add_attribute("action", "mint")
+        .add_attribute("sender", info.sender.clone())
+        .add_attribute("signature", signature)
+        .add_attribute("token_id", token_id.to_string())
+        .add_attribute("request.to", request.to)
+        .add_attribute("request.primary_sale_recipient", request.primary_sale_recipient)
+        .add_attribute("request.uri", request.uri)
+        .add_attribute("request.price", request.price)
+        .add_attribute("request.currency", request.currency)
+        .add_attribute("request.validity_start_timestamp", request.validity_start_timestamp)
+        .add_attribute("request.validity_end_timestamp", request.validity_end_timestamp)
+        .add_attribute("request.uuid", request.uuid)
+    )
 }
 
 

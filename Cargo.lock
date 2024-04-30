@@ -1753,6 +1753,7 @@ dependencies = [
  "sha2 0.10.8",
  "subtle-encoding",
  "thiserror",
+ "url",
 ]
 
 [[package]]
