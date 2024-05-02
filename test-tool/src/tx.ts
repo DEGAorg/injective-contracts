@@ -4,7 +4,7 @@ import {
     DegaMinterInstantiateMsg, DegaMinterQueryMsg
 } from "./messages";
 import {
-    MintRequest
+    MintRequest, UpdateAdminCommand
 } from "./messages/dega_minter_execute";
 import {Config} from "./config";
 import {
@@ -28,6 +28,9 @@ import secp256k1 from "secp256k1";
 import {SignerSourceTypeEnum} from "./messages/dega_minter_query";
 import {Network} from "@injectivelabs/networks";
 import { v4 as uuidv4 } from 'uuid';
+import {DegaCw721QueryResponseMessages} from "./messages/dega_cw721_query_responses";
+import {DegaMinterConfigResponse, DegaMinterQueryResponseMessages} from "./messages/dega_minter_query_responses";
+
 
 // Transaction Exec example:
 // https://github.com/InjectiveLabs/injective-create-app-template-nuxt-sc-counter/blob/c94c68de41cb0292c6df27dcd4354d64906ca901/store/counter.ts#L21
@@ -48,8 +51,14 @@ export async function tx(args: string[]) {
         case "instantiate":
             await instantiate(args);
             break;
-        case "mint":
-            await mint(args);
+        case "mint-combined":
+            await mintCombined(args);
+            break;
+        case "mint-as-backend":
+            await mintAsBackend(args);
+            break;
+        case "mint-as-user":
+            await mintAsUser(args);
             break;
         case "s":
         case "store":
@@ -66,6 +75,24 @@ export async function tx(args: string[]) {
             break;
         case "refill-local":
             await refillLocal(args);
+            break;
+        case "burn":
+            await burn(args);
+            break;
+        case "transfer-inj":
+            await transferInj(args);
+            break;
+        case "add-admin":
+            await addAdmin(args);
+            break;
+        case "remove-admin":
+            await removeAdmin(args);
+            break;
+        case "set-mint-signer":
+            await setMintSigner(args);
+            break;
+        case "pause":
+            await pause(args);
             break;
         default:
             console.log("Unknown test execute sub-command: " + sub_command);
@@ -89,8 +116,44 @@ async function sleep(seconds: number) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
+function logResponse(response: TxResponse) {
+
+    if (response.code !== 0) {
+        console.log(`Transaction failed: ${response.rawLog}`);
+        throw new Error("Transaction failed");
+    } else {
+        console.log("txHash: " + response.txHash);
+        console.log("Logs:");
+        console.log(response.logs);
+
+        console.log("==========");
+        console.log("==Events==");
+        console.log("==========");
+
+        if (response.events == undefined) return;
+        const eventsTyped = response.events as TxEvent[];
+
+        let decoder = new TextDecoder();
+
+        eventsTyped.forEach((event) => {
+
+            if (event.type == undefined || event.attributes == undefined) return;
+
+            const eventTypeString = "Event: " + event.type;
+            console.log()
+            console.log(eventTypeString);
+            console.log("-".repeat(eventTypeString.length));
+            event.attributes.forEach((attr) => {
+
+                if (attr.key == undefined || attr.value == undefined) return;
+                console.log(decoder.decode(attr.key) + ": " + decoder.decode(attr.value));
+            });
+        });
+    }
+}
+
 // from DepsMut.Api in the smart contract parameters.
-async function mint(args: string[]) {
+async function mintCombined(args: string[]) {
 
     let nft_price_base = new BigNumberInBase (0.5);
     let nft_price_wei = nft_price_base.toWei();
@@ -171,6 +234,169 @@ async function mint(args: string[]) {
             {
                 denom: "inj",
                 amount: nft_price_wei.toFixed()
+                //amount: (nft_price_wei.plus(100)).toFixed() // slight overpayment
+                //amount: (nft_price_wei.minus(100)).toFixed() // slight underpayment
+            }
+        ],
+    })
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+async function mintAsBackend(args: string[]) {
+
+    if (args.length < 2) {
+        throw new Error("Missing argument. Usage: mint-as-backend <receiver_address> <price>");
+    }
+
+    const receiverAddress = args[0];
+    const priceString = args[1];
+
+    let nftPriceBase = new BigNumberInBase(parseFloat(priceString));
+    let nftPriceWei = nftPriceBase.toWei();
+
+    const nowInSeconds: number = Math.floor(Date.now() / 1000);
+
+    const startTimeInSeconds: number = nowInSeconds - 5; // 5 seconds ago
+    //const startTimeInSeconds: number = nowInSeconds + 60; // 60 seconds from now (intentional error)
+
+    const endTimeInSeconds: number = nowInSeconds + 60 * 5; // 5 minutes from now
+
+    //const endTimeInSeconds: number = nowInSeconds + 8; // 8 seconds from now (intentional error)
+    //await sleep(12); // wait 12 seconds
+
+    let mintRequestMsg: MintRequest = {
+        to: receiverAddress,
+        primary_sale_recipient: Context.primaryAddress,
+        uri: "https://example.com",
+        price: nftPriceWei.toFixed(),
+        currency: "inj",
+        //currency: "other",
+        validity_start_timestamp: startTimeInSeconds.toString(),
+        validity_end_timestamp: endTimeInSeconds.toString(),
+        uuid: uuidv4(),
+        //uuid: "8c288b70-dc7b-47d6-9412-1840f8c25a57"
+    };
+
+
+    //let rawTextMessage = "test message";
+    //let rawMessage = Buffer.from(rawTextMessage, "utf-8");
+
+    const mintRequestBase64 = toBase64(mintRequestMsg);
+    let rawMessage = Buffer.from(mintRequestBase64, "base64")
+    let msgMd5Hash = Buffer.from(sha256(rawMessage))
+    let signingKey = Context.signerSigningKey
+    let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signingKey).signature)
+
+
+    // Optional query to ensure signature is valid before issuing the mint command
+    const mintSignatureBase64 = signature.toString("base64");
+    let checkSigQuery: DegaMinterQueryMsg = {
+        check_sig: {
+            message: {
+                mint_request: mintRequestMsg
+                //string: rawTextMessage // Uncomment to test with a string instead of the mint request
+            },
+            signature: mintSignatureBase64,
+            signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
+            // Uncomment below to test validating with a local public key using on chain logic
+            // signer_source: {
+            //     pub_key_binary: Buffer.from(Context.signerCompressedPublicKey).toString("base64")
+            // }
+        }
+    };
+
+    const checkSigQueryResponse =
+        await Context.chainGrpcWasmApi.fetchSmartContractState(
+            Config.MINTER_ADDRESS,
+            toBase64(checkSigQuery));
+
+    const checkSigQueryResponseObject: object = fromBase64(
+        Buffer.from(checkSigQueryResponse.data).toString("base64")
+    );
+
+    console.log(checkSigQueryResponseObject);
+    console.log();
+    console.log("Test Query Locally Calculated Message Hash: " + msgMd5Hash.toString("hex"));
+
+    const cacheDir = path.resolve(__dirname, "../cache");
+    if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir);
+    }
+
+    const requestPath = path.resolve(cacheDir, "mint-request-base64.txt");
+    fs.writeFileSync(requestPath, mintRequestBase64);
+
+    const signaturePath = path.resolve(cacheDir, "mint-signature.txt");
+    fs.writeFileSync(signaturePath, mintSignatureBase64);
+
+    console.log("Mint Request Base64: " + mintRequestBase64);
+    console.log("Mint Signature Base64: " + mintSignatureBase64);
+}
+
+async function mintAsUser(args: string[]) {
+
+
+    const cacheDir = path.resolve(__dirname, "../cache");
+    const mintRequestPath = path.resolve(cacheDir, "mint-request-base64.txt");
+    const mintRequestBase64 = fs.readFileSync(mintRequestPath, "utf-8");
+    const mintSignaturePath = path.resolve(cacheDir, "mint-signature.txt");
+    const mintSignatureBase64 = fs.readFileSync(mintSignaturePath, "utf-8");
+
+    let mintRequestMsg: MintRequest = fromBase64(mintRequestBase64) as MintRequest;
+
+    let rawMessage = Buffer.from(mintRequestBase64, "base64")
+    let msgMd5Hash = Buffer.from(sha256(rawMessage))
+
+    // Optional query to ensure signature is valid before issuing the mint command
+    let checkSigQuery: DegaMinterQueryMsg = {
+        check_sig: {
+            message: {
+                mint_request: mintRequestMsg
+                //string: rawTextMessage // Uncomment to test with a string instead of the mint request
+            },
+            signature: mintSignatureBase64,
+            signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
+            // Uncomment below to test validating with a local public key using on chain logic
+            // signer_source: {
+            //     pub_key_binary: Buffer.from(Context.signerCompressedPublicKey).toString("base64")
+            // }
+        }
+    };
+
+    const checkSigQueryResponse =
+        await Context.chainGrpcWasmApi.fetchSmartContractState(
+            Config.MINTER_ADDRESS,
+            toBase64(checkSigQuery));
+
+    const checkSigQueryResponseObject: object = fromBase64(
+        Buffer.from(checkSigQueryResponse.data).toString("base64")
+    );
+
+    console.log(checkSigQueryResponseObject);
+    console.log();
+    console.log("Test Query Locally Calculated Message Hash: " + msgMd5Hash.toString("hex"));
+
+    let contractMsg: DegaMinterExecuteMsg = {
+        mint: {
+            request: mintRequestMsg,
+            signature: mintSignatureBase64
+        }
+    }
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.MINTER_ADDRESS,
+        msg: contractMsg,
+        funds: [
+            {
+                denom: mintRequestMsg.currency,
+                amount: mintRequestMsg.price,
                 //amount: (nft_price_wei.plus(100)).toFixed() // slight overpayment
                 //amount: (nft_price_wei.minus(100)).toFixed() // slight underpayment
             }
@@ -524,7 +750,7 @@ async function instantiate_minter() {
     //await backupPromiseCall(() => counterStore.fetchCount());
 }
 
-function stripQuotes(input: string): string {
+export function stripQuotes(input: string): string {
     if (input.startsWith('"') && input.endsWith('"')) {
         return input.slice(1, -1);
     }
@@ -550,7 +776,7 @@ async function store(args: string[]) {
     }
 }
 
-async function store_wasm(wasm_name: string) {
+export async function store_wasm(wasm_name: string): Promise<null|number> {
 
     const artifactsDir = path.resolve(__dirname, "../../artifacts");
     const minterPath = path.resolve(artifactsDir, wasm_name);
@@ -562,7 +788,7 @@ async function store_wasm(wasm_name: string) {
     });
 
     console.log("Storing code for: " + wasm_name);
-    console.log();
+    console.log("");
 
     const response = await Context.primaryBroadcaster.broadcast({
         msgs: storeCodeMsg,
@@ -576,6 +802,8 @@ async function store_wasm(wasm_name: string) {
 
     console.log("Successfully Stored Code")
 
+    let result: null | number = null;
+
     if (response.events != undefined) {
         let decoder = new TextDecoder();
 
@@ -583,7 +811,12 @@ async function store_wasm(wasm_name: string) {
             let eventTyped: TxEvent = event as TxEvent;
             if (eventTyped.type == "cosmwasm.wasm.v1.EventCodeStored") {
                 eventTyped.attributes.forEach((attr: TxAttribute) => {
-                    console.log(decoder.decode(attr.key) + ": " + decoder.decode(attr.value));
+                    const key = decoder.decode(attr.key);
+                    const value = stripQuotes(decoder.decode(attr.value));
+                    console.log(key + ": " + value);
+                    if (key == "code_id") {
+                        result = parseInt(value);
+                    }
                 });
             }
 
@@ -591,16 +824,15 @@ async function store_wasm(wasm_name: string) {
         console.log("")
     }
 
-    //await sleep(3000);
-    //await backupPromiseCall(() => counterStore.fetchCount());
+    return result;
 }
 
-interface TxEvent {
+export interface TxEvent {
     type: string,
     attributes: TxAttribute[],
 }
 
-interface TxAttribute {
+export interface TxAttribute {
     key: Uint8Array,
     value: Uint8Array,
 }
@@ -636,38 +868,243 @@ async function storeCommandLine(args: string[]) {
     });
 }
 
-function logResponse(response: TxResponse) {
 
-    if (response.code !== 0) {
-        console.log(`Transaction failed: ${response.rawLog}`);
-        throw new Error("Transaction failed");
-    } else {
-        console.log("txHash: " + response.txHash);
-        console.log("Logs:");
-        console.log(response.logs);
 
-        console.log("==========");
-        console.log("==Events==");
-        console.log("==========");
-
-        if (response.events == undefined) return;
-        const eventsTyped = response.events as TxEvent[];
-
-        let decoder = new TextDecoder();
-
-        eventsTyped.forEach((event) => {
-
-            if (event.type == undefined || event.attributes == undefined) return;
-
-            const eventTypeString = "Event: " + event.type;
-            console.log()
-            console.log(eventTypeString);
-            console.log("-".repeat(eventTypeString.length));
-            event.attributes.forEach((attr) => {
-
-                if (attr.key == undefined || attr.value == undefined) return;
-                console.log(decoder.decode(attr.key) + ": " + decoder.decode(attr.value));
-            });
-        });
+async function burn(args: string[]) {
+    if (args.length < 1) {
+        throw new Error("Missing argument. Usage: tx burn <token_id>");
     }
+
+    const tokenId = args[0];
+
+    const contractMsg: DegaCw721ExecuteMsg = {
+        burn: {
+            token_id: tokenId
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.CW721_ADDRESS,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+async function transferInj(args: string[]) {
+
+
+    if (args.length < 2) {
+        throw new Error("Missing argument. Usage: tx transfer-inj <receiver> <amount>");
+    }
+
+    const receiverAddress = args[0];
+    const amount = args[1];
+    const amountInBase = new BigNumberInBase(parseInt(amount)).toWei().toFixed()
+
+
+    const sendMsg = MsgSend.fromJSON({
+        srcInjectiveAddress: Context.primaryAddress,
+        dstInjectiveAddress: receiverAddress,
+        amount: {
+            denom: "inj",
+            amount: amountInBase
+        }
+    });
+
+    console.log(sendMsg);
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: sendMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+async function addAdmin(args: string[]) {
+    if (args.length < 1) {
+        throw new Error("Missing argument. Usage: tx add-admin <new-admin-address>");
+    }
+
+    const newAdminAddress = args[0];
+
+    const contractMsg: DegaMinterExecuteMsg = {
+        update_admin: {
+            address: newAdminAddress,
+            command: UpdateAdminCommand.Add,
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.MINTER_ADDRESS,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+async function removeAdmin(args: string[]) {
+    if (args.length < 1) {
+        throw new Error("Missing argument. Usage: tx remove-admin <revoked-admin-address>");
+    }
+
+    const revokedAdminAddress = args[0];
+
+    const contractMsg: DegaMinterExecuteMsg = {
+        update_admin: {
+            address: revokedAdminAddress,
+            command: UpdateAdminCommand.Remove,
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.MINTER_ADDRESS,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+async function setMintSigner(args: string[]) {
+
+    let newSigningKeyBase64 = undefined;
+
+    if (args.length < 1) {
+        newSigningKeyBase64 = Context.signerCompressedPublicKey.toString("base64");
+
+    } else {
+        newSigningKeyBase64 = args[0];
+    }
+
+    let configQuery: DegaMinterQueryMsg = {
+        config: {}
+    };
+
+    const configQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
+        Config.MINTER_ADDRESS,
+        toBase64(configQuery),
+    );
+
+    const configQueryResponseData: DegaMinterConfigResponse = fromBase64(
+        Buffer.from(configQueryResponse.data).toString("base64")
+    ) as DegaMinterConfigResponse;
+
+    let newSettings = configQueryResponseData.dega_minter_settings;
+
+    newSettings.signer_pub_key = newSigningKeyBase64;
+
+    const contractMsg: DegaMinterExecuteMsg = {
+        update_settings: {
+            settings: newSettings
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.MINTER_ADDRESS,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+
+async function pause(args: string[]) {
+
+    if (args.length < 1) {
+        throw new Error("Missing argument. Usage: tx pause <type> <new-setting>");
+    }
+
+    const typeString = args[0];
+
+    if (typeString != "mint" && typeString != "burn" && typeString != "transfer") {
+        throw new Error("Invalid pause type. Must be one of: mint, burn, transfer");
+    }
+
+    const typeVariant = typeString;
+
+    const onString = args[1];
+
+    if (onString != "true" && onString != "false") {
+        throw new Error("Invalid on value. Must be either true or false");
+    }
+
+    const newSetting: boolean = (onString == "true");
+
+    let configQuery: DegaMinterQueryMsg = {
+        config: {}
+    };
+
+    const configQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
+        Config.MINTER_ADDRESS,
+        toBase64(configQuery),
+    );
+
+    const configQueryResponseData: DegaMinterConfigResponse = fromBase64(
+        Buffer.from(configQueryResponse.data).toString("base64")
+    ) as DegaMinterConfigResponse;
+
+    let newSettings = configQueryResponseData.dega_minter_settings;
+
+    switch (typeVariant) {
+        case "mint":
+            newSettings.minting_paused = newSetting;
+            break;
+        case "burn":
+            newSettings.burning_paused = newSetting;
+            break;
+        case "transfer":
+            newSettings.transferring_paused = newSetting;
+            break;
+        default:
+            throw new Error("Unimplemented pause type. Must be one of: mint, burn, transfer");
+    }
+
+    const contractMsg: DegaMinterExecuteMsg = {
+        update_settings: {
+            settings: newSettings
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: Context.primaryAddress,
+        contractAddress: Config.MINTER_ADDRESS,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: Context.gasSettings,
+    })
+
+    logResponse(response);
 }

@@ -1,63 +1,87 @@
 // To parse this data:
 //
-//   import { Convert, DegaMinterQueryMsg } from "./file";
+//   import { Convert, DegaMinterQueryResponseMessages } from "./file";
 //
-//   const degaMinterQueryMsg = Convert.toDegaMinterQueryMsg(json);
+//   const degaMinterQueryResponseMessages = Convert.toDegaMinterQueryResponseMessages(json);
 //
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
 
-export interface DegaMinterQueryMsg {
-    config?:    Config;
-    status?:    Status;
-    check_sig?: CheckSig;
+export interface DegaMinterQueryResponseMessages {
+    check_sig_response:          CheckSigResponse;
+    dega_minter_config_response: DegaMinterConfigResponse;
+    status_response:             StatusResponse;
 }
 
-export interface CheckSig {
-    message:       VerifiableMsg;
-    signature:     string;
-    signer_source: SignerSourceTypeClass | SignerSourceTypeEnum;
+export interface CheckSigResponse {
+    error?:            null | string;
+    is_valid:          boolean;
+    message_hash_hex:  string;
+    verifying_key_len: number;
 }
 
-export interface VerifiableMsg {
-    string?:       string;
-    mint_request?: MintRequest;
+export interface DegaMinterConfigResponse {
+    base_minter_config:   MinterConfigForMinterParamsForEmpty;
+    collection_address:   string;
+    dega_minter_settings: DegaMinterConfigSettings;
 }
 
-export interface MintRequest {
-    currency:                 string;
-    price:                    string;
-    primary_sale_recipient:   string;
-    to:                       string;
-    uri:                      string;
-    uuid:                     string;
-    validity_end_timestamp:   string;
-    validity_start_timestamp: string;
+/**
+ * Saved in every minter
+ */
+export interface MinterConfigForMinterParamsForEmpty {
+    collection_code_id: number;
+    extension:          MinterParamsForEmpty;
+    mint_price:         Coin;
 }
 
-export interface SignerSourceTypeClass {
-    pub_key_binary: string;
+/**
+ * Common params for all minters used for storage
+ */
+export interface MinterParamsForEmpty {
+    creation_fee: Coin;
+    extension:    { [key: string]: any };
+    /**
+     * The minter code id
+     */
+    frozen:                  boolean;
+    max_trading_offset_secs: number;
+    min_mint_price:          Coin;
+    mint_fee_bps:            number;
 }
 
-export enum SignerSourceTypeEnum {
-    ConfigSignerPubKey = "config_signer_pub_key",
+export interface Coin {
+    amount: string;
+    denom:  string;
+    [property: string]: any;
 }
 
-export interface Config {
+export interface DegaMinterConfigSettings {
+    burning_paused:      boolean;
+    minting_paused:      boolean;
+    signer_pub_key:      string;
+    transferring_paused: boolean;
+}
+
+export interface StatusResponse {
+    status: Status;
 }
 
 export interface Status {
+    is_blocked:  boolean;
+    is_explicit: boolean;
+    is_verified: boolean;
 }
 
 // Converts JSON strings to/from your types
 // and asserts the results of JSON.parse at runtime
 export class Convert {
-    public static toDegaMinterQueryMsg(json: string): DegaMinterQueryMsg {
-        return cast(JSON.parse(json), r("DegaMinterQueryMsg"));
+    public static toDegaMinterQueryResponseMessages(json: string): DegaMinterQueryResponseMessages {
+        return cast(JSON.parse(json), r("DegaMinterQueryResponseMessages"));
     }
 
-    public static degaMinterQueryMsgToJson(value: DegaMinterQueryMsg): string {
-        return JSON.stringify(uncast(value, r("DegaMinterQueryMsg")), null, 2);
+    public static degaMinterQueryResponseMessagesToJson(value: DegaMinterQueryResponseMessages): string {
+        return JSON.stringify(uncast(value, r("DegaMinterQueryResponseMessages")), null, 2);
     }
 }
 
@@ -214,38 +238,51 @@ function r(name: string) {
 }
 
 const typeMap: any = {
-    "DegaMinterQueryMsg": o([
-        { json: "config", js: "config", typ: u(undefined, r("Config")) },
-        { json: "status", js: "status", typ: u(undefined, r("Status")) },
-        { json: "check_sig", js: "check_sig", typ: u(undefined, r("CheckSig")) },
+    "DegaMinterQueryResponseMessages": o([
+        { json: "check_sig_response", js: "check_sig_response", typ: r("CheckSigResponse") },
+        { json: "dega_minter_config_response", js: "dega_minter_config_response", typ: r("DegaMinterConfigResponse") },
+        { json: "status_response", js: "status_response", typ: r("StatusResponse") },
     ], false),
-    "CheckSig": o([
-        { json: "message", js: "message", typ: r("VerifiableMsg") },
-        { json: "signature", js: "signature", typ: "" },
-        { json: "signer_source", js: "signer_source", typ: u(r("SignerSourceTypeClass"), r("SignerSourceTypeEnum")) },
+    "CheckSigResponse": o([
+        { json: "error", js: "error", typ: u(undefined, u(null, "")) },
+        { json: "is_valid", js: "is_valid", typ: true },
+        { json: "message_hash_hex", js: "message_hash_hex", typ: "" },
+        { json: "verifying_key_len", js: "verifying_key_len", typ: 0 },
     ], false),
-    "VerifiableMsg": o([
-        { json: "string", js: "string", typ: u(undefined, "") },
-        { json: "mint_request", js: "mint_request", typ: u(undefined, r("MintRequest")) },
+    "DegaMinterConfigResponse": o([
+        { json: "base_minter_config", js: "base_minter_config", typ: r("MinterConfigForMinterParamsForEmpty") },
+        { json: "collection_address", js: "collection_address", typ: "" },
+        { json: "dega_minter_settings", js: "dega_minter_settings", typ: r("DegaMinterConfigSettings") },
     ], false),
-    "MintRequest": o([
-        { json: "currency", js: "currency", typ: "" },
-        { json: "price", js: "price", typ: "" },
-        { json: "primary_sale_recipient", js: "primary_sale_recipient", typ: "" },
-        { json: "to", js: "to", typ: "" },
-        { json: "uri", js: "uri", typ: "" },
-        { json: "uuid", js: "uuid", typ: "" },
-        { json: "validity_end_timestamp", js: "validity_end_timestamp", typ: "" },
-        { json: "validity_start_timestamp", js: "validity_start_timestamp", typ: "" },
+    "MinterConfigForMinterParamsForEmpty": o([
+        { json: "collection_code_id", js: "collection_code_id", typ: 0 },
+        { json: "extension", js: "extension", typ: r("MinterParamsForEmpty") },
+        { json: "mint_price", js: "mint_price", typ: r("Coin") },
     ], false),
-    "SignerSourceTypeClass": o([
-        { json: "pub_key_binary", js: "pub_key_binary", typ: "" },
+    "MinterParamsForEmpty": o([
+        { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
+        { json: "extension", js: "extension", typ: m("any") },
+        { json: "frozen", js: "frozen", typ: true },
+        { json: "max_trading_offset_secs", js: "max_trading_offset_secs", typ: 0 },
+        { json: "min_mint_price", js: "min_mint_price", typ: r("Coin") },
+        { json: "mint_fee_bps", js: "mint_fee_bps", typ: 0 },
     ], false),
-    "Config": o([
+    "Coin": o([
+        { json: "amount", js: "amount", typ: "" },
+        { json: "denom", js: "denom", typ: "" },
+    ], "any"),
+    "DegaMinterConfigSettings": o([
+        { json: "burning_paused", js: "burning_paused", typ: true },
+        { json: "minting_paused", js: "minting_paused", typ: true },
+        { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
+        { json: "transferring_paused", js: "transferring_paused", typ: true },
+    ], false),
+    "StatusResponse": o([
+        { json: "status", js: "status", typ: r("Status") },
     ], false),
     "Status": o([
+        { json: "is_blocked", js: "is_blocked", typ: true },
+        { json: "is_explicit", js: "is_explicit", typ: true },
+        { json: "is_verified", js: "is_verified", typ: true },
     ], false),
-    "SignerSourceTypeEnum": [
-        "config_signer_pub_key",
-    ],
 };

@@ -10,6 +10,14 @@ function notEmpty(value: any) {
     return value !== null && value !== undefined;
 }
 
+function isJestRunning() {
+    return process.env.JEST_WORKER_ID !== undefined;
+}
+
+function inDeployment() {
+    return process.env.DEPLOYMENT !== undefined;
+}
+
 function getContractAddressesFromWasmDeployConfig(useLocal: boolean)
     : { minterCodeId: any, minterAddress: any, cw721CodeId: any, cw721Address: any } | null
 {
@@ -71,14 +79,39 @@ function initConfig() {
 
     config();
 
-    let useLocal = process.env.USE_LOCAL as string == "true";
+    let useLocal = process.env.USE_LOCAL as string == "true" || isJestRunning();
 
     let minterCodeId = 0;
     let minterAddress = (useLocal ? process.env.MINTER_ADDRESS_LOCAL : process.env.MINTER_ADDRESS) as string
     let cw721CodeId = 0;
     let cw721Address = (useLocal ? process.env.CW721_ADDRESS_LOCAL : process.env.CW721_ADDRESS) as string
 
-    if (process.env.USE_WASM_DEPLOY_CONFIG as string == "true") {
+    if (isJestRunning()) {
+
+        const deploymentVar = process.env.DEPLOYMENT;
+
+        if (inDeployment()) {
+
+            // Define these as their own flag to avoid a collision and accidental usage of
+            // local testing code ids during the running of the test suite during deployment
+            // The flags below are what are used when running the test suite during deployment.
+            const testMinterCodeId = process.env.TEST_MINTER_CODE_ID;
+            const testCw721CodeId = process.env.TEST_CW721_CODE_ID;
+
+            if (testMinterCodeId == undefined || testMinterCodeId == "" ||
+                testCw721CodeId == undefined || testCw721CodeId == "") {
+                throw new Error("TEST_MINTER_CODE_ID and TEST_CW721_CODE_ID must be set in the environment" +
+                    "when running integration tests in a deployment");
+            }
+
+            minterCodeId = parseInt(testMinterCodeId);
+            cw721CodeId = parseInt(testCw721CodeId);
+        } else {
+            minterCodeId = parseInt(process.env.MINTER_CODE_ID_LOCAL as string);
+            cw721CodeId = parseInt(process.env.CW721_CODE_ID_LOCAL as string);
+        }
+
+    } else if (process.env.USE_WASM_DEPLOY_CONFIG as string == "true") {
 
         let minterAndCw721CodeIdsAddressesOrNull =
             getContractAddressesFromWasmDeployConfig(useLocal) as

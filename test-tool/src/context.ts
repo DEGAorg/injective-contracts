@@ -28,7 +28,7 @@ function initContext() {
     const signerCompressedPublicKey = Buffer.from(secp256k1.publicKeyCreate(signerSigningKey, true))
     const signerAddress = signerPrivateKey.toBech32();
 
-    const hasGenesisMnemonic = Config.LOCAL_GENESIS_MNEMONIC == "";
+    const hasGenesisMnemonic = Config.LOCAL_GENESIS_MNEMONIC != undefined && Config.LOCAL_GENESIS_MNEMONIC != "";
 
     const localGenesisPrivateKey =
         hasGenesisMnemonic ?

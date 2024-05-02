@@ -1,4 +1,4 @@
-use cosmwasm_schema::cw_serde;
+use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Empty, Timestamp, Uint128, Uint256};
 use sg2::{MinterParams};
 
@@ -27,6 +27,9 @@ use base_minter::{
     //     ContractError as SgBaseMinterContractError,
     // }
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+use sg4::StatusResponse;
 
 use sg4::{
     QueryMsg as SgBaseMinterQueryMsg,
@@ -156,17 +159,28 @@ pub struct CheckSigResponse {
 }
 
 #[cw_serde]
+pub struct AdminsResponse {
+    pub admins: Vec<String>,
+}
+
+#[cw_serde]
+#[derive(QueryResponses)]
 pub enum QueryMsg {
-    /// Returns `DegaMinterConfigResponse`
+    #[returns(DegaMinterConfigResponse)]
     Config {},
-    /// Returns `StatusResponse`
+
+    #[returns(StatusResponse)]
     Status {},
 
+    #[returns(CheckSigResponse)]
     CheckSig {
         message: VerifiableMsg,
         signature: String,
         signer_source: SignerSourceType,
     },
+
+    #[returns(AdminsResponse)]
+    Admins {},
 }
 
 #[cw_serde]

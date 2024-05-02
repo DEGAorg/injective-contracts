@@ -237,7 +237,7 @@ fn test(args: &TestArgs) -> anyhow::Result<()> {
         .wait_with_output()?;
 
     Command::new("node")
-        .arg("dist/test.js")
+        .arg("dist/main.js")
         .args(&args.additional_args)
         .current_dir("test-tool")
         .spawn()?

@@ -7,11 +7,6 @@
 // These functions will throw an error if the JSON doesn't
 // match the expected interface, even if the JSON is valid.
 
-/**
- * Returns `DegaMinterConfigResponse`
- *
- * Returns `StatusResponse`
- */
 export interface DegaMinterQueryMsg {
     config?:    Config;
     status?:    Status;

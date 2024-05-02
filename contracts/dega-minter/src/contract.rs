@@ -14,7 +14,7 @@ use base_minter::{
     },
 };
 
-use dega_inj::minter::{QueryMsg, CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg, DegaMinterConfigResponse, DegaMinterConfigSettings, UpdateAdminCommand};
+use dega_inj::minter::{QueryMsg, CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg, DegaMinterConfigResponse, DegaMinterConfigSettings, UpdateAdminCommand, AdminsResponse};
 
 use sha2::{Digest, Sha256};
 use base_minter::state::{COLLECTION_ADDRESS, increment_token_index};
@@ -69,6 +69,7 @@ pub fn query(
             )
         },
         QueryMsg::Config {} => to_json_binary(&query_config(deps, env)?),
+        QueryMsg::Admins {} => to_json_binary(&query_admins(deps, env)?),
         _ => sg_base_minter_query(deps.into(), env, msg.into()),
     }
 }
@@ -83,6 +84,21 @@ fn query_config(deps: Deps, _env: Env) -> StdResult<DegaMinterConfigResponse> {
         base_minter_config: base_config_query_result.config,
         dega_minter_settings,
         collection_address: base_config_query_result.collection_address,
+    })
+}
+
+fn query_admins(deps: Deps, _env: Env) -> StdResult<AdminsResponse> {
+
+    let mut admins: Vec<String> = vec![];
+
+    for admin_key in ADMIN_LIST.keys(deps.storage, None, None, Order::Ascending) {
+        admins.push(
+            admin_key.map_err(|e| StdError::generic_err(format!("Error while loading admin key: {}", e)))?
+        );
+    }
+
+    Ok(AdminsResponse {
+        admins
     })
 }
 
@@ -164,7 +180,7 @@ fn execute_update_admin(
         },
         UpdateAdminCommand::Remove => {
 
-            if ADMIN_LIST.keys(deps.storage, None, None, Order::Ascending).count() >= 1 {
+            if ADMIN_LIST.keys(deps.storage, None, None, Order::Ascending).count() < 2 {
                 Err(ContractError::GenericError("Cannot remove admin when one or none exists.".to_string()))?
             }
 

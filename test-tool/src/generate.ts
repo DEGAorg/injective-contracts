@@ -80,6 +80,12 @@ export async function generate(args: string[]) {
         "DegaMinterQueryMsg",
     );
 
+    await compileFile(
+        "../../contracts/dega-minter/schema/query_response_messages.json",
+        "../generated-ts/messages/dega_minter_query_responses.ts",
+        "DegaMinterQueryResponseMessages",
+    );
+
 
     // Dega CW721 Messages to Typescript
     await compileFile(
@@ -104,5 +110,11 @@ export async function generate(args: string[]) {
         "../../contracts/dega-cw721/schema/query_msg.json",
         "../generated-ts/messages/dega_cw721_query.ts",
         "DegaCw721QueryMsg",
+    );
+
+    await compileFile(
+        "../../contracts/dega-cw721/schema/query_response_messages.json",
+        "../generated-ts/messages/dega_cw721_query_responses.ts",
+        "DegaCw721QueryResponseMessages",
     );
 }

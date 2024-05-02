@@ -3,7 +3,6 @@
   "title": "QueryMsg",
   "oneOf": [
     {
-      "description": "Returns `DegaMinterConfigResponse`",
       "type": "object",
       "required": [
         "config"
@@ -17,7 +16,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Returns `StatusResponse`",
       "type": "object",
       "required": [
         "status"
