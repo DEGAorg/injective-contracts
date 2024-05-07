@@ -8,9 +8,14 @@
 // match the expected interface, even if the JSON is valid.
 
 export interface DegaMinterQueryResponseMessages {
+    admins_response:             AdminsResponse;
     check_sig_response:          CheckSigResponse;
     dega_minter_config_response: DegaMinterConfigResponse;
     status_response:             StatusResponse;
+}
+
+export interface AdminsResponse {
+    admins: string[];
 }
 
 export interface CheckSigResponse {
@@ -57,10 +62,8 @@ export interface Coin {
 }
 
 export interface DegaMinterConfigSettings {
-    burning_paused:      boolean;
-    minting_paused:      boolean;
-    signer_pub_key:      string;
-    transferring_paused: boolean;
+    minting_paused: boolean;
+    signer_pub_key: string;
 }
 
 export interface StatusResponse {
@@ -239,9 +242,13 @@ function r(name: string) {
 
 const typeMap: any = {
     "DegaMinterQueryResponseMessages": o([
+        { json: "admins_response", js: "admins_response", typ: r("AdminsResponse") },
         { json: "check_sig_response", js: "check_sig_response", typ: r("CheckSigResponse") },
         { json: "dega_minter_config_response", js: "dega_minter_config_response", typ: r("DegaMinterConfigResponse") },
         { json: "status_response", js: "status_response", typ: r("StatusResponse") },
+    ], false),
+    "AdminsResponse": o([
+        { json: "admins", js: "admins", typ: a("") },
     ], false),
     "CheckSigResponse": o([
         { json: "error", js: "error", typ: u(undefined, u(null, "")) },
@@ -272,10 +279,8 @@ const typeMap: any = {
         { json: "denom", js: "denom", typ: "" },
     ], "any"),
     "DegaMinterConfigSettings": o([
-        { json: "burning_paused", js: "burning_paused", typ: true },
         { json: "minting_paused", js: "minting_paused", typ: true },
         { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
-        { json: "transferring_paused", js: "transferring_paused", typ: true },
     ], false),
     "StatusResponse": o([
         { json: "status", js: "status", typ: r("Status") },

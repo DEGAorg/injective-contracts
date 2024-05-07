@@ -66,10 +66,8 @@ export interface DegaMinterParams {
 }
 
 export interface DegaMinterConfigSettings {
-    burning_paused:      boolean;
-    minting_paused:      boolean;
-    signer_pub_key:      string;
-    transferring_paused: boolean;
+    minting_paused: boolean;
+    signer_pub_key: string;
 }
 
 // Converts JSON strings to/from your types
@@ -279,9 +277,7 @@ const typeMap: any = {
         { json: "initial_admin", js: "initial_admin", typ: "" },
     ], false),
     "DegaMinterConfigSettings": o([
-        { json: "burning_paused", js: "burning_paused", typ: true },
         { json: "minting_paused", js: "minting_paused", typ: true },
         { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
-        { json: "transferring_paused", js: "transferring_paused", typ: true },
     ], false),
 };

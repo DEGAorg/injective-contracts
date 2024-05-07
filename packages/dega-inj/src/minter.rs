@@ -92,8 +92,6 @@ pub struct DegaMinterParams {
 pub struct DegaMinterConfigSettings {
     pub signer_pub_key: String,
     pub minting_paused: bool,
-    pub transferring_paused: bool,
-    pub burning_paused: bool,
 }
 
 pub type Test = BaseMinterConfigResponse<DegaMinterConfigSettings>;

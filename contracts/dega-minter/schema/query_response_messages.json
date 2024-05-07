@@ -3,11 +3,15 @@
   "title": "query_response_messages",
   "type": "object",
   "required": [
+    "admins_response",
     "check_sig_response",
     "dega_minter_config_response",
     "status_response"
   ],
   "properties": {
+    "admins_response": {
+      "$ref": "#/definitions/AdminsResponse"
+    },
     "check_sig_response": {
       "$ref": "#/definitions/CheckSigResponse"
     },
@@ -20,6 +24,21 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "AdminsResponse": {
+      "type": "object",
+      "required": [
+        "admins"
+      ],
+      "properties": {
+        "admins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "CheckSigResponse": {
       "type": "object",
       "required": [
@@ -86,23 +105,15 @@
     "DegaMinterConfigSettings": {
       "type": "object",
       "required": [
-        "burning_paused",
         "minting_paused",
-        "signer_pub_key",
-        "transferring_paused"
+        "signer_pub_key"
       ],
       "properties": {
-        "burning_paused": {
-          "type": "boolean"
-        },
         "minting_paused": {
           "type": "boolean"
         },
         "signer_pub_key": {
           "type": "string"
-        },
-        "transferring_paused": {
-          "type": "boolean"
         }
       },
       "additionalProperties": false

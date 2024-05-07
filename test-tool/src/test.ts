@@ -133,9 +133,7 @@ describe('Dega Injective Integration Test Suite', () => {
                 extension: {
                     dega_minter_settings: {
                         signer_pub_key: Context.signerCompressedPublicKey.toString("base64"),
-                        burning_paused: false,
                         minting_paused: false,
-                        transferring_paused: false
                     },
                     initial_admin: Context.primaryAddress,
                 },

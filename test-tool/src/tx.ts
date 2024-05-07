@@ -4,6 +4,7 @@ import {
     DegaMinterInstantiateMsg, DegaMinterQueryMsg
 } from "./messages";
 import {
+    DegaMinterConfigSettings,
     MintRequest, UpdateAdminCommand
 } from "./messages/dega_minter_execute";
 import {Config} from "./config";
@@ -18,7 +19,7 @@ import {
     MsgSend,
     ChainRestAuthApi,
     BaseAccount,
-    ChainGrpcAuthApi, MsgStoreCode, MsgInstantiateContract, sha256, MsgExecuteContract, TxResponse,
+    ChainGrpcAuthApi, MsgStoreCode, MsgInstantiateContract, sha256, MsgExecuteContract, TxResponse, MsgMigrateContract,
 } from "@injectivelabs/sdk-ts";
 import { BigNumberInBase } from '@injectivelabs/utils'
 import { exec } from 'child_process';
@@ -30,6 +31,8 @@ import {Network} from "@injectivelabs/networks";
 import { v4 as uuidv4 } from 'uuid';
 import {DegaCw721QueryResponseMessages} from "./messages/dega_cw721_query_responses";
 import {DegaMinterConfigResponse, DegaMinterQueryResponseMessages} from "./messages/dega_minter_query_responses";
+import {DegaCw721MigrateMsg} from "./messages/dega_cw721_migrate";
+import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
 
 
 // Transaction Exec example:
@@ -94,6 +97,12 @@ export async function tx(args: string[]) {
         case "pause":
             await pause(args);
             break;
+        case "migrate":
+            await migrate(args);
+            break;
+        case "gov-proposal":
+            await govProposal(args);
+            break;
         default:
             console.log("Unknown test execute sub-command: " + sub_command);
             break;
@@ -155,8 +164,15 @@ function logResponse(response: TxResponse) {
 // from DepsMut.Api in the smart contract parameters.
 async function mintCombined(args: string[]) {
 
-    let nft_price_base = new BigNumberInBase (0.5);
-    let nft_price_wei = nft_price_base.toWei();
+    if (args.length < 2) {
+        throw new Error("Missing argument. Usage: mint-combined <receiver_address> <price>");
+    }
+
+    const receiverAddress = args[0];
+    const priceString = args[1];
+
+    let nftPriceBase = new BigNumberInBase(parseFloat(priceString));
+    let nftPriceWei = nftPriceBase.toWei();
 
     const nowInSeconds: number = Math.floor(Date.now() / 1000);
 
@@ -169,10 +185,10 @@ async function mintCombined(args: string[]) {
     //await sleep(12); // wait 12 seconds
 
     let mintRequestMsg: MintRequest = {
-        to: Context.signerAddress,
+        to: receiverAddress,
         primary_sale_recipient: Context.primaryAddress,
         uri: "https://example.com",
-        price: nft_price_wei.toFixed(),
+        price: nftPriceWei.toFixed(),
         currency: "inj",
         //currency: "other",
         validity_start_timestamp: startTimeInSeconds.toString(),
@@ -233,9 +249,9 @@ async function mintCombined(args: string[]) {
         funds: [
             {
                 denom: "inj",
-                amount: nft_price_wei.toFixed()
-                //amount: (nft_price_wei.plus(100)).toFixed() // slight overpayment
-                //amount: (nft_price_wei.minus(100)).toFixed() // slight underpayment
+                amount: nftPriceWei.toFixed()
+                //amount: (nftPriceWei.plus(100)).toFixed() // slight overpayment
+                //amount: (nftPriceWei.minus(100)).toFixed() // slight underpayment
             }
         ],
     })
@@ -660,9 +676,7 @@ async function instantiate_minter() {
             extension: {
                 dega_minter_settings: {
                     signer_pub_key: Context.signerCompressedPublicKey.toString("base64"),
-                    burning_paused: false,
-                    minting_paused: false,
-                    transferring_paused: false
+                    minting_paused: false
                 },
                 initial_admin: Context.primaryAddress,
             },
@@ -674,7 +688,8 @@ async function instantiate_minter() {
             },
             mint_fee_bps: 0
         },
-        cw721_contract_label: "DEGA Collection - Test Collection"
+        cw721_contract_label: "DEGA Collection - Test Collection",
+        cw721_contract_admin: Context.primaryAddress
     };
 
 
@@ -779,8 +794,8 @@ async function store(args: string[]) {
 export async function store_wasm(wasm_name: string): Promise<null|number> {
 
     const artifactsDir = path.resolve(__dirname, "../../artifacts");
-    const minterPath = path.resolve(artifactsDir, wasm_name);
-    const wasmBytes = new Uint8Array(Array.from(fs.readFileSync(minterPath)));
+    const wasmPath = path.resolve(artifactsDir, wasm_name);
+    const wasmBytes = new Uint8Array(Array.from(fs.readFileSync(wasmPath)));
 
     const storeCodeMsg = MsgStoreCode.fromJSON({
         sender: Context.primaryAddress,
@@ -1040,18 +1055,10 @@ async function setMintSigner(args: string[]) {
 async function pause(args: string[]) {
 
     if (args.length < 1) {
-        throw new Error("Missing argument. Usage: tx pause <type> <new-setting>");
+        throw new Error("Missing argument. Usage: tx pause <new-setting>");
     }
 
-    const typeString = args[0];
-
-    if (typeString != "mint" && typeString != "burn" && typeString != "transfer") {
-        throw new Error("Invalid pause type. Must be one of: mint, burn, transfer");
-    }
-
-    const typeVariant = typeString;
-
-    const onString = args[1];
+    const onString = args[0];
 
     if (onString != "true" && onString != "false") {
         throw new Error("Invalid on value. Must be either true or false");
@@ -1059,34 +1066,32 @@ async function pause(args: string[]) {
 
     const newSetting: boolean = (onString == "true");
 
-    let configQuery: DegaMinterQueryMsg = {
-        config: {}
+    // let configQuery: DegaMinterQueryMsg = {
+    //     config: {}
+    // };
+    //
+    // const configQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
+    //     Config.MINTER_ADDRESS,
+    //     toBase64(configQuery),
+    // );
+    //
+    // const configQueryResponseData: DegaMinterConfigResponse = fromBase64(
+    //     Buffer.from(configQueryResponse.data).toString("base64")
+    // ) as DegaMinterConfigResponse;
+    //
+    // let newSettings = configQueryResponseData.dega_minter_settings;
+    //
+    // if (newSettings.minting_paused == newSetting) {
+    //     console.log("Pause already in desired state");
+    //     return;
+    // }
+    //
+    // newSettings.minting_paused = newSetting;
+
+    const newSettings: DegaMinterConfigSettings = {
+        signer_pub_key: Context.signerCompressedPublicKey.toString("base64"),
+        minting_paused: newSetting
     };
-
-    const configQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
-        Config.MINTER_ADDRESS,
-        toBase64(configQuery),
-    );
-
-    const configQueryResponseData: DegaMinterConfigResponse = fromBase64(
-        Buffer.from(configQueryResponse.data).toString("base64")
-    ) as DegaMinterConfigResponse;
-
-    let newSettings = configQueryResponseData.dega_minter_settings;
-
-    switch (typeVariant) {
-        case "mint":
-            newSettings.minting_paused = newSetting;
-            break;
-        case "burn":
-            newSettings.burning_paused = newSetting;
-            break;
-        case "transfer":
-            newSettings.transferring_paused = newSetting;
-            break;
-        default:
-            throw new Error("Unimplemented pause type. Must be one of: mint, burn, transfer");
-    }
 
     const contractMsg: DegaMinterExecuteMsg = {
         update_settings: {
@@ -1107,4 +1112,125 @@ async function pause(args: string[]) {
     })
 
     logResponse(response);
+}
+
+
+async function migrate(args: string[]) {
+
+    {
+        const minterCodeId = Config.MINTER_CODE_ID;
+        const minterAddress = Config.MINTER_ADDRESS
+        const migrateMinterMsg: DegaMinterMigrateMsg = {};
+
+        await migrateContract(
+            minterCodeId,
+            minterAddress,
+            migrateMinterMsg,
+            "DEGA Minter"
+        );
+    }
+
+    {
+        let cw721CodeId = Config.CW721_CODE_ID;
+        const cw721Address = Config.CW721_ADDRESS;
+        const migrateCw721Msg: DegaCw721MigrateMsg = {};
+
+        await migrateContract(
+            cw721CodeId,
+            cw721Address,
+            migrateCw721Msg,
+            "DEGA CW721"
+        );
+    }
+
+}
+
+
+async function migrateContract(
+    codeId: number,
+    contractAddress: string,
+    migrateMessage: object,
+    contractName: string,
+) {
+
+    const migrateContractMsg = MsgMigrateContract.fromJSON({
+        sender: Context.primaryAddress,
+        codeId: codeId,
+        msg: migrateMessage,
+        contract: contractAddress,
+    });
+
+    console.log(`Migrating code for ${contractName}`);
+    console.log("");
+
+    const response = await Context.primaryBroadcaster.broadcast({
+        msgs: migrateContractMsg,
+        gas: Context.gasSettings
+    });
+
+    logResponse(response);
+
+    console.log(`Successfully Migrated ${contractName}`)
+}
+
+
+async function govProposal(
+    args: string[]
+) {
+    if (args.length < 1 || (args[0] != "primary" && args[0] != "signer")) {
+        throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
+    }
+}
+
+async function govProposalStoreCode(
+    wasm_name: string,
+    title: string,
+    summary: string,
+    instantiateEverybody: boolean
+) {
+
+    if (Config.NETWORK != Network.Local) {
+        throw new Error("This command is only meant for localnet, use the deploy tool for testnet and mainnet");
+    }
+
+    const artifactsDir = path.resolve(__dirname, "../../artifacts");
+    const wasmPath = path.resolve(artifactsDir, wasm_name);
+
+    const gasPrices = Context.gasPricesAmountWei.toFixed();
+    const gas = Context.gasAmountWei.toFixed();
+    const despositAmountInBaseInj = 100;
+    const despositAmountInWei = new BigNumberInBase(despositAmountInBaseInj).toWei().toFixed();
+
+    // Build your command using the variables
+    const command =
+        `yes ${Config.INJECTIVED_PASSWORD} |` +
+        ` injectived tx wasm submit-proposal` +
+        ` wasm-store "${wasmPath}"` +
+        ` --title="${title}"` +
+        ` --summary="${summary}"` +
+        ` --instantiate-everybody ${instantiateEverybody ? "true" : "false"}` +
+        ` --broadcast-mode=sync` +
+        ` --chain-id="${Context.primaryBroadcaster.chainId}"` +
+        //` --node=https://sentry.tm.injective.network:443` +
+        ` --deposit=${despositAmountInWei}inj` +
+        ` --gas=${gas}` +
+        ` --gas-prices=${gasPrices}inj` +
+        ` --from=genesis` +
+        ` --yes` +
+        ` --output json`
+    ;
+
+    console.log("Running command: " + command)
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.log(`error: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.log(`stderr: ${stderr}`);
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
+    });
 }

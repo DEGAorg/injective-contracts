@@ -127,23 +127,15 @@
     "DegaMinterConfigSettings": {
       "type": "object",
       "required": [
-        "burning_paused",
         "minting_paused",
-        "signer_pub_key",
-        "transferring_paused"
+        "signer_pub_key"
       ],
       "properties": {
-        "burning_paused": {
-          "type": "boolean"
-        },
         "minting_paused": {
           "type": "boolean"
         },
         "signer_pub_key": {
           "type": "string"
-        },
-        "transferring_paused": {
-          "type": "boolean"
         }
       },
       "additionalProperties": false

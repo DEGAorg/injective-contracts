@@ -3,10 +3,11 @@ import path from "node:path"
 import * as fs from "fs"
 import {spawn} from 'child_process'
 import {
+    AccessType,
     MsgBroadcasterWithPk,
     MsgInstantiateContract,
     MsgMigrateContract,
-    MsgStoreCode,
+    MsgStoreCode, MsgSubmitTextProposal,
     PrivateKey
 } from "@injectivelabs/sdk-ts"
 import * as t from 'io-ts'
@@ -172,6 +173,11 @@ async function runMain() {
 }
 
 
+const govProposalSpec = t.type({
+})
+
+type GovProposalSpec = t.TypeOf<typeof govProposalSpec>
+
 const deploySpec = t.type({
     privateKeyFilename: t.string,
     network: t.keyof({
@@ -182,8 +188,12 @@ const deploySpec = t.type({
     grpcEndpoint: t.union([t.string, t.undefined, t.null]),
     optionsBuildAndOptimize: t.boolean,
     optionsStoreCodeForMinter: t.boolean,
+    optionsGovernanceProposalForMinter: t.union([t.boolean, t.undefined, t.null]),
+    govProposalSpecForMinter: t.union([govProposalSpec, t.undefined, t.null]),
     preExistingMinterCodeId: t.union([t.number, t.undefined, t.null]),
     optionsStoreCodeForCw721: t.boolean,
+    optionsGovernanceProposalForCw721: t.union([t.boolean, t.undefined, t.null]),
+    govProposalSpecForCw721: t.union([govProposalSpec, t.undefined, t.null]),
     preExistingCw721CodeId: t.union([t.number, t.undefined, t.null]),
     optionsInstantiate: t.boolean,
     optionsMigrateMinter: t.boolean,
@@ -203,9 +213,7 @@ const deploySpec = t.type({
     cw721MigrateAdmin: t.union([t.string, t.undefined, t.null]),
     cw721AddressForMigration: t.union([t.string, t.undefined, t.null]),
     minterSignerPubKeyBase64: t.string,
-    minterBurningPaused: t.boolean,
     minterMintingPaused: t.boolean,
-    minterTransferringPaused: t.boolean,
     minterInitialAdmin: t.string,
     minterContractLabel: t.string,
     minterContractMigratable: t.boolean,
@@ -401,6 +409,8 @@ async function migrate(context: DeployContext) {
     }
 }
 
+
+
 async function deploy(context: DeployContext) {
 
     const hasMigration = context.spec.optionsMigrateMinter || context.spec.optionsMigrateCw721;
@@ -414,11 +424,27 @@ async function deploy(context: DeployContext) {
     }
 
     if (context.spec.optionsStoreCodeForMinter) {
-        await store_wasm(context, "dega_minter.wasm")
+        await storeWasm(context, "dega_minter.wasm")
+    }
+
+    if (context.spec.optionsGovernanceProposalForMinter) {
+        if (context.spec.govProposalSpecForMinter == undefined) {
+            throw new ScriptError("Must specify a governance proposal spec via govProposalSpecForMinter " +
+                " to use the optionsGovernanceProposalForMinter option")
+        }
+        await governanceProposal(context, "dega_minter.wasm", context.spec.govProposalSpecForMinter)
+    }
+
+    if (context.spec.optionsGovernanceProposalForCw721) {
+        if (context.spec.govProposalSpecForCw721 == undefined) {
+            throw new ScriptError("Must specify a governance proposal spec via govProposalSpecForCw721 " +
+                "to use the optionGovernanceProposalForCw721 option")
+        }
+        await governanceProposal(context, "dega_minter.wasm", context.spec.govProposalSpecForCw721)
     }
 
     if (context.spec.optionsStoreCodeForCw721) {
-        await store_wasm(context, "dega_cw721.wasm")
+        await storeWasm(context, "dega_cw721.wasm")
     }
 
     if (context.spec.optionsInstantiate) {
@@ -454,7 +480,7 @@ async function buildAndOptimize(context: DeployContext) {
 }
 
 
-async function store_wasm(context: DeployContext, wasm_name: string) {
+async function storeWasm(context: DeployContext, wasm_name: string) {
 
     const wasmPath = path.join(pathsDeployArtifacts, wasm_name)
     const wasmBytes = new Uint8Array(Array.from(fs.readFileSync(wasmPath)))
@@ -499,6 +525,15 @@ async function store_wasm(context: DeployContext, wasm_name: string) {
         })
         console.log("")
     }
+}
+
+async function governanceProposal(context: DeployContext, wasm_name: string, govProposalSpecForMinter: GovProposalSpec) {
+
+    const wasmPath = path.join(pathsDeployArtifacts, wasm_name)
+
+    console.log("Creating governance proposal for: " + wasm_name)
+
+    // Currently WIP in the test tool
 }
 
 
@@ -594,9 +629,7 @@ async function instantiate(context: DeployContext) {
             extension: {
                 dega_minter_settings: {
                     signer_pub_key: context.spec.minterSignerPubKeyBase64,
-                    burning_paused: context.spec.minterBurningPaused,
                     minting_paused: context.spec.minterMintingPaused,
-                    transferring_paused: context.spec.minterTransferringPaused
                 },
                 initial_admin: context.spec.minterInitialAdmin,
             },

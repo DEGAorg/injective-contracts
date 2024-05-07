@@ -5,6 +5,10 @@
 This directory contains the typescript test tool, a set of simple calls and functionality that can be used
 to quickly test, prototype and debug the smart contracts using a web calling paradigm and API.
 
+## Setup
+
+
+
 ## Calling
 
 The test tool can either be called:
