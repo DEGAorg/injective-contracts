@@ -11,6 +11,10 @@ export interface DegaMinterQueryMsg {
     config?:    Config;
     status?:    Status;
     check_sig?: CheckSig;
+    admins?:    Admins;
+}
+
+export interface Admins {
 }
 
 export interface CheckSig {
@@ -218,6 +222,9 @@ const typeMap: any = {
         { json: "config", js: "config", typ: u(undefined, r("Config")) },
         { json: "status", js: "status", typ: u(undefined, r("Status")) },
         { json: "check_sig", js: "check_sig", typ: u(undefined, r("CheckSig")) },
+        { json: "admins", js: "admins", typ: u(undefined, r("Admins")) },
+    ], false),
+    "Admins": o([
     ], false),
     "CheckSig": o([
         { json: "message", js: "message", typ: r("VerifiableMsg") },

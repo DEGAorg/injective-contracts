@@ -12,6 +12,7 @@ This repository contains the smart contracts for the DEGA platform on Injective.
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env.fish"
 ```
 - Follow the on screen instructions
 ```bash
@@ -28,6 +29,28 @@ cargo update
 
 ```bash
 cargo install --no-default-features --force cargo-make
+```
+
+### Build the CLI
+
+It is suggested to build the CLI so you can run "dega-inj test <command>" 
+to run the test tool from the root
+```bash
+cargo update-cli
+```
+
+### Install the Deploy Tool
+
+Run this if you're planning to run deployments
+```bash
+(cd deploy/tool && npm install)
+```
+
+### Install the Deploy Tool
+
+Run this if you're planning to use the test-ool
+```bash
+(cd test-tool && npm install)
 ```
 
 ## Further Workspace Setup for Development

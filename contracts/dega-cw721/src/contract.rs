@@ -32,25 +32,12 @@ pub fn _execute(
 ) -> Result<Response, ContractError> {
 
     match msg {
-        ExecuteMsg::TransferNft { .. } |
-        ExecuteMsg::SendNft { .. } => {
-            let minter_config = load_dega_minter_settings(&deps.as_ref())?;
-            if minter_config.dega_minter_settings.transferring_paused {
-                return Err(ContractError::OperationPaused)
-            }
-        },
         ExecuteMsg::Mint { .. } => {
             let minter_config = load_dega_minter_settings(&deps.as_ref())?;
             if minter_config.dega_minter_settings.minting_paused {
                 return Err(ContractError::OperationPaused)
             }
         },
-        ExecuteMsg::Burn { .. } => {
-            let minter_config = load_dega_minter_settings(&deps.as_ref())?;
-            if minter_config.dega_minter_settings.burning_paused {
-                return Err(ContractError::OperationPaused)
-            }
-        }
         _ => {}
     }
 

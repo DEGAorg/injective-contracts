@@ -1,13 +1,14 @@
 {
   "privateKeyFilename": "sample-mnemonic.json",
-  "privateKeyFormat": "Mnemonic",
   "network": "Local",
   "grpcEndpoint": null,
   "optionsBuildAndOptimize": true,
   "optionsStoreCodeForMinter": true,
+  "optionsGovernanceProposalForMinter": false,
   "preExistingMinterCodeId": null,
   "optionsStoreCodeForCw721": true,
   "preExistingCw721CodeId": null,
+  "optionsGovernanceProposalForCw721": false,
   "optionsInstantiate": true,
   "optionsMigrateMinter": false,
   "minterAddressForMigration": null,
@@ -27,12 +28,12 @@
   "cw721ContractMigratable": false,
   "cw721MigrateAdmin": null,
   "minterSignerPubKeyBase64": "A9tu/MCgtgLwbz+UcyIc/kPB38+6k3BP895SShKV6eRR",
-  "minterBurningPaused": false,
   "minterMintingPaused": false,
-  "minterTransferringPaused": false,
   "minterSecondaryRoyalty": 0.05,
   "minterInitialAdmin": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
   "minterContractLabel": "DEGA Minter - Test Collection",
   "minterContractMigratable": false,
-  "minterMigrateAdmin": null
+  "minterMigrateAdmin": null,
+  "govProposalSpecForMinter": {},
+  "govProposalSpecForCw721": {}
 }

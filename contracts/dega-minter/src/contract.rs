@@ -147,9 +147,7 @@ pub fn execute_update_settings(
         .add_attribute("sender", info.sender.clone())
         .add_event(Event::new("DegaMinter.UpdateSettings.NewSettings")
             .add_attribute("signer_pub_key", settings.signer_pub_key.clone())
-            .add_attribute("transferring_paused", format!("{}",settings.transferring_paused))
             .add_attribute("minting_paused", format!("{}",settings.minting_paused))
-            .add_attribute("burning_paused", format!("{}",settings.burning_paused))
         )
     )
 }
