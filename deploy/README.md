@@ -12,7 +12,7 @@ The calling paradigm is
 ```bash
 ./deploy.sh <spec-file>
 ```
-With `<spec-file>` relative to deploy/specs directory.
+With `<spec-file>` path relative to deploy directory.
 
 The tool could also be called either via npm using `npm run deploy <spec-file>` from inside the deploy directory,
 

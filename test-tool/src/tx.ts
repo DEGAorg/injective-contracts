@@ -21,7 +21,7 @@ import {
     BaseAccount,
     ChainGrpcAuthApi, MsgStoreCode, MsgInstantiateContract, sha256, MsgExecuteContract, TxResponse, MsgMigrateContract,
 } from "@injectivelabs/sdk-ts";
-import { BigNumberInBase } from '@injectivelabs/utils'
+import {BigNumberInBase, BigNumberInWei} from '@injectivelabs/utils'
 import { exec } from 'child_process';
 import path from "node:path";
 import fs from "fs";
@@ -37,6 +37,8 @@ import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
 
 // Transaction Exec example:
 // https://github.com/InjectiveLabs/injective-create-app-template-nuxt-sc-counter/blob/c94c68de41cb0292c6df27dcd4354d64906ca901/store/counter.ts#L21
+
+
 
 
 export async function tx(args: string[]) {
@@ -103,6 +105,9 @@ export async function tx(args: string[]) {
         case "gov-proposal":
             await govProposal(args);
             break;
+        case "gov-summary-test":
+            await govSummaryTest(args);
+            break;
         default:
             console.log("Unknown test execute sub-command: " + sub_command);
             break;
@@ -139,14 +144,14 @@ function logResponse(response: TxResponse) {
         console.log("==Events==");
         console.log("==========");
 
-        if (response.events == undefined) return;
+        if (response.events == null) return;
         const eventsTyped = response.events as TxEvent[];
 
         let decoder = new TextDecoder();
 
         eventsTyped.forEach((event) => {
 
-            if (event.type == undefined || event.attributes == undefined) return;
+            if (event.type == null || event.attributes == null) return;
 
             const eventTypeString = "Event: " + event.type;
             console.log()
@@ -154,7 +159,7 @@ function logResponse(response: TxResponse) {
             console.log("-".repeat(eventTypeString.length));
             event.attributes.forEach((attr) => {
 
-                if (attr.key == undefined || attr.value == undefined) return;
+                if (attr.key == null || attr.value == null) return;
                 console.log(decoder.decode(attr.key) + ": " + decoder.decode(attr.value));
             });
         });
@@ -563,7 +568,7 @@ async function sendTalisSale(args: string[]) {
 
 async function refillLocal(args: string[]) {
 
-    if (Context.localGenesisAddress == undefined || Context.localGenesisBroadcaster == undefined) {
+    if (Context.localGenesisAddress == null || Context.localGenesisBroadcaster == null) {
         throw new Error("Local Genesis Address required for refilling local")
     }
 
@@ -1177,16 +1182,84 @@ async function migrateContract(
 async function govProposal(
     args: string[]
 ) {
-    if (args.length < 1 || (args[0] != "primary" && args[0] != "signer")) {
-        throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
+
+    if (args.length < 1) {
+        throw new Error("Missing argument. Usage: tx gov-proposal <simulate|broadcast>");
     }
+
+    const dryRunString = args[0];
+
+    if (dryRunString != "simulate" && dryRunString != "broadcast") {
+        throw new Error("Invalid on value. Must be either simulate or broadcast");
+    }
+
+    {
+        const wasmName = "dega_minter.wasm"
+        const testTitle = "Store Code for the DEGA Minter Contract"
+        const testDescriptionFileName = "example-post.txt"
+
+        await govProposalStoreCode(
+            wasmName,
+            testTitle,
+            testDescriptionFileName,
+            [Context.primaryAddress],
+            dryRunString != "broadcast"
+        );
+    }
+
+    await sleep(10);
+
+    {
+        const wasmName = "dega_cw721.wasm"
+        const testTitle = "Store Code for the DEGA Collection Contract"
+        const testDescriptionFileName = "example-post.txt"
+
+        await govProposalStoreCode(
+            wasmName,
+            testTitle,
+            testDescriptionFileName,
+            null,
+            dryRunString != "broadcast"
+        );
+    }
+}
+
+function replaceLineEndingsWithBreaks(input: string): string {
+    // Replace Windows-style line endings
+    let result = input.replace(/\r\n/g, '<br>\r\n');
+
+    // Replace Unix-style line endings
+    result = result.replace(/\n/g, '<br>\n');
+
+    return result;
+}
+
+function replaceLineEndingsWithSlashN(input: string): string {
+    // Replace Windows-style line endings
+    let result = input.replace(/\r\n/g, '\\n');
+
+    // Replace Unix-style line endings
+    result = result.replace(/\n/g, '\\n');
+
+    return result;
+}
+
+function replaceWithUnicode(input: string): string {
+    let result = input.replace(/</g, '\\u003C');
+    result = result.replace(/>/g, '\\u003E');
+    return result;
+}
+
+function escapeDoubleQuotes(input: string): string {
+    return input.replace(/"/g, '\\"');
 }
 
 async function govProposalStoreCode(
     wasm_name: string,
     title: string,
-    summary: string,
-    instantiateEverybody: boolean
+    summaryFileName: string,
+    instantiateAddresses: string[] | null,
+    dryRun: boolean
 ) {
 
     if (Config.NETWORK != Network.Local) {
@@ -1197,30 +1270,88 @@ async function govProposalStoreCode(
     const wasmPath = path.resolve(artifactsDir, wasm_name);
 
     const gasPrices = Context.gasPricesAmountWei.toFixed();
-    const gas = Context.gasAmountWei.toFixed();
+    const gas = new BigNumberInWei(60000000).toFixed();
     const despositAmountInBaseInj = 100;
     const despositAmountInWei = new BigNumberInBase(despositAmountInBaseInj).toWei().toFixed();
 
+    let instantiateArg;
+
+    if (instantiateAddresses == null || instantiateAddresses.length == 0) {
+        instantiateArg = ` --instantiate-everybody true`;
+    } else {
+        instantiateArg = ` --instantiate-anyof-addresses "` + instantiateAddresses.join(",") + `"`;
+    }
+
+    const summaryFilePath = path.resolve(__dirname, "../data", summaryFileName);
+    const summaryContents = fs.readFileSync(summaryFilePath, "utf-8");
+
+    const htmlPreview =
+        `<html>\n` +
+        `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />\n` +
+        replaceLineEndingsWithBreaks(summaryContents) + `\n` +
+        `</html>\n`;
+
+    const htmlPreviewFileName = summaryFileName.replace(".txt", ".html")
+    const htmlPreviewPath = path.resolve(__dirname, "../cache", htmlPreviewFileName);
+    fs.writeFileSync(htmlPreviewPath, htmlPreview);
+
+    // Replace carrots for HTML in the front end
+    const unicodeEncodedSummaryString = replaceWithUnicode(summaryContents);
+
+    // Replace line endings with \n
+    const newLineNormalizedSummaryString = replaceLineEndingsWithSlashN(unicodeEncodedSummaryString);
+
+    // Replace double quotes for the command line command
+    const escapedSummaryString = escapeDoubleQuotes(newLineNormalizedSummaryString);
+
     // Build your command using the variables
-    const command =
-        `yes ${Config.INJECTIVED_PASSWORD} |` +
-        ` injectived tx wasm submit-proposal` +
-        ` wasm-store "${wasmPath}"` +
-        ` --title="${title}"` +
-        ` --summary="${summary}"` +
-        ` --instantiate-everybody ${instantiateEverybody ? "true" : "false"}` +
-        ` --broadcast-mode=sync` +
-        ` --chain-id="${Context.primaryBroadcaster.chainId}"` +
-        //` --node=https://sentry.tm.injective.network:443` +
-        ` --deposit=${despositAmountInWei}inj` +
-        ` --gas=${gas}` +
-        ` --gas-prices=${gasPrices}inj` +
-        ` --from=genesis` +
-        ` --yes` +
-        ` --output json`
+    // let command =
+    //     `yes ${Config.INJECTIVED_PASSWORD} |` +
+    //     ` injectived tx wasm submit-proposal` +
+    //     ` wasm-store "${wasmPath}"` +
+    //     ` --title="${title}"` +
+    //     ` --summary="${escapedSummaryString}"` +
+    //     instantiateArg +
+    //     ` --broadcast-mode=sync` +
+    //     ` --chain-id="${Context.primaryBroadcaster.chainId}"` +
+    //     //` --node=https://sentry.tm.injective.network:443` +
+    //     ` --deposit=${despositAmountInWei}inj` +
+    //     ` --gas=${gas}` +
+    //     ` --gas-prices=${gasPrices}inj` +
+    //     ` --from=${(dryRun ? Context.localGenesisAddress : "genesis")}` +
+    //     ` --yes` +
+    //     ` --output json` +
+    //     (dryRun ? ` --dry-run` : ``)
+    // ;
+
+
+    let command =
+        `yes ${Config.INJECTIVED_PASSWORD} |`
+            + ` injectived tx wasm submit-proposal`
+            + ` wasm-store "${wasmPath}"`
+            + ` --title="${title}"`
+            + ` --summary="${escapedSummaryString}"`
+            + instantiateArg
+            //+ ` --node=https://sentry.tm.injective.network:443`
+            + ` --deposit=${despositAmountInWei}inj`
+            + ` --gas=${gas}`
+            + ` --gas-prices=${gasPrices}inj`
+            //+ ` --from=${(dryRun ? Context.localGenesisAddress : "genesis")}`
+            + ` --yes`
+            + ` --output json`
+            + ` --offline`
+            + ` --generate-only`
+
+            //+ (dryRun ? ` --dry-run` : ``)
+
+            //+ ` --broadcast-mode=sync`
+            //+ ` --chain-id="${Context.primaryBroadcaster.chainId}"`
     ;
 
-    console.log("Running command: " + command)
+
+    console.log("Running governance proposal for: " + wasm_name)
+
+    //command = "echo hello"
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
@@ -1233,4 +1364,48 @@ async function govProposalStoreCode(
         }
         console.log(`stdout: ${stdout}`);
     });
+}
+
+async function govSummaryTest(args: string[]) {
+
+    const summaryFileName = "test-post.txt";
+    const summaryFilePath = path.resolve(__dirname, "../data", summaryFileName);
+    const summaryContents = fs.readFileSync(summaryFilePath, "utf-8");
+
+    const htmlPreview =
+        `<html>\n` +
+        `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />\n` +
+        replaceLineEndingsWithBreaks(summaryContents) + `\n` +
+        `</html>\n`;
+
+    const htmlPreviewFileName = summaryFileName.replace(".txt", ".html")
+    const htmlPreviewPath = path.resolve(__dirname, "../cache", htmlPreviewFileName);
+    fs.writeFileSync(htmlPreviewPath, htmlPreview);
+
+    console.log("===============")
+    console.log("==   INPUT   ==")
+    console.log("===============")
+    console.log("")
+    console.log(summaryContents);
+    console.log("")
+    console.log("")
+    console.log("")
+    console.log("")
+
+    // Replace carrots for HTML in the front end
+    const unicodeEncodedSummaryString = replaceWithUnicode(summaryContents);
+
+    // Replace line endings with \n
+    const newLineNormalizedSummaryString = replaceLineEndingsWithSlashN(unicodeEncodedSummaryString);
+
+    // Replace double quotes for the command line command
+    const escapedSummaryString = escapeDoubleQuotes(newLineNormalizedSummaryString);
+
+
+    console.log("================")
+    console.log("==   OUTPUT   ==")
+    console.log("================")
+    console.log("")
+    console.log(escapedSummaryString);
+    console.log("")
 }

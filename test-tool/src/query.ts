@@ -9,6 +9,10 @@ import secp256k1 from 'secp256k1'
 import { randomBytes } from 'crypto'
 import { bech32 } from 'bech32'
 import {MintRequest, SignerSourceTypeEnum} from "./messages/dega_minter_query";
+import {getNetworkEndpoints, Network} from "@injectivelabs/networks";
+import { execSync } from 'child_process';
+
+
 
 export async function query(args: string[]) {
 
@@ -32,6 +36,9 @@ export async function query(args: string[]) {
             break;
         case "derive-eth":
             await deriveEthBasedAddress();
+            break;
+        case "signing-details":
+            await signingDetails(args);
             break;
         default:
             console.log("Unknown test query sub-command: " + sub_command);
@@ -262,4 +269,45 @@ function deriveSecp256k1Address() {
 
     const publicKey = Buffer.concat([buf1, buf2, buf3]).toString('base64')
     const type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey'
+}
+
+async function signingDetails(args: string[]) {
+
+    if (args.length < 2) {
+        console.log("Usage: query signing-details <network> <address>");
+        return;
+    }
+
+    const networkString = args[0];
+    const address = args[1];
+
+    let network;
+    let rpcEndpoint;
+
+    if (networkString === "mainnet") {
+        network = Network.Mainnet;
+        rpcEndpoint = "https://sentry.tm.injective.network:443";
+    } else if (networkString === "testnet") {
+        network = Network.Testnet;
+        rpcEndpoint = "https://testnet.sentry.tm.injective.network:443";
+    } else if (networkString === "local") {
+        network = Network.Local;
+        rpcEndpoint = "http://localhost:26657";
+    } else {
+        console.log("Invalid network: " + networkString);
+        return;
+    }
+
+    console.log("RPC Endpoint: " + rpcEndpoint);
+
+    let execArgs = [];
+    execArgs.push(`injectived`);
+    execArgs.push(`--node="${rpcEndpoint}"`);
+    execArgs.push(`query`);
+    execArgs.push(`account`);
+    execArgs.push(address)
+
+    const accountQuery = execSync(execArgs.join(" "), {encoding: 'utf-8'});
+
+    console.log(accountQuery);
 }

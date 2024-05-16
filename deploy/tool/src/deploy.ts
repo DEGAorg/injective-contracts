@@ -1,19 +1,19 @@
 import path from "node:path"
 //import {exec} from "child_process"
 import * as fs from "fs"
-import {spawn} from 'child_process'
+import {exec, execSync, spawn} from 'child_process'
 import {
     AccessType,
     MsgBroadcasterWithPk,
     MsgInstantiateContract,
     MsgMigrateContract,
     MsgStoreCode, MsgSubmitTextProposal,
-    PrivateKey
+    PrivateKey, sha256
 } from "@injectivelabs/sdk-ts"
 import * as t from 'io-ts'
 import { isLeft } from 'fp-ts/lib/Either'
 import {Network, getNetworkEndpoints} from "@injectivelabs/networks"
-import {BigNumberInWei} from "@injectivelabs/utils"
+import {BigNumberInWei, BigNumberInBase} from "@injectivelabs/utils"
 import {ChainId} from "@injectivelabs/ts-types"
 import {DegaMinterInstantiateMsg} from "./messages"
 import * as util from 'util';
@@ -174,12 +174,17 @@ async function runMain() {
 
 
 const govProposalSpec = t.type({
+    title: t.string,
+    summaryFilePath: t.string,
+    proposerAddress: t.string,
+    instantiateAddresses: t.union([t.array(t.string), t.undefined, t.null]),
+    depositAmountINJ: t.number,
 })
 
 type GovProposalSpec = t.TypeOf<typeof govProposalSpec>
 
 const deploySpec = t.type({
-    privateKeyFilename: t.string,
+    privateKeyFilename: t.union([t.string, t.undefined, t.null]),
     network: t.keyof({
         Local: null,
         Testnet: null,
@@ -188,10 +193,14 @@ const deploySpec = t.type({
     grpcEndpoint: t.union([t.string, t.undefined, t.null]),
     optionsBuildAndOptimize: t.boolean,
     optionsStoreCodeForMinter: t.boolean,
+    preExistingMinterBinary: t.union([t.string, t.undefined, t.null]),
+    preExistingMinterBinaryChecksum: t.union([t.string, t.undefined, t.null]),
     optionsGovernanceProposalForMinter: t.union([t.boolean, t.undefined, t.null]),
     govProposalSpecForMinter: t.union([govProposalSpec, t.undefined, t.null]),
     preExistingMinterCodeId: t.union([t.number, t.undefined, t.null]),
     optionsStoreCodeForCw721: t.boolean,
+    preExistingCw721Binary: t.union([t.string, t.undefined, t.null]),
+    preExistingCw721BinaryChecksum: t.union([t.string, t.undefined, t.null]),
     optionsGovernanceProposalForCw721: t.union([t.boolean, t.undefined, t.null]),
     govProposalSpecForCw721: t.union([govProposalSpec, t.undefined, t.null]),
     preExistingCw721CodeId: t.union([t.number, t.undefined, t.null]),
@@ -225,7 +234,7 @@ type DeploySpec = t.TypeOf<typeof deploySpec>
 
 function loadSpec(specPath: string) {
 
-    const fullSpecPath = path.join(pathsDeploySpecs, specPath)
+    const fullSpecPath = path.join(pathsDeploy, specPath)
     const fileContents = fs.readFileSync(fullSpecPath, 'utf-8')
     const jsonData = JSON.parse(fileContents)
     return deploySpec.decode(jsonData)
@@ -235,12 +244,15 @@ function loadSpec(specPath: string) {
 interface DeployContext {
     spec: DeploySpec
     output: DeployOutput
-    deployTxPrivateKey: PrivateKey
-    deployTxAddress: string
-    deployTxBroadcaster: MsgBroadcasterWithPk
+    chainId: ChainId,
+    node: string,
+    deployTxPrivateKey: PrivateKey | undefined
+    deployTxAddress: string | undefined
+    deployTxBroadcaster: MsgBroadcasterWithPk | undefined
     gasPricesAmountWei: BigNumberInWei
     gasAmountWei: BigNumberInWei
     gasSettings: {gasPrice: string, gas: number}
+    injectivedPassword: string | null | undefined
 }
 
 const privateKeyDef = t.type({
@@ -248,41 +260,62 @@ const privateKeyDef = t.type({
         Mnemonic: null,
         SeedHex: null
     }),
-    key: t.string
+    key: t.string,
+    injectivedPassword: t.union([t.string, t.undefined, t.null]),
 })
 
 type PrivateKeyDef = t.TypeOf<typeof privateKeyDef>;
 
 async function makeContext(spec: DeploySpec): Promise<DeployContext> {
 
-    let deployTxPrivateKey: PrivateKey = await loadPrivateKey(spec)
+    let [
+        deployTxPrivateKey,
+        injectivedPasswd
+    ] = await loadPrivateKey(spec)
 
-    const deployTxAddress = deployTxPrivateKey.toBech32()
+
 
     let network: Network = Network.Local
+    let chainId: ChainId;
+    let node: string;
 
     if (spec.network === "Local") {
-        network = Network.Local
+        network = Network.Local;
+        chainId = ChainId.Mainnet; // Local uses the mainnet chainId
+        node = "http://localhost:26657";
     } else if (spec.network === "Testnet") {
         network = Network.Testnet
+        chainId = ChainId.Testnet;
+        node = "https://testnet.sentry.tm.injective.network:443";
     } else if (spec.network === "Mainnet") {
         network = Network.Mainnet
+        chainId = ChainId.Mainnet;
+        node = "https://sentry.tm.injective.network:443"
     } else {
         throw new ScriptError("Invalid network")
     }
 
-    let endpoints = getNetworkEndpoints(network)
+    const endpoints = getNetworkEndpoints(network)
     if (spec.grpcEndpoint != undefined) {
         endpoints.grpc = spec.grpcEndpoint
     }
 
-    const deployTxBroadcaster = new MsgBroadcasterWithPk({
-        privateKey: deployTxPrivateKey, /** private key hash or PrivateKey class from sdk-ts */
-        network: network,
-        endpoints: endpoints,
-    })
-    if (spec.network === "Local") {
-        deployTxBroadcaster.chainId = ChainId.Mainnet // Default config of localnet uses a chainId of 1 (same as mainnet)
+    let deployTxAddress =
+        deployTxPrivateKey != null ?
+            deployTxPrivateKey.toBech32() :
+            undefined;
+
+    let deployTxBroadcaster;
+
+    if (deployTxPrivateKey != null) {
+        deployTxBroadcaster = new MsgBroadcasterWithPk({
+            privateKey: deployTxPrivateKey, /** private key hash or PrivateKey class from sdk-ts */
+            network: network,
+            endpoints: endpoints,
+        });
+        if (spec.network === "Local") {
+            deployTxBroadcaster.chainId = chainId // Default config of localnet uses a chainId of 1 (same as mainnet)
+        }
     }
 
     const gasPricesAmountWei = new BigNumberInWei(500000000)
@@ -305,16 +338,24 @@ async function makeContext(spec: DeploySpec): Promise<DeployContext> {
             minterAddress: null,
             cw721Address: null,
         },
+        chainId: chainId,
+        node: node,
         deployTxPrivateKey: deployTxPrivateKey,
         deployTxAddress: deployTxAddress,
         deployTxBroadcaster: deployTxBroadcaster,
         gasPricesAmountWei: gasPricesAmountWei,
         gasAmountWei: gasAmountWei,
         gasSettings: gasSettings,
+        injectivedPassword: injectivedPasswd,
     }
 }
 
-async function loadPrivateKey(spec: DeploySpec): Promise<PrivateKey> {
+async function loadPrivateKey(spec: DeploySpec): Promise<[PrivateKey|undefined,string|undefined]> {
+
+    if (spec.privateKeyFilename == null) {
+        return [undefined, undefined];
+    }
+
     const privateKeyFilePath = path.join(pathsDeployPrivateKeys, spec.privateKeyFilename);
     const fileContents = fs.readFileSync(privateKeyFilePath, 'utf-8');
     const jsonData = JSON.parse(fileContents);
@@ -335,7 +376,10 @@ async function loadPrivateKey(spec: DeploySpec): Promise<PrivateKey> {
         throw new Error("Invalid private key format");
     }
 
-    return privateKey;
+    let injectivedPassword: string | undefined =
+        privateKeyData.injectivedPassword == null ? undefined : privateKeyData.injectivedPassword;
+
+    return [privateKey, injectivedPassword];
 }
 
 // Use only null and not undefined so that it's always clear when output values are absent
@@ -354,7 +398,7 @@ type DeployOutput = t.TypeOf<typeof deployOutput>
 
 function getMinterAddressForMigrate(context: DeployContext) {
 
-        if (context.spec.minterAddressForMigration == undefined) {
+        if (context.spec.minterAddressForMigration == null) {
             throw new ScriptError("If migrating must specify a minter address for migration with minterAddressForMigration option")
         }
 
@@ -363,7 +407,7 @@ function getMinterAddressForMigrate(context: DeployContext) {
 
 function getCw721AddressForMigrate(context: DeployContext) {
 
-        if (context.spec.cw721AddressForMigration == undefined) {
+        if (context.spec.cw721AddressForMigration == null) {
             throw new ScriptError("If migrating must specify a cw721 address for migration with cw721AddressForMigration option")
         }
 
@@ -423,29 +467,90 @@ async function deploy(context: DeployContext) {
         await buildAndOptimize(context)
     }
 
+    if (context.spec.optionsStoreCodeForMinter && context.spec.optionsGovernanceProposalForMinter) {
+        throw new ScriptError("Will not store code and generate governance proposal tx in the same deployment")
+    }
+
     if (context.spec.optionsStoreCodeForMinter) {
-        await storeWasm(context, "dega_minter.wasm")
+
+        let wasmPath;
+
+        if (context.spec.preExistingMinterBinary != null) {
+            wasmPath = path.join(pathsDeploy, context.spec.preExistingMinterBinary);
+        } else {
+            wasmPath = path.join(pathsDeployArtifacts, "dega_minter.wasm");
+        }
+
+        await storeWasm(context, "dega-minter", wasmPath)
     }
 
     if (context.spec.optionsGovernanceProposalForMinter) {
-        if (context.spec.govProposalSpecForMinter == undefined) {
+        if (context.spec.govProposalSpecForMinter == null) {
             throw new ScriptError("Must specify a governance proposal spec via govProposalSpecForMinter " +
                 " to use the optionsGovernanceProposalForMinter option")
         }
-        await governanceProposal(context, "dega_minter.wasm", context.spec.govProposalSpecForMinter)
+
+        if (context.spec.preExistingMinterBinary == null) {
+            throw new ScriptError("Must specify a pre-existing minter binary to use the optionsGovernanceProposalForMinter option")
+        }
+
+        if (context.spec.preExistingMinterBinaryChecksum == null) {
+            throw new ScriptError("Must specify a pre-existing minter binary to use the optionsGovernanceProposalForMinter option")
+        }
+
+        const wasmPath = path.join(pathsDeploy, context.spec.preExistingMinterBinary);
+
+        await governanceProposal(
+            context,
+            "dega-minter",
+            wasmPath,
+            context.spec.preExistingMinterBinaryChecksum,
+            context.spec.govProposalSpecForMinter
+        );
     }
 
-    if (context.spec.optionsGovernanceProposalForCw721) {
-        if (context.spec.govProposalSpecForCw721 == undefined) {
-            throw new ScriptError("Must specify a governance proposal spec via govProposalSpecForCw721 " +
-                "to use the optionGovernanceProposalForCw721 option")
-        }
-        await governanceProposal(context, "dega_minter.wasm", context.spec.govProposalSpecForCw721)
+    if (context.spec.optionsStoreCodeForCw721 && context.spec.optionsGovernanceProposalForCw721) {
+        throw new ScriptError("Will not store code and generate governance proposal tx in the same deployment")
     }
 
     if (context.spec.optionsStoreCodeForCw721) {
-        await storeWasm(context, "dega_cw721.wasm")
+        let wasmPath;
+
+        if (context.spec.preExistingCw721Binary != null) {
+            wasmPath = path.join(pathsDeploy, context.spec.preExistingCw721Binary);
+        } else {
+            wasmPath = path.join(pathsDeployArtifacts, "dega_minter.wasm");
+        }
+
+        await storeWasm(context, "dega-cw721", wasmPath)
     }
+
+    if (context.spec.optionsGovernanceProposalForCw721) {
+        if (context.spec.govProposalSpecForCw721 == null) {
+            throw new ScriptError("Must specify a governance proposal spec via govProposalSpecForCw721 " +
+                "to use the optionGovernanceProposalForCw721 option")
+        }
+
+        if (context.spec.preExistingCw721Binary == null) {
+            throw new ScriptError("Must specify a pre-existing cw721 binary to use the optionsGovernanceProposalForMinter option")
+        }
+
+        if (context.spec.preExistingCw721BinaryChecksum == null) {
+            throw new ScriptError("Must specify a pre-existing cw721 binary to use the optionsGovernanceProposalForMinter option")
+        }
+
+        const wasmPath = path.join(pathsDeploy, context.spec.preExistingCw721Binary);
+
+        await governanceProposal(
+            context,
+            "dega-cw721",
+            wasmPath,
+            context.spec.preExistingCw721BinaryChecksum,
+            context.spec.govProposalSpecForCw721
+        );
+    }
+
+
 
     if (context.spec.optionsInstantiate) {
         await instantiate(context)
@@ -480,9 +585,16 @@ async function buildAndOptimize(context: DeployContext) {
 }
 
 
-async function storeWasm(context: DeployContext, wasm_name: string) {
+async function storeWasm(
+    context: DeployContext,
+    contractName: string,
+    wasmPath: string,
+) {
 
-    const wasmPath = path.join(pathsDeployArtifacts, wasm_name)
+    if (context.deployTxPrivateKey == null || context.deployTxBroadcaster == null || context.deployTxAddress == null) {
+        throw new ScriptError("Must specify a broadcast key to store code");
+    }
+
     const wasmBytes = new Uint8Array(Array.from(fs.readFileSync(wasmPath)))
 
     const storeCodeMsg = MsgStoreCode.fromJSON({
@@ -490,7 +602,7 @@ async function storeWasm(context: DeployContext, wasm_name: string) {
         wasmBytes: wasmBytes
     })
 
-    console.log("Storing code for: " + wasm_name)
+    console.log("Storing code for: " + contractName)
     console.log("")
 
     const response = await context.deployTxBroadcaster.broadcast({
@@ -513,9 +625,9 @@ async function storeWasm(context: DeployContext, wasm_name: string) {
                     const value = decoder.decode(attr.value)
                     console.log(key + ": " + value)
                     if (key == "code_id") {
-                        if (wasm_name == "dega_minter.wasm") {
+                        if (contractName == "dega-minter") {
                             context.output.minterCodeIdStored = parseInt(stripQuotes(value))
-                        } else if (wasm_name == "dega_cw721.wasm") {
+                        } else if (contractName == "dega-cw721") {
                             context.output.cw721CodeIdStored = parseInt(stripQuotes(value))
                         }
                     }
@@ -527,26 +639,166 @@ async function storeWasm(context: DeployContext, wasm_name: string) {
     }
 }
 
-async function governanceProposal(context: DeployContext, wasm_name: string, govProposalSpecForMinter: GovProposalSpec) {
+function replaceLineEndingsWithBreaks(input: string): string {
+    // Replace Windows-style line endings
+    let result = input.replace(/\r\n/g, '<br>\r\n');
 
-    const wasmPath = path.join(pathsDeployArtifacts, wasm_name)
+    // Replace Unix-style line endings
+    result = result.replace(/\n/g, '<br>\n');
 
-    console.log("Creating governance proposal for: " + wasm_name)
+    return result;
+}
 
-    // Currently WIP in the test tool
+function replaceLineEndingsWithSlashN(input: string): string {
+    // Replace Windows-style line endings
+    let result = input.replace(/\r\n/g, '\n');
+
+    // Replace Unix-style line endings
+    result = result.replace(/\n/g, '\n');
+
+    return result;
+}
+
+function escapeGtLtWithUnicode(input: string): string {
+    let result = input.replace(/</g, '\u003c');
+    result = result.replace(/>/g, '\u003e');
+    return result;
+}
+
+function escapeDoubleQuotes(input: string): string {
+    return input.replace(/"/g, '\\"');
+}
+
+async function governanceProposal(
+    context: DeployContext,
+    contractName: string,
+    wasmPath: string,
+    wasmChecksum: string,
+    govProposalSpec: GovProposalSpec
+) {
+
+    if (context.spec.network == "Mainnet") {
+        throw new Error("Remove this error when ready to submit gov proposal test on Mainnet");
+    }
+
+    // if (context.injectivedPassword == null) {
+    //     throw new ScriptError("Must specify injectived password to submit governance proposals")
+    // }
+
+    console.log("Creating governance proposal transaction for: " + contractName)
+
+    if (wasmChecksum) {
+        console.log("Specified Checksum for " + contractName + ": " + wasmChecksum)
+        const wasmContents = fs.readFileSync(wasmPath);
+        const generatedChecksum = Buffer.from(sha256(wasmContents));
+        const generatedChecksumString = generatedChecksum.toString('hex');
+        console.log("Generated Checksum for " + contractName + ": " + generatedChecksumString)
+        if (generatedChecksumString != wasmChecksum) {
+            throw new ScriptError("Wasm checksum does not match for: " + contractName)
+        }
+    }
+
+    //const gasPrices = context.gasPricesAmountWei.toFixed();
+    //const gas = new BigNumberInWei(60000000).toFixed();
+    const despositAmountInBaseInj = govProposalSpec.depositAmountINJ;
+    const despositAmountInWei = new BigNumberInBase(despositAmountInBaseInj).toWei().toFixed();
+
+    let instantiateArgs;
+
+    if (govProposalSpec.instantiateAddresses == null || govProposalSpec.instantiateAddresses.length == 0) {
+        instantiateArgs = [`--instantiate-everybody`,`true`];
+    } else {
+        instantiateArgs = [
+            `--instantiate-anyof-addresses`,
+            `"` + govProposalSpec.instantiateAddresses.join(",") + `"`
+        ];
+    }
+
+    const relativeSummaryFilePath = govProposalSpec.summaryFilePath;
+    const summaryFilePath = path.join(pathsDeploy, relativeSummaryFilePath);
+    const summaryFileName = path.basename(summaryFilePath);
+    let summaryContents = fs.readFileSync(summaryFilePath, "utf-8");
+
+    const htmlPreview =
+        `<html>\n` +
+        `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />\n` +
+        replaceLineEndingsWithBreaks(summaryContents) + `\n` +
+        `</html>\n`;
+
+    const htmlPreviewFileName = summaryFileName.replace(".txt", "_" + contractName + ".html")
+    const htmlPreviewPath = path.resolve(pathsDeployArtifacts, htmlPreviewFileName);
+    fs.writeFileSync(htmlPreviewPath, htmlPreview);
+
+    // Replace carrots for HTML in the front end
+    //summaryContents = escapeGtLtWithUnicode(summaryContents);
+
+    // Replace line endings with \n
+    summaryContents = replaceLineEndingsWithSlashN(summaryContents);
+
+    // Replace double quotes for the command line command
+    summaryContents = escapeDoubleQuotes(summaryContents);
+
+    console.log("Running governance proposal for: " + contractName)
+
+    let baseTxArgs = [];
+    baseTxArgs.push("injectived");
+    baseTxArgs.push("tx");
+    baseTxArgs.push("wasm");
+    baseTxArgs.push("submit-proposal");
+    baseTxArgs.push("wasm-store");
+    baseTxArgs.push(`"${wasmPath}"`);
+    baseTxArgs.push(`--title="${govProposalSpec.title}"`);
+    baseTxArgs.push(`--summary="${summaryContents}"`);
+    //baseTxArgs.push(`--summary="Example Summary"`);
+    baseTxArgs.push(...instantiateArgs);
+    baseTxArgs.push(`--deposit=${despositAmountInWei}inj`);
+    baseTxArgs.push(`--chain-id="${context.chainId}"`);
+    baseTxArgs.push(`--from=${govProposalSpec.proposerAddress}`);
+    baseTxArgs.push(`--node=${context.node}`);
+
+    console.log("Base CLI Tx:");
+    console.log(baseTxArgs.join(" "));
+
+
+    const injectivedPassword = process.env.INJECTIVED_PASSWORD;
+    if (injectivedPassword == null) {
+        throw new ScriptError("Must specify INJECTIVED_PASSWORD in environment to generate governance proposal transactions");
+    }
+
+    let generateTxArgs = [];
+    generateTxArgs.push("echo");
+    generateTxArgs.push(`${injectivedPassword}`);
+    generateTxArgs.push(`|`);
+    generateTxArgs = generateTxArgs.concat(baseTxArgs);
+    generateTxArgs.push(`--generate-only`);
+    generateTxArgs.push(`--gas=auto`);
+    generateTxArgs.push(`--gas-adjustment=1.4`);
+    generateTxArgs.push(`--gas-prices=500000000inj`);
+    const outputJsonTxFilepath =
+        path.join(pathsDeployArtifacts, "proposal-tx_" + contractName + "_" + context.spec.network + ".json");
+
+
+    //const txJsonStringUnformatted = await run(context, "injectived", generateTxArgs);
+    const txJsonStringUnformatted = execSync(generateTxArgs.join(" "), { encoding: 'utf-8' });
+    console.log("Output String:")
+    console.log(txJsonStringUnformatted);
+    let txJsonObj = JSON.parse(txJsonStringUnformatted)
+    // txJsonObj["auth_info"]["fee"]["gas_limit"] = adjustedGasEstimate.toString();
+    let prettyJsonTxString = JSON.stringify(txJsonObj, null, 2);
+    fs.writeFileSync(outputJsonTxFilepath, prettyJsonTxString);
 }
 
 
 function getCw721CodeIdForInstantiateOrMigrate(context: DeployContext) {
 
     if (context.spec.optionsStoreCodeForCw721) {
-        if (context.output.cw721CodeIdStored == undefined) {
+        if (context.output.cw721CodeIdStored == null) {
             throw new ScriptError("Missing cw721 code_id after storing")
         }
 
         return context.output.cw721CodeIdStored;
 
-    } else if (context.spec.preExistingCw721CodeId == undefined) {
+    } else if (context.spec.preExistingCw721CodeId == null) {
         throw new ScriptError("Must specify a pre-existing cw721 code_id if not storing cw721 code")
     } else {
         return context.spec.preExistingCw721CodeId;
@@ -556,13 +808,13 @@ function getCw721CodeIdForInstantiateOrMigrate(context: DeployContext) {
 function getMinterCodeIdForInstantiateOrMigrate(context: DeployContext) {
 
     if (context.spec.optionsStoreCodeForMinter) {
-        if (context.output.minterCodeIdStored == undefined) {
+        if (context.output.minterCodeIdStored == null) {
             throw new ScriptError("Missing minter code_id after storing")
         }
 
         return context.output.minterCodeIdStored;
 
-    } else if (context.spec.preExistingMinterCodeId == undefined) {
+    } else if (context.spec.preExistingMinterCodeId == null) {
         throw new ScriptError("Must specify a pre-existing minter code_id if not storing minter code")
     } else {
         return context.spec.preExistingMinterCodeId;
@@ -571,6 +823,10 @@ function getMinterCodeIdForInstantiateOrMigrate(context: DeployContext) {
 
 
 async function instantiate(context: DeployContext) {
+
+    if (context.deployTxPrivateKey == null || context.deployTxBroadcaster == null || context.deployTxAddress == null) {
+        throw new ScriptError("Must specify a broadcast key to instantiate");
+    }
 
     const minterCodeId = getMinterCodeIdForInstantiateOrMigrate(context);
     const cw721CodeId = getCw721CodeIdForInstantiateOrMigrate(context);
@@ -581,7 +837,7 @@ async function instantiate(context: DeployContext) {
 
         cw721MigrateAdmin = context.spec.cw721MigrateAdmin;
 
-        if (cw721MigrateAdmin == undefined) {
+        if (cw721MigrateAdmin == null) {
             throw new ScriptError("Must specify a cw721 migrate admin to make cw721 contract migratable")
         }
     } else if (context.spec.cw721MigrateAdmin != undefined) {
@@ -654,7 +910,7 @@ async function instantiate(context: DeployContext) {
 
     if (context.spec.minterContractMigratable) {
 
-        if (context.spec.minterMigrateAdmin == undefined) {
+        if (context.spec.minterMigrateAdmin == null) {
             throw new ScriptError("Must specify a minter migrate admin to make minter contract migratable")
         } else {
             minterMigrateAdmin = context.spec.minterMigrateAdmin;
@@ -738,6 +994,10 @@ async function migrateContract(
     contractName: string,
 ) {
 
+    if (context.deployTxPrivateKey == null || context.deployTxBroadcaster == null || context.deployTxAddress == null) {
+        throw new ScriptError("Must specify a broadcast key to migrate");
+    }
+
     const migrateContractMsg = MsgMigrateContract.fromJSON({
         sender: context.deployTxAddress,
         codeId: codeId,
@@ -759,6 +1019,38 @@ async function migrateContract(
     console.log("");
 
 }
+
+// async function dryRunUsefulCodeSnippets() {
+//
+//     txArgs.push(`--gas=auto`);
+//     txArgs.push(`--gas-adjustment=1.5`);
+//     txArgs.push(`--offline`);
+//
+//     For broadcast
+//     txArgs.push(`--broadcast-mode=sync`);
+//     txArgs.push(`--node=${context.deployTxBroadcaster.endpoints.rpc}`);
+//     txArgs.push(`--gas=${gas}`);
+//     txArgs.push(`--gas-prices=${gasPrices}inj`);
+//     txArgs.push(`--yes`);
+//     txArgs.push(`--output`);
+//     txArgs.push(`json`);
+//     if (govProposalSpec.dryRun) {
+//         txArgs.push(`--dry-run`);
+//     }
+//
+//     let dryRunEstimateTxArgs = txArgs;
+//     dryRunEstimateTxArgs.push(`--dry-run`);
+//     dryRunEstimateTxArgs.push(`2>&1`); // Needed because by default gas estimate output is sent to stderr
+//     const gasEstimateOutput = execSync(dryRunEstimateTxArgs.join(" "), { encoding: 'utf-8' });
+//     const gasEstimateOutputTokens = gasEstimateOutput.split(" ");
+//     const gasEstimateString = gasEstimateOutputTokens[gasEstimateOutputTokens.length - 1];
+//     const gasEstimateNumber = parseInt(gasEstimateString);
+//     console.log("Submit Proposal Gas Estimate: " + gasEstimateNumber);
+//     const adjustedGasEstimate = Math.round(gasEstimateNumber * 1.3);
+//     console.log("Adjusted Gas Estimate: " + adjustedGasEstimate);
+//
+// }
+
 
 async function output(context: DeployContext) {
 
@@ -787,6 +1079,8 @@ function stripQuotes(input: string): string {
 
 async function run(context: DeployContext, command: string, args: string[] = []) {
 
+    let outResult = ""
+
     console.log("RUN: " + command + " " + args.join(" "))
 
     let childProcess = spawn(command, args, {
@@ -799,11 +1093,13 @@ async function run(context: DeployContext, command: string, args: string[] = [])
     childProcess.stdout.on('data', (data) => {
         process.stdout.write(data);
         fs.appendFileSync(pathsLogFile, data);
+        outResult += data
     });
 
     childProcess.stderr.on('data', (data) => {
         process.stderr.write(data);
         fs.appendFileSync(pathsLogFile, data);
+        outResult += data
     });
 
     // let exitChild = function(childProcess: ChildProcess, signal: string) {
@@ -819,6 +1115,8 @@ async function run(context: DeployContext, command: string, args: string[] = [])
     await new Promise( (resolve) => {
         childProcess.on('close', resolve)
     })
+
+    return outResult;
 }
 
 

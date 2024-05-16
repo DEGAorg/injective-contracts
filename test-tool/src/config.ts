@@ -98,8 +98,8 @@ function initConfig() {
             const testMinterCodeId = process.env.TEST_MINTER_CODE_ID;
             const testCw721CodeId = process.env.TEST_CW721_CODE_ID;
 
-            if (testMinterCodeId == undefined || testMinterCodeId == "" ||
-                testCw721CodeId == undefined || testCw721CodeId == "") {
+            if (testMinterCodeId == null || testMinterCodeId == "" ||
+                testCw721CodeId == null || testCw721CodeId == "") {
                 throw new Error("TEST_MINTER_CODE_ID and TEST_CW721_CODE_ID must be set in the environment" +
                     "when running integration tests in a deployment");
             }

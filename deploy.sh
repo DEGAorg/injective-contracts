@@ -2,4 +2,4 @@
 
 cd deploy/tool
 
-npm run deploy "$@"
+npm run "$@"

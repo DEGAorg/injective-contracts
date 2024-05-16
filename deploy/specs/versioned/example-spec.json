@@ -34,6 +34,12 @@
   "minterContractLabel": "DEGA Minter - Test Collection",
   "minterContractMigratable": false,
   "minterMigrateAdmin": null,
-  "govProposalSpecForMinter": {},
-  "govProposalSpecForCw721": {}
+  "govProposalSpecForMinter": {
+    "title": "Upload Example Minter Contract Wasm Code",
+    "summaryFilePath": "specs/versioned/example-gov-prop-summary.txt",
+    "instantiateAddresses": ["inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6"],
+    "deployTxAccountName": "dev",
+    "dryRun": true
+  },
+  "govProposalSpecForCw721": null
 }
