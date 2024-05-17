@@ -75,8 +75,6 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) ->
                 dega_minter_settings: dega_inj::minter::DegaMinterConfigSettings {
                     signer_pub_key,
                     minting_paused: false,
-                    transferring_paused: false,
-                    burning_paused: false,
                 },
                 initial_admin: ADMIN.into(),
             },
