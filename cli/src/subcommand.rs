@@ -133,6 +133,9 @@ async fn mint() -> anyhow::Result<()> {
 
     let address = get_address().await?;
 
+    let config = CONFIG.read().await;
+    let collection_contract = config.get_contract_addr(&Contracts::DegaCw721.to_string())?.clone();
+
     let mint_request_msg = MintRequest {
         to: address.clone(),
         primary_sale_recipient: address.clone(),
@@ -142,11 +145,11 @@ async fn mint() -> anyhow::Result<()> {
         validity_start_timestamp: Uint128::from(0u32),
         validity_end_timestamp: Uint128::from(0u32),
         uuid: "00000000-0000-0000-0000-000000000000".to_string(),
+        collection: collection_contract.clone(),
     };
 
     let sig_base64 = sign_msg_bytes(to_json_binary(&mint_request_msg)?.as_slice()).await?;
 
-    let config = CONFIG.read().await;
     let minter_contract = config.get_contract_addr(&Contracts::DegaMinter.to_string())?.clone();
 
     let msg = Mint {
@@ -423,6 +426,7 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     }
 
     let minter_contract = config.get_contract_addr(&Contracts::DegaMinter.to_string())?.clone();
+    let collection_contract = config.get_contract_addr(&Contracts::DegaCw721.to_string())?.clone();
 
     let mint_request_msg = MintRequest {
         to: account_id_from_cosmrs.to_string(),
@@ -433,6 +437,7 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
         validity_start_timestamp: Uint128::from(0u32),
         validity_end_timestamp: Uint128::from(0u32),
         uuid: "00000000-0000-0000-0000-000000000000".to_string(),
+        collection: collection_contract.clone(),
     };
 
     let mint_msg_binary = to_json_binary(&mint_request_msg).map_err(

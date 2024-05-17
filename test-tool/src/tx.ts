@@ -200,6 +200,8 @@ async function mintCombined(args: string[]) {
         validity_end_timestamp: endTimeInSeconds.toString(),
         uuid: uuidv4(),
         //uuid: "8c288b70-dc7b-47d6-9412-1840f8c25a57"
+        collection: Config.CW721_ADDRESS,
+        //collection: "inj1n8n0p5l48g7xy9y7k4hu694jl4c82ej4mwqmfz"
     };
 
     //let rawTextMessage = "test message";
@@ -302,6 +304,7 @@ async function mintAsBackend(args: string[]) {
         validity_end_timestamp: endTimeInSeconds.toString(),
         uuid: uuidv4(),
         //uuid: "8c288b70-dc7b-47d6-9412-1840f8c25a57"
+        collection: Config.CW721_ADDRESS,
     };
 
 

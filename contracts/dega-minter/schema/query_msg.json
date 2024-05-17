@@ -75,6 +75,7 @@
     "MintRequest": {
       "type": "object",
       "required": [
+        "collection",
         "currency",
         "price",
         "primary_sale_recipient",
@@ -85,6 +86,9 @@
         "validity_start_timestamp"
       ],
       "properties": {
+        "collection": {
+          "type": "string"
+        },
         "currency": {
           "type": "string"
         },

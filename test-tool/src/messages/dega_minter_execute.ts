@@ -20,6 +20,7 @@ export interface Mint {
 }
 
 export interface MintRequest {
+    collection:               string;
     currency:                 string;
     price:                    string;
     primary_sale_recipient:   string;
@@ -225,6 +226,7 @@ const typeMap: any = {
         { json: "signature", js: "signature", typ: "" },
     ], false),
     "MintRequest": o([
+        { json: "collection", js: "collection", typ: "" },
         { json: "currency", js: "currency", typ: "" },
         { json: "price", js: "price", typ: "" },
         { json: "primary_sale_recipient", js: "primary_sale_recipient", typ: "" },

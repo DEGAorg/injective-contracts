@@ -29,6 +29,7 @@ export interface VerifiableMsg {
 }
 
 export interface MintRequest {
+    collection:               string;
     currency:                 string;
     price:                    string;
     primary_sale_recipient:   string;
@@ -236,6 +237,7 @@ const typeMap: any = {
         { json: "mint_request", js: "mint_request", typ: u(undefined, r("MintRequest")) },
     ], false),
     "MintRequest": o([
+        { json: "collection", js: "collection", typ: "" },
         { json: "currency", js: "currency", typ: "" },
         { json: "price", js: "price", typ: "" },
         { json: "primary_sale_recipient", js: "primary_sale_recipient", typ: "" },

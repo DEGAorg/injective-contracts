@@ -273,8 +273,19 @@ fn execute_mint(
 
     Url::parse(&request.uri.to_string()).map_err(|_| ContractError::GenericError("Invalid URI".to_string()))?;
 
-    let collection_address = COLLECTION_ADDRESS.load(deps.storage)
+    let this_collection_address = COLLECTION_ADDRESS.load(deps.storage)
         .map_err(|e| ContractError::Std("Error while loading collection address".to_string(), e))?;
+
+    let request_collection_address = deps.api.addr_validate(request.collection.as_str())
+        .map_err(|e| ContractError::Std("Error validating request collection address".to_string(), e))?;
+
+    if this_collection_address != request_collection_address {
+        return Err(ContractError::GenericError(format!(
+            "Mint request authorized for collection ({}) sent to incorrect collection ({})",
+            request_collection_address.as_str(),
+            this_collection_address.as_str(),
+            )));
+    }
 
     let token_id = increment_token_index(deps.storage)
         .map_err(|e| ContractError::Std("Error while incrementing token index".to_string(), e))?;
@@ -287,7 +298,7 @@ fn execute_mint(
         extension: None,
     };
     let mint_wasm_msg = CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: collection_address.to_string(),
+        contract_addr: this_collection_address.to_string(),
         msg: to_json_binary(&mint_exec_msg)
             .map_err(|e| ContractError::Std("Error during conversion of mint exec message to binary".to_string(), e))?,
         funds: vec![],
@@ -309,6 +320,7 @@ fn execute_mint(
         .add_attribute("sender", info.sender.clone())
         .add_attribute("signature", signature)
         .add_attribute("token_id", token_id.to_string())
+        .add_attribute("collection_address", this_collection_address.to_string())
         .add_attribute("request.to", request.to)
         .add_attribute("request.primary_sale_recipient", request.primary_sale_recipient)
         .add_attribute("request.uri", request.uri)
@@ -316,6 +328,7 @@ fn execute_mint(
         .add_attribute("request.currency", request.currency)
         .add_attribute("request.validity_start_timestamp", request.validity_start_timestamp)
         .add_attribute("request.validity_end_timestamp", request.validity_end_timestamp)
+        .add_attribute("request.collection", request.collection)
         .add_attribute("request.uuid", request.uuid)
     )
 }
