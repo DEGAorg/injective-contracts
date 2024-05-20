@@ -58,6 +58,8 @@ async function addMsgForFillingTestAddress(addressToFill: string, balanceRequire
         }
     }));
 
+
+
     return msgArray;
 }
 
@@ -136,10 +138,8 @@ async function fillTestWallets() {
 
     await testContext.localGenesisBroadcaster.broadcast({
         msgs: sendMessages,
-        gas: {
-            gasPrice: new BigNumberInBase(0.01).toWei().toFixed()
-        }
-    })
+        gas: appContext.gasSettings
+    });
 }
 
 

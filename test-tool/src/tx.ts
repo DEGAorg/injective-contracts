@@ -625,9 +625,7 @@ async function refillLocal(args: string[]) {
 
     const response = await context.localGenesisBroadcaster.broadcast({
         msgs: sendMsg,
-        gas: {
-            gasPrice: new BigNumberInBase(0.01).toWei().toFixed()
-        }
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -749,10 +747,7 @@ export async function instantiateMinter(instantiateMessage: MsgInstantiateContra
 
     const response = await context.primaryBroadcaster.broadcast({
         msgs: instantiateMessage,
-        gas: {
-            gasPrice: context.gasPricesAmountWei.toFixed(),
-            gas: context.gasAmountWei.toNumber()
-        }
+        gas: context.gasSettings,
     })
 
     let minterAddress: string | undefined = "";
@@ -777,7 +772,7 @@ export async function instantiateMinter(instantiateMessage: MsgInstantiateContra
                         is_cw721 = true;
                     }
                     if (key == "contract_address") {
-                        address = value;
+                        address = stripQuotes(value);
                     }
                 });
 
@@ -848,10 +843,7 @@ export async function store_wasm(wasm_name: string): Promise<number> {
 
     const response = await context.primaryBroadcaster.broadcast({
         msgs: storeCodeMsg,
-        gas: {
-            gasPrice: context.gasPricesAmountWei.toFixed(),
-            gas: context.gasAmountWei.toNumber()
-        }
+        gas: context.gasSettings,
     })
 
     logResponse(response);
