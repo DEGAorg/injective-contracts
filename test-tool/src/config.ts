@@ -32,7 +32,7 @@ function initConfig() {
 
     if (isJestRunning()) {
         const testEnvPath = path.resolve(__dirname, "..", "cache", ".env.test")
-        config({path: testEnvPath});
+        config({path: testEnvPath, override: true});
     }
 
     let networkType: "Local" | "Testnet" | "Mainnet";

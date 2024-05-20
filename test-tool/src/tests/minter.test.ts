@@ -109,6 +109,10 @@ describe('Dega Minter', () => {
             ],
         })
 
+        await info([]);
+
+        console.log(`Minter Address: `, appContext.minterAddress);
+
         const response = await appContext.primaryBroadcaster.broadcast({
             msgs: execMsg,
             gas: appContext.gasSettings,
