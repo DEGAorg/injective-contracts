@@ -28,8 +28,6 @@ function validateChecksum(hash: string) {
 }
 
 
-
-
 async function initTestContext(): Promise<TestContext> {
 
     // We need to reload the config because the statically loaded Config object
@@ -50,9 +48,6 @@ async function initTestContext(): Promise<TestContext> {
             });
 
     localGenesisBroadcaster.chainId = ChainId.Mainnet; // Fix for local testnet chain ID being wrong for Local in the injective typescript library
-
-
-    console.log("CANARY!!!!!!!!!!!")
 
     const testPrivateKeyOne = PrivateKey.fromHex(config.TEST_TEST_ONE_SEEDHEX);
     const testAddressOne = testPrivateKeyOne.toBech32();
