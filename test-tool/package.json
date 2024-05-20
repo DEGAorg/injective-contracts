@@ -5,7 +5,8 @@
   "main": "dist/main.js",
   "scripts": {
     "tsc": "npx tsc",
-    "test": "npx tsc && node dist/main.js"
+    "run": "npx tsc && node dist/main.js",
+    "test": "npx tsc && npx jest"
   },
   "author": "Unamint Studios, Will Stahl <will@stahl.cc>",
   "license": "None (all rights reserved)",

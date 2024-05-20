@@ -8,21 +8,31 @@ skip_core_tasks = true
 command = "cargo"
 args    = ["fmt", "--all", "--check"]
 
-[tasks.test]
+[tasks.unit-test]
 command = "cargo"
-args    = ["test", "--locked"]
+args    = ["test", "--locked", "-p", "dega-cw721", "-p", "dega-minter"]
+
+[tasks.int-test]
+script = """
+cd test-tool
+npm run test
+"""
 
 [tasks.lint]
 command = "cargo"
 args    = ["clippy", "--tests", "--", "-D", "warnings"]
 
-[tasks.build]
+[tasks.build-raw]
 command = "cargo"
 args    = ["build", "--release", "--locked", "--target", "wasm32-unknown-unknown", "-p", "dega-cw721", "-p", "dega-minter"]
 
-[tasks.optimize]
+[tasks.build]
 # https://hub.docker.com/r/cosmwasm/workspace-optimizer/tags https://hub.docker.com/r/cosmwasm/workspace-optimizer-arm64/tags
 script = """
+if [[ -d "artifacts" ]]; then
+  rm artifacts/*
+fi
+
 if [[ $(arch) == "arm64" ]]; then
   image="cosmwasm/workspace-optimizer-arm64"
 else
@@ -33,6 +43,15 @@ docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
   ${image}:0.15.0
+
+if [[ -d "artifacts-optimized" ]]; then
+  rm -rf artifacts-optimized/*
+else
+  mkdir artifacts-optimized
+fi
+
+mv artifacts/* artifacts-optimized/
+rmdir artifacts
 """
 
 [tasks.schema]

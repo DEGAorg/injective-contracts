@@ -1,22 +1,25 @@
 import {generate} from "./generate";
 import {query} from "./query";
 import {tx} from "./tx";
-import {Context} from "./context";
+import {getAppContext} from "./context";
 import {Config} from "./config";
 import {toBase64} from "@injectivelabs/sdk-ts";
 
 
 function main() {
 
-    console.log("Network: " + Config.NETWORK);
-    console.log("Minter Address: " + Config.MINTER_ADDRESS);
-    console.log("CW721 Address: " + Config.CW721_ADDRESS);
-    console.log("Primary Address: " + Context.primaryAddress);
-    console.log("Signer Address: " + Context.signerAddress);
-    console.log("Signer Compressed Pubkey Base64: " + Context.signerCompressedPublicKey.toString('base64'));
-    console.log("Local Genesis Address: " + Context.localGenesisAddress);
-
     (async () => {
+
+        const context = await getAppContext();
+
+        console.log("Network: " + Config.NETWORK);
+        console.log("Minter Address: " + context.minterAddress);
+        console.log("CW721 Address: " + context.cw721Address);
+        console.log("Primary Address: " + context.primaryAddress);
+        console.log("Signer Address: " + context.signerAddress);
+        console.log("Signer Compressed Pubkey Base64: " + context.signerCompressedPublicKey.toString('base64'));
+        console.log("Local Genesis Address: " + context.localGenesisAddress);
+
 
         let command: string | null = null; // default to query
         let args = new Array<string>();
@@ -66,11 +69,14 @@ main();
 
 
 async function makeSig(message: string) {
+
+    const context = await getAppContext();
+
     let mintRequestBase64 = toBase64({message});
     let buffer = Buffer.from(mintRequestBase64, "base64");
     //let uint8Array = new Uint8Array(buffer);
 
-    const signature = await Context.signerPrivateKey.sign(buffer);
+    const signature = await context.signerPrivateKey.sign(buffer);
     let sigBase64 = toBase64(signature);
 
     console.log("Signature:");

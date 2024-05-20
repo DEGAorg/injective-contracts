@@ -9,7 +9,7 @@ import {
 } from "./messages/dega_minter_execute";
 import {Config} from "./config";
 import {
-    Context,
+    getAppContext,
 } from "./context";
 import {
     fromBase64,
@@ -173,6 +173,8 @@ async function mintCombined(args: string[]) {
         throw new Error("Missing argument. Usage: mint-combined <receiver_address> <price>");
     }
 
+    const context = await getAppContext();
+
     const receiverAddress = args[0];
     const priceString = args[1];
 
@@ -191,7 +193,7 @@ async function mintCombined(args: string[]) {
 
     let mintRequestMsg: MintRequest = {
         to: receiverAddress,
-        primary_sale_recipient: Context.primaryAddress,
+        primary_sale_recipient: context.primaryAddress,
         uri: "https://example.com",
         price: nftPriceWei.toFixed(),
         currency: "inj",
@@ -200,7 +202,7 @@ async function mintCombined(args: string[]) {
         validity_end_timestamp: endTimeInSeconds.toString(),
         uuid: uuidv4(),
         //uuid: "8c288b70-dc7b-47d6-9412-1840f8c25a57"
-        collection: Config.CW721_ADDRESS,
+        collection: context.cw721Address,
         //collection: "inj1n8n0p5l48g7xy9y7k4hu694jl4c82ej4mwqmfz"
     };
 
@@ -209,7 +211,7 @@ async function mintCombined(args: string[]) {
 
     let rawMessage = Buffer.from(toBase64(mintRequestMsg), "base64")
     let msgMd5Hash = Buffer.from(sha256(rawMessage))
-    let signingKey = Context.signerSigningKey
+    let signingKey = context.signerSigningKey
     let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signingKey).signature)
 
 
@@ -224,14 +226,14 @@ async function mintCombined(args: string[]) {
             signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
             // Uncomment below to test validating with a local public key using on chain logic
             // signer_source: {
-            //     pub_key_binary: Buffer.from(Context.signerCompressedPublicKey).toString("base64")
+            //     pub_key_binary: Buffer.from(context.signerCompressedPublicKey).toString("base64")
             // }
         }
     };
 
     const checkSigQueryResponse =
-        await Context.chainGrpcWasmApi.fetchSmartContractState(
-            Config.MINTER_ADDRESS,
+        await context.queryWasmApi.fetchSmartContractState(
+            context.minterAddress,
             toBase64(checkSigQuery));
 
     const checkSigQueryResponseObject: object = fromBase64(
@@ -250,8 +252,8 @@ async function mintCombined(args: string[]) {
     }
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.MINTER_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.minterAddress,
         msg: contractMsg,
         funds: [
             {
@@ -263,9 +265,9 @@ async function mintCombined(args: string[]) {
         ],
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -276,6 +278,8 @@ async function mintAsBackend(args: string[]) {
     if (args.length < 2) {
         throw new Error("Missing argument. Usage: mint-as-backend <receiver_address> <price>");
     }
+
+    const context = await getAppContext();
 
     const receiverAddress = args[0];
     const priceString = args[1];
@@ -295,7 +299,7 @@ async function mintAsBackend(args: string[]) {
 
     let mintRequestMsg: MintRequest = {
         to: receiverAddress,
-        primary_sale_recipient: Context.primaryAddress,
+        primary_sale_recipient: context.primaryAddress,
         uri: "https://example.com",
         price: nftPriceWei.toFixed(),
         currency: "inj",
@@ -304,7 +308,7 @@ async function mintAsBackend(args: string[]) {
         validity_end_timestamp: endTimeInSeconds.toString(),
         uuid: uuidv4(),
         //uuid: "8c288b70-dc7b-47d6-9412-1840f8c25a57"
-        collection: Config.CW721_ADDRESS,
+        collection: context.cw721Address,
     };
 
 
@@ -314,7 +318,7 @@ async function mintAsBackend(args: string[]) {
     const mintRequestBase64 = toBase64(mintRequestMsg);
     let rawMessage = Buffer.from(mintRequestBase64, "base64")
     let msgMd5Hash = Buffer.from(sha256(rawMessage))
-    let signingKey = Context.signerSigningKey
+    let signingKey = context.signerSigningKey
     let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signingKey).signature)
 
 
@@ -330,14 +334,14 @@ async function mintAsBackend(args: string[]) {
             signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
             // Uncomment below to test validating with a local public key using on chain logic
             // signer_source: {
-            //     pub_key_binary: Buffer.from(Context.signerCompressedPublicKey).toString("base64")
+            //     pub_key_binary: Buffer.from(context.signerCompressedPublicKey).toString("base64")
             // }
         }
     };
 
     const checkSigQueryResponse =
-        await Context.chainGrpcWasmApi.fetchSmartContractState(
-            Config.MINTER_ADDRESS,
+        await context.queryWasmApi.fetchSmartContractState(
+            context.minterAddress,
             toBase64(checkSigQuery));
 
     const checkSigQueryResponseObject: object = fromBase64(
@@ -365,6 +369,7 @@ async function mintAsBackend(args: string[]) {
 
 async function mintAsUser(args: string[]) {
 
+    const context = await getAppContext();
 
     const cacheDir = path.resolve(__dirname, "../cache");
     const mintRequestPath = path.resolve(cacheDir, "mint-request-base64.txt");
@@ -388,14 +393,14 @@ async function mintAsUser(args: string[]) {
             signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
             // Uncomment below to test validating with a local public key using on chain logic
             // signer_source: {
-            //     pub_key_binary: Buffer.from(Context.signerCompressedPublicKey).toString("base64")
+            //     pub_key_binary: Buffer.from(context.signerCompressedPublicKey).toString("base64")
             // }
         }
     };
 
     const checkSigQueryResponse =
-        await Context.chainGrpcWasmApi.fetchSmartContractState(
-            Config.MINTER_ADDRESS,
+        await context.queryWasmApi.fetchSmartContractState(
+            context.minterAddress,
             toBase64(checkSigQuery));
 
     const checkSigQueryResponseObject: object = fromBase64(
@@ -414,8 +419,8 @@ async function mintAsUser(args: string[]) {
     }
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.MINTER_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.minterAddress,
         msg: contractMsg,
         funds: [
             {
@@ -427,9 +432,9 @@ async function mintAsUser(args: string[]) {
         ],
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -440,6 +445,8 @@ async function transferToken(args: string[]) {
     if (args.length < 2) {
         throw new Error("Missing arguments. send usage: transfer <token_id> <recipient>");
     }
+
+    const context = await getAppContext();
 
     const tokenId = args[0];
     const recipient = args[1];
@@ -452,24 +459,24 @@ async function transferToken(args: string[]) {
     };
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.CW721_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.cw721Address,
         msg: contractMsg,
         funds: []
     })
 
     // const execMsgVanilla = MsgExecuteContract.fromJSON({
-    //     sender: Context.primaryAddress,
-    //     contractAddress: Config.CW721_ADDRESS,
+    //     sender: context.primaryAddress,
+    //     contractAddress: context.cw721Address,
     //     msg: contractMsg,
     //     funds: []
     // })
 
     //execMsgVanilla.toData()["@type"]
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -481,6 +488,8 @@ async function sendToken(args: string[]) {
     if (args.length < 2) {
         throw new Error("Missing arguments. send usage: send <token_id> <recipient_contract> <receive_message>");
     }
+
+    const context = await getAppContext();
 
     const tokenId = args[0];
     const recipient_contract = args[1];
@@ -495,15 +504,15 @@ async function sendToken(args: string[]) {
     };
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.CW721_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.cw721Address,
         msg: contractMsg,
         funds: []
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -516,11 +525,13 @@ async function sendTalisSale(args: string[]) {
         throw new Error("Missing arguments. send-talis-sell usage: send-talis-sell <token_id> <price>");
     }
 
+    const context = await getAppContext();
+
     let market_address = ""
 
-    if (Config.NETWORK == Network.Testnet) {
+    if (Config.NETWORK == "Testnet") {
         market_address = "inj1n8n0p5l48g7xy9y7k4hu694jl4c82ej4mwqmfz"
-    } else if (Config.NETWORK == Network.Mainnet) {
+    } else if (Config.NETWORK == "Mainnet") {
         throw new Error("Mainnet address not known")
     } else {
         throw new Error("Cannot send to Talis when in Localnet")
@@ -532,7 +543,7 @@ async function sendTalisSale(args: string[]) {
     const sellTokenMsg = {
         sell_token: {
             token_id: tokenId,
-            contract_address: Config.CW721_ADDRESS,
+            contract_address: context.cw721Address,
             class_id: "injective",
             price: {
                 native: [
@@ -554,15 +565,15 @@ async function sendTalisSale(args: string[]) {
     };
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.CW721_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.cw721Address,
         msg: contractMsg,
         funds: []
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -571,7 +582,9 @@ async function sendTalisSale(args: string[]) {
 
 async function refillLocal(args: string[]) {
 
-    if (Context.localGenesisAddress == null || Context.localGenesisBroadcaster == null) {
+    const context = await getAppContext();
+
+    if (context.localGenesisAddress == null || context.localGenesisBroadcaster == null) {
         throw new Error("Local Genesis Address required for refilling local")
     }
 
@@ -583,10 +596,10 @@ async function refillLocal(args: string[]) {
 
     switch (args[0]) {
         case "primary":
-            dstInjectiveAddress = Context.primaryAddress;
+            dstInjectiveAddress = context.primaryAddress;
             break;
         case "signer":
-                dstInjectiveAddress = Context.signerAddress;
+                dstInjectiveAddress = context.signerAddress;
                 break;
         case "other":
             if (args.length < 2) {
@@ -600,7 +613,7 @@ async function refillLocal(args: string[]) {
     }
 
      const sendMsg = MsgSend.fromJSON({
-        srcInjectiveAddress: Context.localGenesisAddress,
+        srcInjectiveAddress: context.localGenesisAddress,
         dstInjectiveAddress: dstInjectiveAddress,
         amount: {
             denom: "inj",
@@ -610,7 +623,7 @@ async function refillLocal(args: string[]) {
 
     console.log(sendMsg);
 
-    const response = await Context.localGenesisBroadcaster.broadcast({
+    const response = await context.localGenesisBroadcaster.broadcast({
         msgs: sendMsg,
         gas: {
             gasPrice: new BigNumberInBase(0.01).toWei().toFixed()
@@ -627,9 +640,11 @@ async function refillLocalCommandLine(args: string[]) {
         throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
     }
 
-    const dstInjectiveAddress = (args[0] == "primary") ? Context.primaryAddress : Context.signerAddress;
-    const gasPrices = Context.gasPricesAmountWei.toFixed() + "inj";
-    const gas = Context.gasAmountWei.toFixed() + "inj";
+    const context = await getAppContext();
+
+    const dstInjectiveAddress = (args[0] == "primary") ? context.primaryAddress : context.signerAddress;
+    const gasPrices = context.gasPricesAmountWei.toFixed() + "inj";
+    const gas = context.gasAmountWei.toFixed() + "inj";
     const refillAmount = new BigNumberInBase(0.01).toWei().toFixed();
 
     // Build your command using the variables
@@ -637,7 +652,7 @@ async function refillLocalCommandLine(args: string[]) {
         `yes ${Config.INJECTIVED_PASSWORD}` +
         ` | injectived tx bank send --from=genesis --chain-id="injective-1"` +
         ` --yes --gas-prices=${gasPrices}inj --gas=${gas}inj` +
-        ` ${Context.localGenesisAddress} ${dstInjectiveAddress} ${refillAmount}inj`;
+        ` ${context.localGenesisAddress} ${dstInjectiveAddress} ${refillAmount}inj`;
 
     console.log("Running command: " + command)
 
@@ -655,21 +670,19 @@ async function refillLocalCommandLine(args: string[]) {
 }
 
 async function instantiate(args: string[]) {
-    await instantiate_minter();
-}
 
-async function instantiate_minter() {
+    const context = await getAppContext();
 
-    const signerCompressedPubKeyBase64 = Context.signerCompressedPublicKey.toString("base64")
+    const signerCompressedPubKeyBase64 = context.signerCompressedPublicKey.toString("base64")
 
     console.log("Compressed Pub key Base64: " + signerCompressedPubKeyBase64)
     console.log()
 
     const instantiateMinterMsg: DegaMinterInstantiateMsg = {
         collection_params: {
-            code_id: Config.CW721_CODE_ID,
+            code_id: context.cw721CodeId,
             info: {
-                creator: Context.primaryAddress,
+                creator: context.primaryAddress,
                 description: "A simple test collection description",
                 image: "https://storage.googleapis.com/dega-banner/banner.png"
             },
@@ -683,10 +696,10 @@ async function instantiate_minter() {
             },
             extension: {
                 dega_minter_settings: {
-                    signer_pub_key: Context.signerCompressedPublicKey.toString("base64"),
+                    signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
                     minting_paused: false
                 },
-                initial_admin: Context.primaryAddress,
+                initial_admin: context.primaryAddress,
             },
             frozen: false,
             max_trading_offset_secs: 0,
@@ -697,7 +710,7 @@ async function instantiate_minter() {
             mint_fee_bps: 0
         },
         cw721_contract_label: "DEGA Collection - Test Collection",
-        cw721_contract_admin: Context.primaryAddress
+        cw721_contract_admin: context.primaryAddress
     };
 
 
@@ -706,9 +719,9 @@ async function instantiate_minter() {
     console.log()
 
     const instantiateContractMsg = MsgInstantiateContract.fromJSON({
-        sender: Context.primaryAddress,
-        admin: Context.primaryAddress,
-        codeId: Config.MINTER_CODE_ID,
+        sender: context.primaryAddress,
+        admin: context.primaryAddress,
+        codeId: context.minterCodeId,
         label: "DEGA Minter - Test Collection",
         msg: instantiateMinterMsg,
     });
@@ -716,20 +729,34 @@ async function instantiate_minter() {
     console.log("Instantiating code for Dega Minter");
     console.log();
 
-    const response = await Context.primaryBroadcaster.broadcast({
-        msgs: instantiateContractMsg,
-        gas: {
-            gasPrice: Context.gasPricesAmountWei.toFixed(),
-            gas: Context.gasAmountWei.toNumber()
-        }
-    })
 
-    //console.log(response);
+    const [response, minterAddress, cw721Address] =
+        await instantiateMinter(instantiateContractMsg);
+
 
     logResponse(response);
 
+    console.log("");
     console.log("Successfully Instantiated Contract")
+    console.log("Minter Address: " + minterAddress);
+    console.log("CW721 Address: " + cw721Address);
+    console.log("");
+}
 
+export async function instantiateMinter(instantiateMessage: MsgInstantiateContract): Promise<[any,string,string]> {
+
+    const context = await getAppContext();
+
+    const response = await context.primaryBroadcaster.broadcast({
+        msgs: instantiateMessage,
+        gas: {
+            gasPrice: context.gasPricesAmountWei.toFixed(),
+            gas: context.gasAmountWei.toNumber()
+        }
+    })
+
+    let minterAddress: string | undefined = "";
+    let cw721Address: string | undefined = "";
 
     if (response.events != undefined) {
         let decoder = new TextDecoder();
@@ -743,10 +770,10 @@ async function instantiate_minter() {
                 eventTyped.attributes.forEach((attr: TxAttribute) => {
                     let key = decoder.decode(attr.key);
                     let value = decoder.decode(attr.value);
-                    if (key == "code_id" && stripQuotes(value) == Config.MINTER_CODE_ID.toString()) {
+                    if (key == "code_id" && stripQuotes(value) == context.minterCodeId.toString()) {
                         is_minter = true;
                     }
-                    if (key == "code_id" && stripQuotes(value) == Config.CW721_CODE_ID.toString()) {
+                    if (key == "code_id" && stripQuotes(value) == context.cw721CodeId.toString()) {
                         is_cw721 = true;
                     }
                     if (key == "contract_address") {
@@ -759,18 +786,21 @@ async function instantiate_minter() {
                 }
 
                 if (is_minter) {
-                    console.log("Minter Address: " + address);
+                    minterAddress = address;
                 } else if (is_cw721) {
-                    console.log("CW721 Address: " + address);
+                    cw721Address = address;
                 }
             }
 
         });
-        console.log("")
     }
 
-    //await sleep(3000);
-    //await backupPromiseCall(() => counterStore.fetchCount());
+    if (minterAddress == "" || cw721Address == "") {
+        throw new Error("Minter or CW721 address not found in response during contract instantiation")
+    }
+
+    return [response, minterAddress, cw721Address];
+
 }
 
 export function stripQuotes(input: string): string {
@@ -799,25 +829,28 @@ async function store(args: string[]) {
     }
 }
 
-export async function store_wasm(wasm_name: string): Promise<null|number> {
+export async function store_wasm(wasm_name: string): Promise<number> {
 
-    const artifactsDir = path.resolve(__dirname, "../../artifacts");
+    const context = await getAppContext();
+
+    const artifactsDir = path.resolve(__dirname, "../../artifacts-optimized");
     const wasmPath = path.resolve(artifactsDir, wasm_name);
     const wasmBytes = new Uint8Array(Array.from(fs.readFileSync(wasmPath)));
 
     const storeCodeMsg = MsgStoreCode.fromJSON({
-        sender: Context.primaryAddress,
+        sender: context.primaryAddress,
         wasmBytes: wasmBytes
     });
 
     console.log("Storing code for: " + wasm_name);
     console.log("");
 
-    const response = await Context.primaryBroadcaster.broadcast({
+
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: storeCodeMsg,
         gas: {
-            gasPrice: Context.gasPricesAmountWei.toFixed(),
-            gas: Context.gasAmountWei.toNumber()
+            gasPrice: context.gasPricesAmountWei.toFixed(),
+            gas: context.gasAmountWei.toNumber()
         }
     })
 
@@ -847,6 +880,10 @@ export async function store_wasm(wasm_name: string): Promise<null|number> {
         console.log("")
     }
 
+    if (result == null) {
+        throw new Error("Code ID not found in response")
+    }
+
     return result;
 }
 
@@ -863,12 +900,14 @@ export interface TxAttribute {
 
 async function storeCommandLine(args: string[]) {
 
+    const context = await getAppContext();
+
     const artifactsDir = path.resolve(__dirname, "../../artifacts");
     const minterPath = path.resolve(artifactsDir, "dega_minter.wasm");
 
-    const payerAddress = Context.primaryAddress;
-    const gasPrices = Context.gasPricesAmountWei.toFixed();
-    const gas = Context.gasAmountWei.toFixed();
+    const payerAddress = context.primaryAddress;
+    const gasPrices = context.gasPricesAmountWei.toFixed();
+    const gas = context.gasAmountWei.toFixed();
 
     // Build your command using the variables
     const command =
@@ -898,6 +937,8 @@ async function burn(args: string[]) {
         throw new Error("Missing argument. Usage: tx burn <token_id>");
     }
 
+    const context = await getAppContext();
+
     const tokenId = args[0];
 
     const contractMsg: DegaCw721ExecuteMsg = {
@@ -907,15 +948,15 @@ async function burn(args: string[]) {
     };
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.CW721_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.cw721Address,
         msg: contractMsg,
         funds: []
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -928,13 +969,15 @@ async function transferInj(args: string[]) {
         throw new Error("Missing argument. Usage: tx transfer-inj <receiver> <amount>");
     }
 
+    const context = await getAppContext();
+
     const receiverAddress = args[0];
     const amount = args[1];
     const amountInBase = new BigNumberInBase(parseInt(amount)).toWei().toFixed()
 
 
     const sendMsg = MsgSend.fromJSON({
-        srcInjectiveAddress: Context.primaryAddress,
+        srcInjectiveAddress: context.primaryAddress,
         dstInjectiveAddress: receiverAddress,
         amount: {
             denom: "inj",
@@ -944,9 +987,9 @@ async function transferInj(args: string[]) {
 
     console.log(sendMsg);
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: sendMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -956,6 +999,8 @@ async function addAdmin(args: string[]) {
     if (args.length < 1) {
         throw new Error("Missing argument. Usage: tx add-admin <new-admin-address>");
     }
+
+    const context = await getAppContext();
 
     const newAdminAddress = args[0];
 
@@ -967,15 +1012,15 @@ async function addAdmin(args: string[]) {
     };
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.MINTER_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.minterAddress,
         msg: contractMsg,
         funds: []
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -985,6 +1030,8 @@ async function removeAdmin(args: string[]) {
     if (args.length < 1) {
         throw new Error("Missing argument. Usage: tx remove-admin <revoked-admin-address>");
     }
+
+    const context = await getAppContext();
 
     const revokedAdminAddress = args[0];
 
@@ -996,15 +1043,15 @@ async function removeAdmin(args: string[]) {
     };
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.MINTER_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.minterAddress,
         msg: contractMsg,
         funds: []
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -1012,10 +1059,12 @@ async function removeAdmin(args: string[]) {
 
 async function setMintSigner(args: string[]) {
 
+    const context = await getAppContext();
+
     let newSigningKeyBase64 = undefined;
 
     if (args.length < 1) {
-        newSigningKeyBase64 = Context.signerCompressedPublicKey.toString("base64");
+        newSigningKeyBase64 = context.signerCompressedPublicKey.toString("base64");
 
     } else {
         newSigningKeyBase64 = args[0];
@@ -1025,8 +1074,8 @@ async function setMintSigner(args: string[]) {
         config: {}
     };
 
-    const configQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
-        Config.MINTER_ADDRESS,
+    const configQueryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.minterAddress,
         toBase64(configQuery),
     );
 
@@ -1045,15 +1094,15 @@ async function setMintSigner(args: string[]) {
     };
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.MINTER_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.minterAddress,
         msg: contractMsg,
         funds: []
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -1065,6 +1114,8 @@ async function pause(args: string[]) {
     if (args.length < 1) {
         throw new Error("Missing argument. Usage: tx pause <new-setting>");
     }
+
+    const context = await getAppContext();
 
     const onString = args[0];
 
@@ -1078,8 +1129,8 @@ async function pause(args: string[]) {
     //     config: {}
     // };
     //
-    // const configQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
-    //     Config.MINTER_ADDRESS,
+    // const configQueryResponse = await context.chainGrpcWasmApi.fetchSmartContractState(
+    //     context.minterAddress,
     //     toBase64(configQuery),
     // );
     //
@@ -1097,7 +1148,7 @@ async function pause(args: string[]) {
     // newSettings.minting_paused = newSetting;
 
     const newSettings: DegaMinterConfigSettings = {
-        signer_pub_key: Context.signerCompressedPublicKey.toString("base64"),
+        signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
         minting_paused: newSetting
     };
 
@@ -1108,15 +1159,15 @@ async function pause(args: string[]) {
     };
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: Context.primaryAddress,
-        contractAddress: Config.MINTER_ADDRESS,
+        sender: context.primaryAddress,
+        contractAddress: context.minterAddress,
         msg: contractMsg,
         funds: []
     })
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: execMsg,
-        gas: Context.gasSettings,
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -1125,9 +1176,11 @@ async function pause(args: string[]) {
 
 async function migrate(args: string[]) {
 
+    const context = await getAppContext();
+
     {
-        const minterCodeId = Config.MINTER_CODE_ID;
-        const minterAddress = Config.MINTER_ADDRESS
+        const minterCodeId = context.minterCodeId;
+        const minterAddress = context.minterAddress
         const migrateMinterMsg: DegaMinterMigrateMsg = {};
 
         await migrateContract(
@@ -1139,8 +1192,8 @@ async function migrate(args: string[]) {
     }
 
     {
-        let cw721CodeId = Config.CW721_CODE_ID;
-        const cw721Address = Config.CW721_ADDRESS;
+        let cw721CodeId = context.cw721CodeId;
+        const cw721Address = context.cw721Address;
         const migrateCw721Msg: DegaCw721MigrateMsg = {};
 
         await migrateContract(
@@ -1161,8 +1214,10 @@ async function migrateContract(
     contractName: string,
 ) {
 
+    const context = await getAppContext();
+
     const migrateContractMsg = MsgMigrateContract.fromJSON({
-        sender: Context.primaryAddress,
+        sender: context.primaryAddress,
         codeId: codeId,
         msg: migrateMessage,
         contract: contractAddress,
@@ -1171,9 +1226,9 @@ async function migrateContract(
     console.log(`Migrating code for ${contractName}`);
     console.log("");
 
-    const response = await Context.primaryBroadcaster.broadcast({
+    const response = await context.primaryBroadcaster.broadcast({
         msgs: migrateContractMsg,
-        gas: Context.gasSettings
+        gas: context.gasSettings
     });
 
     logResponse(response);
@@ -1190,6 +1245,8 @@ async function govProposal(
         throw new Error("Missing argument. Usage: tx gov-proposal <simulate|broadcast>");
     }
 
+    const context = await getAppContext();
+
     const dryRunString = args[0];
 
     if (dryRunString != "simulate" && dryRunString != "broadcast") {
@@ -1205,7 +1262,7 @@ async function govProposal(
             wasmName,
             testTitle,
             testDescriptionFileName,
-            [Context.primaryAddress],
+            [context.primaryAddress],
             dryRunString != "broadcast"
         );
     }
@@ -1265,14 +1322,16 @@ async function govProposalStoreCode(
     dryRun: boolean
 ) {
 
-    if (Config.NETWORK != Network.Local) {
+    const context = await getAppContext();
+
+    if (Config.NETWORK != "Local") {
         throw new Error("This command is only meant for localnet, use the deploy tool for testnet and mainnet");
     }
 
     const artifactsDir = path.resolve(__dirname, "../../artifacts");
     const wasmPath = path.resolve(artifactsDir, wasm_name);
 
-    const gasPrices = Context.gasPricesAmountWei.toFixed();
+    const gasPrices = context.gasPricesAmountWei.toFixed();
     const gas = new BigNumberInWei(60000000).toFixed();
     const despositAmountInBaseInj = 100;
     const despositAmountInWei = new BigNumberInBase(despositAmountInBaseInj).toWei().toFixed();
@@ -1316,12 +1375,12 @@ async function govProposalStoreCode(
     //     ` --summary="${escapedSummaryString}"` +
     //     instantiateArg +
     //     ` --broadcast-mode=sync` +
-    //     ` --chain-id="${Context.primaryBroadcaster.chainId}"` +
+    //     ` --chain-id="${context.primaryBroadcaster.chainId}"` +
     //     //` --node=https://sentry.tm.injective.network:443` +
     //     ` --deposit=${despositAmountInWei}inj` +
     //     ` --gas=${gas}` +
     //     ` --gas-prices=${gasPrices}inj` +
-    //     ` --from=${(dryRun ? Context.localGenesisAddress : "genesis")}` +
+    //     ` --from=${(dryRun ? context.localGenesisAddress : "genesis")}` +
     //     ` --yes` +
     //     ` --output json` +
     //     (dryRun ? ` --dry-run` : ``)
@@ -1339,7 +1398,7 @@ async function govProposalStoreCode(
             + ` --deposit=${despositAmountInWei}inj`
             + ` --gas=${gas}`
             + ` --gas-prices=${gasPrices}inj`
-            //+ ` --from=${(dryRun ? Context.localGenesisAddress : "genesis")}`
+            //+ ` --from=${(dryRun ? context.localGenesisAddress : "genesis")}`
             + ` --yes`
             + ` --output json`
             + ` --offline`
@@ -1348,7 +1407,7 @@ async function govProposalStoreCode(
             //+ (dryRun ? ` --dry-run` : ``)
 
             //+ ` --broadcast-mode=sync`
-            //+ ` --chain-id="${Context.primaryBroadcaster.chainId}"`
+            //+ ` --chain-id="${context.primaryBroadcaster.chainId}"`
     ;
 
 

@@ -1,7 +1,7 @@
 import {config} from "dotenv";
-import {Network} from "@injectivelabs/networks";
-import fs from 'fs';
-import path from 'path';
+import path from "node:path";
+import {randomBytes} from "crypto";
+import {PrivateKey} from "@injectivelabs/sdk-ts";
 
 function isEmpty(value: any) {
     return value === null || value === undefined;
@@ -10,158 +10,96 @@ function notEmpty(value: any) {
     return value !== null && value !== undefined;
 }
 
-function isJestRunning() {
-    return process.env.JEST_WORKER_ID !== undefined;
+export function isJestRunning() {
+    return process.env.NODE_ENV == "test";
 }
 
-function inDeployment() {
+export function inDeployment() {
     return process.env.DEPLOYMENT !== undefined;
 }
 
-function getContractAddressesFromWasmDeployConfig(useLocal: boolean)
-    : { minterCodeId: any, minterAddress: any, cw721CodeId: any, cw721Address: any } | null
-{
+export function generatePrivateKeySeedHex() {
+    return "0x" + randomBytes(32).toString("hex");
+}
 
-    // Resolve the path to the JSON file
-    const jsonFilePath = path.resolve(__dirname, '../../.wasm-deploy/config.json');
-
-    if (!fs.existsSync(jsonFilePath)) return null;
-
-    // Read the JSON file
-    const jsonData = fs.readFileSync(jsonFilePath, 'utf-8');
-
-    // Parse the JSON file into an object
-    const jsonObject = JSON.parse(jsonData);
-
-    // Get the env_id from the config
-    const envId = useLocal ? process.env.CONFIG_LOCAL_ENV : process.env.CONFIG_TESTNET_ENV;
-
-    if (isEmpty(jsonObject)) return null;
-
-    const envs = jsonObject["envs"] as any[];
-    if (isEmpty(envs)) return null;
-
-    const envObject = envs.find(env => env["env_id"] === envId);
-    if (isEmpty(envObject)) return null;
-
-    const contracts = envObject["contracts"] as any[];
-    if (isEmpty(contracts)) return null;
-
-    let minterCodeId = null;
-    let minterAddress = null;
-    const minterContract = contracts.find(contract => contract["name"] === 'dega-minter');
-    if (notEmpty(minterContract)) {
-        minterCodeId = minterContract["code_id"];
-        if (process.env.USE_WASM_DEPLOY_CONFIG as string == "true") {
-            minterAddress = minterContract["addr"];
-        }
-    }
-
-    let cw721CodeId = null;
-    let cw721Address = null;
-    const cw721Contract = contracts.find(contract => contract["name"] === 'dega-cw721');
-    if (cw721Contract) {
-        cw721CodeId = cw721Contract["code_id"];
-        if (process.env.USE_WASM_DEPLOY_CONFIG as string == "true") {
-            cw721Address = cw721Contract["addr"];
-        }
-    }
-
-    return {
-        minterCodeId: minterCodeId,
-        minterAddress: minterAddress,
-        cw721CodeId: cw721CodeId,
-        cw721Address: cw721Address,
-    }
+export function generatePrivateKey() {
+    return PrivateKey.fromHex(generatePrivateKeySeedHex());
 }
 
 function initConfig() {
 
     config();
 
-    let useLocal = process.env.USE_LOCAL as string == "true" || isJestRunning();
-
-    let minterCodeId = 0;
-    let minterAddress = (useLocal ? process.env.MINTER_ADDRESS_LOCAL : process.env.MINTER_ADDRESS) as string
-    let cw721CodeId = 0;
-    let cw721Address = (useLocal ? process.env.CW721_ADDRESS_LOCAL : process.env.CW721_ADDRESS) as string
-
     if (isJestRunning()) {
-
-        const deploymentVar = process.env.DEPLOYMENT;
-
-        if (inDeployment()) {
-
-            // Define these as their own flag to avoid a collision and accidental usage of
-            // local testing code ids during the running of the test suite during deployment
-            // The flags below are what are used when running the test suite during deployment.
-            const testMinterCodeId = process.env.TEST_MINTER_CODE_ID;
-            const testCw721CodeId = process.env.TEST_CW721_CODE_ID;
-
-            if (testMinterCodeId == null || testMinterCodeId == "" ||
-                testCw721CodeId == null || testCw721CodeId == "") {
-                throw new Error("TEST_MINTER_CODE_ID and TEST_CW721_CODE_ID must be set in the environment" +
-                    "when running integration tests in a deployment");
-            }
-
-            minterCodeId = parseInt(testMinterCodeId);
-            cw721CodeId = parseInt(testCw721CodeId);
-        } else {
-            minterCodeId = parseInt(process.env.MINTER_CODE_ID_LOCAL as string);
-            cw721CodeId = parseInt(process.env.CW721_CODE_ID_LOCAL as string);
-        }
-
-    } else if (process.env.USE_WASM_DEPLOY_CONFIG as string == "true") {
-
-        let minterAndCw721CodeIdsAddressesOrNull =
-            getContractAddressesFromWasmDeployConfig(useLocal) as
-                { minterCodeId: number, minterAddress: string, cw721CodeId: number, cw721Address: string };
-
-        if (notEmpty(minterAndCw721CodeIdsAddressesOrNull)) {
-            const minterCodeIdNumber = minterAndCw721CodeIdsAddressesOrNull.minterCodeId as number;
-            if (notEmpty(minterCodeIdNumber)) {
-                minterCodeId = minterCodeIdNumber;
-            }
-            const minterAddressString = minterAndCw721CodeIdsAddressesOrNull.minterAddress as string;
-            if (notEmpty(minterAddressString) && minterAddressString.length > 0) {
-                minterAddress = minterAddressString;
-            }
-            const cw721CodeIdNumber = minterAndCw721CodeIdsAddressesOrNull.cw721CodeId as number;
-            if (notEmpty(cw721CodeIdNumber)) {
-                cw721CodeId = cw721CodeIdNumber;
-            }
-            const cw721AddressString = minterAndCw721CodeIdsAddressesOrNull.cw721Address as string;
-            if (notEmpty(cw721AddressString) && cw721AddressString.length > 0) {
-                cw721Address = cw721AddressString;
-            }
-        }
-    } else {
-        if (useLocal) {
-            minterCodeId = parseInt(process.env.MINTER_CODE_ID_LOCAL as string);
-            cw721CodeId = parseInt(process.env.CW721_CODE_ID_LOCAL as string);
-        } else {
-            minterCodeId = parseInt(process.env.MINTER_CODE_ID as string);
-            cw721CodeId = parseInt(process.env.CW721_CODE_ID as string);
-        }
+        const testEnvPath = path.resolve(__dirname, "..", "cache", ".env.test")
+        config({path: testEnvPath});
     }
 
-    const useWasmDeployConfig = process.env.USE_WASM_DEPLOY_CONFIG as string == "true";
+    let networkType: "Local" | "Testnet" | "Mainnet";
+
+    const networkString = process.env.NETWORK;
+
+    if (networkString != "Local" && networkString != "Testnet" && networkString != "Mainnet") {
+        if (networkString) {
+            throw new Error("Invalid NETWORK defined in environment: " + networkString);
+        }
+
+        networkType = "Testnet"; // Default to Local
+    } else {
+        networkType = networkString as "Local" | "Testnet" | "Mainnet";
+    }
+
+    if (isJestRunning() && networkType != "Local") {
+        networkType = "Local";
+    }
+
+    if (!process.env.PRIVATE_KEY_MNEMONIC) {
+        throw new Error("PRIVATE_KEY_MNEMONIC must be defined in the environment");
+    }
+
+    if (!process.env.SIGNER_KEY_MNEMONIC) {
+        throw new Error("SIGNER_KEY_MNEMONIC must be defined in the environment");
+    }
+
+    if (isJestRunning() && !process.env.LOCAL_GENESIS_MNEMONIC) {
+        throw new Error("LOCAL_GENESIS_MNEMONIC must be defined in the environment when running integration tests");
+    }
 
     return {
-        USE_WASM_DEPLOY_CONFIG: useWasmDeployConfig as boolean,
-        CONFIG_LOCAL_ENV: process.env.CONFIG_LOCAL_ENV as string,
-        CONFIG_TESTNET_ENV: process.env.CONFIG_TESTNET_ENV as string,
-        PRIVATE_KEY_MNEMONIC: process.env.PRIVATE_KEY_MNEMONIC as string,
-        USE_LOCAL: useLocal,
-        NETWORK: useLocal ? Network.Local : Network.Testnet,
-        MINTER_CODE_ID: minterCodeId,
-        MINTER_ADDRESS: minterAddress,
-        CW721_CODE_ID: cw721CodeId,
-        CW721_ADDRESS: cw721Address,
-        SIGNER_KEY_MNEMONIC: process.env.SIGNER_KEY_MNEMONIC as string,
-        LOCAL_GENESIS_MNEMONIC: process.env.LOCAL_GENESIS_MNEMONIC as string,
-        INJECTIVED_PASSWORD: process.env.INJECTIVED_PASSWORD as string,
+        PRIVATE_KEY_MNEMONIC: process.env.PRIVATE_KEY_MNEMONIC,
+        SIGNER_KEY_MNEMONIC: process.env.SIGNER_KEY_MNEMONIC,
+        LOCAL_GENESIS_MNEMONIC: process.env.LOCAL_GENESIS_MNEMONIC ?? "",
+        INJECTIVED_PASSWORD: process.env.INJECTIVED_PASSWORD ?? "",
+        NETWORK: networkType,
+        MINTER_CODE_ID_LOCAL: process.env.MINTER_CODE_ID_LOCAL ?? "",
+        CW721_CODE_ID_LOCAL: process.env.CW721_CODE_ID_LOCAL ?? "",
+        MINTER_ADDRESS_LOCAL: process.env.MINTER_ADDRESS_LOCAL ?? "",
+        CW721_ADDRESS_LOCAL: process.env.CW721_ADDRESS_LOCAL ?? "",
+        MINTER_CODE_ID_TESTNET: process.env.MINTER_CODE_ID_TESTNET ?? "",
+        CW721_CODE_ID_TESTNET: process.env.CW721_CODE_ID_TESTNET ?? "",
+        MINTER_ADDRESS_TESTNET: process.env.MINTER_ADDRESS_TESTNET ?? "",
+        CW721_ADDRESS_TESTNET: process.env.CW721_ADDRESS_TESTNET ?? "",
+        MINTER_CODE_ID_MAINNET: process.env.MINTER_CODE_ID_MAINNET ?? "",
+        CW721_CODE_ID_MAINNET: process.env.CW721_CODE_ID_MAINNET ?? "",
+        MINTER_ADDRESS_MAINNET: process.env.MINTER_ADDRESS_MAINNET ?? "",
+        CW721_ADDRESS_MAINNET: process.env.CW721_ADDRESS_MAINNET ?? "",
+        TEST_PRIMARY_SEEDHEX: process.env.TEST_PRIMARY_SEEDHEX ?? "",
+        TEST_SIGNER_SEEDHEX: process.env.TEST_SIGNER_SEEDHEX ?? "",
+        TEST_TEST_ONE_SEEDHEX: process.env.TEST_TEST_ONE_SEEDHEX ?? "",
+        TEST_TEST_TWO_SEEDHEX: process.env.TEST_TEST_TWO_SEEDHEX ?? "",
+        TEST_TEST_THREE_SEEDHEX: process.env.TEST_TEST_THREE_SEEDHEX ?? "",
+        TEST_MINTER_CODE_ID: process.env.TEST_MINTER_CODE_ID ?? "",
+        TEST_CW721_CODE_ID: process.env.TEST_CW721_CODE_ID ?? "",
+        TEST_MINTER_ADDRESS: process.env.TEST_MINTER_ADDRESS ?? "",
+        TEST_CW721_ADDRESS: process.env.TEST_CW721_ADDRESS ?? "",
     }
 }
 
 export const Config = initConfig();
+
+// Used in testing when we have procedurally generated the config but need
+// to access the values we just generated
+export function reloadConfig() {
+    return initConfig();
+}
+

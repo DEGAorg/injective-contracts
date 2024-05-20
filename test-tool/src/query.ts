@@ -1,4 +1,4 @@
-import {Context} from "./context";
+import {getAppContext} from "./context";
 import {Config} from "./config";
 import {fromBase64, sha256, toBase64} from "@injectivelabs/sdk-ts";
 import {DegaCw721QueryMsg, DegaMinterQueryMsg} from "./messages";
@@ -48,7 +48,9 @@ export async function query(args: string[]) {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
 export async function info(args: string[]) {
 
-    const bankBalances = await Context.chainGrpcBankApi.fetchBalances(Context.primaryAddress);
+    const context = await getAppContext();
+
+    const bankBalances = await context.queryBankApi.fetchBalances(context.primaryAddress);
     console.log(bankBalances);
 
     //const queryFromObject = toBase64({ get_coin: {} })
@@ -61,8 +63,8 @@ export async function info(args: string[]) {
     // };
 
     let configQuery: DegaMinterQueryMsg = {config: {}};
-    const configQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
-        Config.MINTER_ADDRESS,
+    const configQueryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.minterAddress,
         toBase64(configQuery),
     );
 
@@ -75,8 +77,8 @@ export async function info(args: string[]) {
 
     let collectionInfoQuery: DegaCw721QueryMsg = {collection_info: {}};
 
-    const collectionInfoQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
-        Config.CW721_ADDRESS,
+    const collectionInfoQueryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.cw721Address,
         toBase64(collectionInfoQuery),
     );
 
@@ -93,15 +95,18 @@ export async function info(args: string[]) {
 
 export async function checkSig(args: string[]) {
 
+    const context = await getAppContext();
+
     let mintRequestMsg: MintRequest = {
-        to: Context.primaryAddress,
-        primary_sale_recipient: Context.primaryAddress,
+        to: context.primaryAddress,
+        primary_sale_recipient: context.primaryAddress,
         uri: "https://www.domain.com",
         price: "0",
-        currency: Context.primaryAddress,
+        currency: context.primaryAddress,
         validity_start_timestamp: "0",
         validity_end_timestamp: "0",
         uuid: "00000000-0000-0000-0000-000000000000",
+        collection: context.cw721Address
     };
 
     let mintRequestBase64 = toBase64(mintRequestMsg);
@@ -112,7 +117,7 @@ export async function checkSig(args: string[]) {
     //let uint8Array = new Uint8Array(buffer);
 
 
-    let signingKey = Context.signerSigningKey
+    let signingKey = context.signerSigningKey
     let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signingKey).signature)
 
     let sigBase64 = signature.toString("base64");
@@ -124,7 +129,7 @@ export async function checkSig(args: string[]) {
     console.log();
     console.log("Signature: " + sigBase64);
     console.log();
-    console.log("Address: " + Context.signerAddress);
+    console.log("Address: " + context.signerAddress);
     console.log();
 
     let checkSigQuery: DegaMinterQueryMsg = {
@@ -137,13 +142,13 @@ export async function checkSig(args: string[]) {
             //signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
             // Uncomment below to test validating with a local public key using on chain logic
             signer_source: {
-                pub_key_binary: Buffer.from(Context.signerCompressedPublicKey).toString("base64")
+                pub_key_binary: Buffer.from(context.signerCompressedPublicKey).toString("base64")
             }
         }
     };
 
-    const checkSigQueryResponse = await Context.chainGrpcWasmApi.fetchSmartContractState(
-        Config.MINTER_ADDRESS,
+    const checkSigQueryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.minterAddress,
         toBase64(checkSigQuery) // as DegaMinterQueryMsg),
     );
 
@@ -156,17 +161,20 @@ export async function checkSig(args: string[]) {
 
 async function sigInfo(args: string[]) {
 
+    const context = await getAppContext();
+
     let rawTextMessage = "test message";
 
     let mintRequestMsg: MintRequest = {
-        to: Context.primaryAddress,
-        primary_sale_recipient: Context.primaryAddress,
+        to: context.primaryAddress,
+        primary_sale_recipient: context.primaryAddress,
         uri: "https://www.domain.com",
         price: "0",
         currency: "inj",
         validity_start_timestamp: "0",
         validity_end_timestamp: "0",
         uuid: "00000000-0000-0000-0000-000000000000",
+        collection: context.cw721Address
     };
 
     //let rawMessage = Buffer.from(rawTextMessage, "utf-8");
@@ -178,14 +186,14 @@ async function sigInfo(args: string[]) {
     let msgMd5Hash = Buffer.from(sha256(rawMessage)); // echo -n 'test message' | sha256sum
     let msgHashHex = msgMd5Hash.toString("hex");
 
-    let signingKey = Context.signerSigningKey;
+    let signingKey = context.signerSigningKey;
     //let signingKey = randomBytes(32);
 
     //console.log("Signing Key Hex: " + signingKey.toString("hex"));
     //console.log("Signing Key Base64: " + signingKey.toString("base64"));
     //console.log("Signing Key Length: " + signingKey.length);
 
-    let publicKey = Context.signerCompressedPublicKey;
+    let publicKey = context.signerCompressedPublicKey;
 
     console.log("Compressed Pubkey Hex: " + publicKey.toString("hex"));
     console.log("Compressed Pubkey Base64: " + publicKey.toString("base64"));
@@ -202,7 +210,7 @@ async function sigInfo(args: string[]) {
     console.log("Signature Base64: " + sigBase64);
     console.log("Signature Length: " + signature.length);
     console.log();
-    console.log("Address: " + Context.signerAddress);
+    console.log("Address: " + context.signerAddress);
     console.log();
 
     let checkSigQuery: DegaMinterQueryMsg = {
@@ -220,8 +228,8 @@ async function sigInfo(args: string[]) {
     };
 
     const checkSigQueryResponse =
-        await Context.chainGrpcWasmApi.fetchSmartContractState(
-        Config.MINTER_ADDRESS,
+        await context.queryWasmApi.fetchSmartContractState(
+        context.minterAddress,
         toBase64(checkSigQuery));
 
     const checkSigQueryResponseObject: object = fromBase64(
@@ -258,8 +266,10 @@ async function deriveEthBasedAddress() {
     console.log(injectiveAddress)
 }
 
-function deriveSecp256k1Address() {
-    const privateKey = Context.primaryPrivateKey.toPrivateKeyHex()
+async function deriveSecp256k1Address() {
+    const context = await getAppContext();
+
+    const privateKey = context.primaryPrivateKey.toPrivateKeyHex()
     const privateKeyHex = Buffer.from(privateKey, 'hex')
     const publicKeyByte = secp256k1.publicKeyCreate(privateKeyHex)
 

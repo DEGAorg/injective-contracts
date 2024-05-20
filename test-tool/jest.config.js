@@ -2,5 +2,6 @@
 module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/dist'],
-  testMatch: ['**/__tests__/**/*.js?(x)', '**/?(*.)+(spec|test).js?(x)'],
+  testMatch: ['**/tests/?(*.)+(spec|test).js?(x)'],
+  globalSetup: './dist/tests/setup.js',
 };

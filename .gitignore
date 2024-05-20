@@ -21,8 +21,9 @@ target/
 *.wasm
 hash.txt
 contracts.txt
+checksums.txt
 artifacts/
-artifacts-deploy/
+artifacts-optimized/
 
 # code coverage
 tarpaulin-report.*
