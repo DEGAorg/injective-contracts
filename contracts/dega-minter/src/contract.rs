@@ -70,10 +70,10 @@ pub fn query(
         },
         QueryMsg::Config {} => to_json_binary(&query_config(deps, env)?),
         QueryMsg::Admins {} => to_json_binary(&query_admins(deps, env)?),
-        _ => sg_base_minter_query(deps.into(), env, msg.into()),
+        _ => sg_base_minter_query(deps, env, msg.into()),
     }
 }
-fn query_config(deps: Deps, _env: Env) -> StdResult<DegaMinterConfigResponse> {
+pub(crate) fn query_config(deps: Deps, _env: Env) -> StdResult<DegaMinterConfigResponse> {
     let base_config_query_result = query_config_base(deps)
         .map_err(|e| StdError::generic_err(format!("Error during base config query: {}", e)))?;
 
@@ -87,7 +87,7 @@ fn query_config(deps: Deps, _env: Env) -> StdResult<DegaMinterConfigResponse> {
     })
 }
 
-fn query_admins(deps: Deps, _env: Env) -> StdResult<AdminsResponse> {
+pub(crate) fn query_admins(deps: Deps, _env: Env) -> StdResult<AdminsResponse> {
 
     let mut admins: Vec<String> = vec![];
 
@@ -139,7 +139,7 @@ pub fn execute_update_settings(
         return Err(ContractError::Unauthorized("Only admins can update settings".to_string()));
     }
 
-    DEGA_MINTER_SETTINGS.save(deps.storage, &settings)
+    DEGA_MINTER_SETTINGS.save(deps.storage, settings)
         .map_err(|e| ContractError::Std("Error while saving dega minter settings".to_string(), e))?;
 
     Ok(Response::new()
@@ -152,7 +152,7 @@ pub fn execute_update_settings(
     )
 }
 
-fn execute_update_admin(
+pub(crate) fn execute_update_admin(
     deps: &mut DepsMut,
     _env: &Env,
     info: &MessageInfo,
@@ -198,7 +198,7 @@ fn execute_update_admin(
 }
 
 
-fn execute_mint(
+pub(crate) fn execute_mint(
     deps: DepsMut,
     env: Env,
     info: MessageInfo,
@@ -245,11 +245,11 @@ fn execute_mint(
         .map_err(|e| ContractError::Std("Error while registering UUID".to_string(), e))?;
 
 
-    if info.funds.iter().count() > 1 {
+    if info.funds.len() > 1 {
         return Err(ContractError::GenericError("Must only provide one payment currency".to_string()));
     }
 
-    let funds = match info.funds.get(0) {
+    let funds = match info.funds.first() {
         Some(funds) => funds,
         None => return Err(ContractError::GenericError("No payment provided".to_string())),
     };
@@ -346,43 +346,18 @@ pub fn query_check_sig(deps: Deps, _env: Env, message: VerifiableMsg, signature:
     };
 
     let hash_bytes = Sha256::digest(message_bytes);
-    let hash_hex_string = hex::encode(&hash_bytes);
+    let hash_hex_string = hex::encode(hash_bytes);
 
     let sig_binary = Binary::from_base64(&signature)
         .map_err(|e| StdError::generic_err(format!("Error during decode signature from base64: {}", e)))?;
     let sig_bytes: &[u8] = sig_binary.as_slice();
 
     let verifying_pub_key_bytes = match signer_source {
-        // SignerSourceType::Address(address) => {
-        //     //let pub_key_canonic_addr = deps.api.addr_canonicalize(&address).map_err(|e| StdError::generic_err(format!("Error while getting binary key for signer: {}", e)))?;
-        //
-        //     // let address_result = query_account(deps, address.clone())?;
-        //     // let address_result_string = to_json_string(
-        //     //     from_json(address_result)
-        //     //             .map_err(|e| StdError::generic_err(format!("Error deserializing address query result: {}", e)))?
-        //     // ).map_err(|e| StdError::generic_err(format!("Error stringifying address query result: {}", e)))?;
-        //     //
-        //     // Err(StdError::generic_err(format!("Exiting early to report address: {}", address_result_string)))?
-        //
-        //     //pub_key_canonic_addr.to_vec()
-        //
-        //     query_account(deps, address)?.0
-        // },
         SignerSourceType::PubKeyBinary(pub_key_string) => {
             let pub_key_binary = Binary::from_base64(pub_key_string.as_str())
                 .map_err(|e| StdError::generic_err(format!("Error decoding public key from base64: {}", e)))?;
             pub_key_binary.0
         },
-        // SignerSourceType::ConfigSignerAddress => {
-        //     let sg721_contract_addr = COLLECTION_ADDRESS.load(deps.storage)?;
-        //     let collection_info: CollectionInfoResponse = deps.querier.query_wasm_smart(
-        //         sg721_contract_addr.clone(),
-        //         &Sg721QueryMsg::CollectionInfo {},
-        //     ).map_err(|e| StdError::generic_err(format!("Error during query for collection info: {}", e)))?;
-        //     let creator_addr_string = collection_info.creator;
-        //
-        //     query_account(deps, creator_addr_string)?.0
-        // },
         SignerSourceType::ConfigSignerPubKey => {
             let settings = DEGA_MINTER_SETTINGS.load(deps.storage)
                 .map_err(|e| StdError::generic_err(format!("Error getting dega minter settings: {}", e)))?;

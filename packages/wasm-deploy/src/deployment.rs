@@ -371,12 +371,12 @@ async fn execute_instantiate(
             let mut maybe_code_id : Option<u64> = None;
             let mut maybe_address : Option<String> = None;
             if event.kind.contains("nstantiated") {
-                event.attributes.iter().find(|x| x.key.contains("code_id")).map(|x| {
+                if let Some(x) = event.attributes.iter().find(|x| x.key.contains("code_id")) {
                     maybe_code_id = x.value.trim_matches('"').parse::<u64>().ok();
-                });
-                event.attributes.iter().find(|x| x.key.contains("address")).map(|x| {
+                }
+                if let Some(x) = event.attributes.iter().find(|x| x.key.contains("address")) {
                     maybe_address = Some(x.clone().value.trim_matches('"').to_string());
-                });
+                }
 
                 if let (Some(code_id), Some(address)) = (maybe_code_id, maybe_address) {
                     address_code_map.insert(address, code_id);

@@ -9,6 +9,9 @@ pub mod state;
 pub mod contract;
 mod lookup;
 
+#[cfg(test)]
+mod tests;
+
 // SGBaseMinter Imports
 use base_minter::{
     contract::{

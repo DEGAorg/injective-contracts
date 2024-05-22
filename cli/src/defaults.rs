@@ -38,7 +38,7 @@ lazy_static! {
     ];
 }
 
-pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) -> dega_inj::minter::InstantiateMsg {
+pub fn get_default_minter_instantiate_msg(contracts_info: &[ContractInfo]) -> dega_inj::minter::InstantiateMsg {
 
     // Just panic / crash if we can't find a code ID (this context doesn't support error handling unfortunately)
     let contract_name = Contracts::DegaCw721.to_string();

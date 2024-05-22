@@ -164,6 +164,7 @@ pub struct AdminsResponse {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[allow(clippy::large_enum_variant)]
 pub enum QueryMsg {
     #[returns(DegaMinterConfigResponse)]
     Config {},

@@ -31,14 +31,11 @@ pub fn _execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
 
-    match msg {
-        ExecuteMsg::Mint { .. } => {
-            let minter_config = load_dega_minter_settings(&deps.as_ref())?;
-            if minter_config.dega_minter_settings.minting_paused {
-                return Err(ContractError::OperationPaused)
-            }
-        },
-        _ => {}
+    if let ExecuteMsg::Mint { .. } = msg {
+        let minter_config = load_dega_minter_settings(&deps.as_ref())?;
+        if minter_config.dega_minter_settings.minting_paused {
+            return Err(ContractError::OperationPaused)
+        }
     }
 
     match msg {
@@ -145,7 +142,7 @@ pub fn execute_update_token_metadata(
         &token_id,
         |token| match token {
             Some(mut token_info) => {
-                token_info.token_uri = token_uri.clone();
+                token_info.token_uri.clone_from(&token_uri);
                 Ok(token_info)
             }
             None => Err(StdError::generic_err(format!("Token ID not found. Token ID: {}", token_id))),

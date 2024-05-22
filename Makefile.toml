@@ -8,6 +8,13 @@ skip_core_tasks = true
 command = "cargo"
 args    = ["fmt", "--all", "--check"]
 
+[tasks.test]
+dependencies = [
+  "lint",
+  "unit-test",
+  "int-test"
+]
+
 [tasks.unit-test]
 command = "cargo"
 args    = ["test", "--locked", "-p", "dega-cw721", "-p", "dega-minter"]

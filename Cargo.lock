@@ -1729,6 +1729,7 @@ name = "dega-minter"
 version = "1.0.0"
 dependencies = [
  "base-minter",
+ "base64 0.13.1",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
@@ -1739,16 +1740,20 @@ dependencies = [
  "cw721 0.18.0",
  "cw721-base 0.18.0",
  "dega-inj",
+ "digest 0.10.7",
  "ethereum-types 0.5.2",
  "hex",
  "injective-cosmwasm",
  "injective-math",
+ "k256 0.13.3",
+ "prost 0.12.6",
  "schemars",
  "serde",
  "serde_repr",
  "sg-mod",
  "sg2",
  "sg4",
+ "sg721",
  "sg721-base",
  "sha2 0.10.8",
  "subtle-encoding",
@@ -4468,6 +4473,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "deb1435c188b76130da55f17a466d252ff7b1418b2ad3e037d127b94e3411f29"
+dependencies = [
+ "bytes",
+ "prost-derive 0.12.6",
+]
+
+[[package]]
 name = "prost-derive"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4491,6 +4506,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "prost-derive"
+version = "0.12.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
+dependencies = [
+ "anyhow",
+ "itertools 0.11.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.60",
 ]
 
 [[package]]
