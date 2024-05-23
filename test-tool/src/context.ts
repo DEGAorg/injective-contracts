@@ -14,7 +14,7 @@ import secp256k1 from "secp256k1"
 import {getTestContext} from "./tests/testContext";
 import {ChainGrpcTendermintApi} from "@injectivelabs/sdk-ts/dist/cjs/client/chain/grpc/ChainGrpcTendermintApi";
 
-interface AppContext {
+export interface AppContext {
     primaryPrivateKey: PrivateKey;
     primaryAddress: string;
     signerPrivateKey: PrivateKey;

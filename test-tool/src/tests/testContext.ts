@@ -6,7 +6,7 @@ import {Config, generatePrivateKey, inDeployment, isJestRunning, reloadConfig} f
 import fs from "fs";
 import path from "node:path";
 
-interface TestContext {
+export interface TestContext {
     testPrivateKeyOne: PrivateKey;
     testAddressOne: string;
     testPrivateKeyTwo: PrivateKey;
