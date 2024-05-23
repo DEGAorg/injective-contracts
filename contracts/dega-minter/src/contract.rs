@@ -206,6 +206,13 @@ pub(crate) fn execute_mint(
     signature: String,
 ) -> Result<Response, ContractError> {
 
+    let dega_minter_settings = DEGA_MINTER_SETTINGS.load(deps.storage)
+        .map_err(|e| ContractError::Std("Error during dega minter settings query".to_string(), e))?;
+
+    if dega_minter_settings.minting_paused {
+        return Err(ContractError::MintingPaused);
+    }
+
     let check_sig_result = query_check_sig(
         deps.as_ref(),
         env.clone(),
@@ -217,6 +224,9 @@ pub(crate) fn execute_mint(
     if !check_sig_result.is_valid {
         return Err(ContractError::GenericError("Signature is invalid".to_string()));
     }
+
+    deps.api.addr_validate(request.to.as_str())
+        .map_err(|e| ContractError::Std("Invalid purchaser address".to_string(), e))?;
 
     let epoch_time_128 = Uint128::from(env.block.time.seconds());
 
@@ -277,7 +287,7 @@ pub(crate) fn execute_mint(
         .map_err(|e| ContractError::Std("Error while loading collection address".to_string(), e))?;
 
     let request_collection_address = deps.api.addr_validate(request.collection.as_str())
-        .map_err(|e| ContractError::Std("Error validating request collection address".to_string(), e))?;
+        .map_err(|e| ContractError::Std("Invalid request collection address".to_string(), e))?;
 
     if this_collection_address != request_collection_address {
         return Err(ContractError::GenericError(format!(
@@ -306,7 +316,7 @@ pub(crate) fn execute_mint(
 
     // Create transfer proceeds msg
     let sale_recipient_addr = deps.api.addr_validate(request.primary_sale_recipient.as_str())
-        .map_err(|e| ContractError::Std("Error validating primary sale recipient address".to_string(), e))?;
+        .map_err(|e| ContractError::Std("Invalid primary sale recipient address".to_string(), e))?;
 
     let transfer_proceeds_msg = CosmosMsg::Bank(BankMsg::Send {
         to_address: sale_recipient_addr.to_string(),

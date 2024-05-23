@@ -21,4 +21,7 @@ pub enum ContractError {
 
     #[error("( Operation unauthorized: ( {0} ) )")]
     Unauthorized(String),
+
+    #[error("( Minting is paused. )")]
+    MintingPaused,
 }
