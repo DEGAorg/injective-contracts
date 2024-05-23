@@ -18,7 +18,6 @@ pub fn _instantiate(
     msg: Sg721BaseInstantiateMsg,
 ) -> Result<Response, ContractError> {
 
-
     DegaCW721Contract::default().instantiate(deps, env, info, msg)
         .map_err(| e | ContractError::Base721("Error during base instantiation".to_string(), e))
 }

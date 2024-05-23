@@ -2,6 +2,9 @@ pub mod error;
 pub mod state;
 mod contract;
 
+#[cfg(test)]
+mod tests;
+
 use cosmwasm_std::{
     DepsMut,
     entry_point,
