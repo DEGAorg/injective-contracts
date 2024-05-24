@@ -108,10 +108,10 @@ pub enum ExecuteMsg {
     },
 
     // Added to SG Base by DEGA
-    UpdateTokenMetadata {
-        token_id: String,
-        token_uri: Option<String>,
-    },
+    // UpdateTokenMetadata {
+    //     token_id: String,
+    //     token_uri: Option<String>,
+    // },
 }
 
 impl From<ExecuteMsg> for sg721::ExecuteMsg<Extension, Empty> {

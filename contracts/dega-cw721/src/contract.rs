@@ -37,15 +37,15 @@ pub fn _execute(
         }
     }
 
-    match msg {
-        ExecuteMsg::UpdateTokenMetadata { token_id, token_uri} => {
-            execute_update_token_metadata(deps, env, info, token_id, token_uri)
-        },
-        _ => {
+    //match msg {
+        // ExecuteMsg::UpdateTokenMetadata { token_id, token_uri} => {
+        //     execute_update_token_metadata(deps, env, info, token_id, token_uri)
+        // },
+        //_ => {
             DegaCW721Contract::default().execute(deps, env, info, msg.into())
                 .map_err(| e | ContractError::Base721("Error during base execution".to_string(), e))
-        }
-    }
+        //}
+    //}
 
 }
 
@@ -116,7 +116,7 @@ pub fn query_check_royalties(_deps: Deps) -> StdResult<cw2981_royalties::msg::Ch
     })
 }
 
-pub fn execute_update_token_metadata(
+pub fn _execute_update_token_metadata(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,

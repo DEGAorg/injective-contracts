@@ -5,8 +5,7 @@
   "required": [
     "admins_response",
     "check_sig_response",
-    "dega_minter_config_response",
-    "status_response"
+    "dega_minter_config_response"
   ],
   "properties": {
     "admins_response": {
@@ -17,9 +16,6 @@
     },
     "dega_minter_config_response": {
       "$ref": "#/definitions/DegaMinterConfigResponse"
-    },
-    "status_response": {
-      "$ref": "#/definitions/StatusResponse"
     }
   },
   "additionalProperties": false,
@@ -179,38 +175,6 @@
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
-    },
-    "Status": {
-      "type": "object",
-      "required": [
-        "is_blocked",
-        "is_explicit",
-        "is_verified"
-      ],
-      "properties": {
-        "is_blocked": {
-          "type": "boolean"
-        },
-        "is_explicit": {
-          "type": "boolean"
-        },
-        "is_verified": {
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
-    },
-    "StatusResponse": {
-      "type": "object",
-      "required": [
-        "status"
-      ],
-      "properties": {
-        "status": {
-          "$ref": "#/definitions/Status"
         }
       },
       "additionalProperties": false

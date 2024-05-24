@@ -11,7 +11,6 @@ export interface DegaMinterQueryResponseMessages {
     admins_response:             AdminsResponse;
     check_sig_response:          CheckSigResponse;
     dega_minter_config_response: DegaMinterConfigResponse;
-    status_response:             StatusResponse;
 }
 
 export interface AdminsResponse {
@@ -64,16 +63,6 @@ export interface Coin {
 export interface DegaMinterConfigSettings {
     minting_paused: boolean;
     signer_pub_key: string;
-}
-
-export interface StatusResponse {
-    status: Status;
-}
-
-export interface Status {
-    is_blocked:  boolean;
-    is_explicit: boolean;
-    is_verified: boolean;
 }
 
 // Converts JSON strings to/from your types
@@ -245,7 +234,6 @@ const typeMap: any = {
         { json: "admins_response", js: "admins_response", typ: r("AdminsResponse") },
         { json: "check_sig_response", js: "check_sig_response", typ: r("CheckSigResponse") },
         { json: "dega_minter_config_response", js: "dega_minter_config_response", typ: r("DegaMinterConfigResponse") },
-        { json: "status_response", js: "status_response", typ: r("StatusResponse") },
     ], false),
     "AdminsResponse": o([
         { json: "admins", js: "admins", typ: a("") },
@@ -281,13 +269,5 @@ const typeMap: any = {
     "DegaMinterConfigSettings": o([
         { json: "minting_paused", js: "minting_paused", typ: true },
         { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
-    ], false),
-    "StatusResponse": o([
-        { json: "status", js: "status", typ: r("Status") },
-    ], false),
-    "Status": o([
-        { json: "is_blocked", js: "is_blocked", typ: true },
-        { json: "is_explicit", js: "is_explicit", typ: true },
-        { json: "is_verified", js: "is_verified", typ: true },
     ], false),
 };

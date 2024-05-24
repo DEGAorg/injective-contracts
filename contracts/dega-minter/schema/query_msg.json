@@ -18,19 +18,6 @@
     {
       "type": "object",
       "required": [
-        "status"
-      ],
-      "properties": {
-        "status": {
-          "type": "object",
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
         "check_sig"
       ],
       "properties": {

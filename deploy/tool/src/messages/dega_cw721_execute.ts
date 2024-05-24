@@ -34,17 +34,17 @@
  * the ownership permanently.
  */
 export interface DegaCw721ExecuteMsg {
-    transfer_nft?:          TransferNft;
-    send_nft?:              SendNft;
-    approve?:               Approve;
-    revoke?:                Revoke;
-    approve_all?:           ApproveAll;
-    revoke_all?:            RevokeAll;
-    mint?:                  Mint;
-    burn?:                  Burn;
-    extension?:             Extension;
-    update_token_metadata?: UpdateTokenMetadata;
-    update_ownership?:      ActionClass | ActionEnum;
+    transfer_nft?:           TransferNft;
+    send_nft?:               SendNft;
+    approve?:                Approve;
+    revoke?:                 Revoke;
+    approve_all?:            ApproveAll;
+    revoke_all?:             RevokeAll;
+    mint?:                   Mint;
+    burn?:                   Burn;
+    extension?:              Extension;
+    update_collection_info?: UpdateCollectionInfo;
+    update_ownership?:       ActionClass | ActionEnum;
 }
 
 export interface Approve {
@@ -122,6 +122,24 @@ export interface TransferNft {
     token_id:  string;
 }
 
+export interface UpdateCollectionInfo {
+    collection_info: UpdateCollectionInfoMsgForRoyaltyInfoResponse;
+}
+
+export interface UpdateCollectionInfoMsgForRoyaltyInfoResponse {
+    creator?:          null | string;
+    description?:      null | string;
+    explicit_content?: boolean | null;
+    external_link?:    null | string;
+    image?:            null | string;
+    royalty_info?:     RoyaltyInfoResponse | null;
+}
+
+export interface RoyaltyInfoResponse {
+    payment_address: string;
+    share:           string;
+}
+
 /**
  * Propose to transfer the contract's ownership to another account, optionally with an
  * expiry time.
@@ -153,11 +171,6 @@ export interface TransferOwnership {
 export enum ActionEnum {
     AcceptOwnership = "accept_ownership",
     RenounceOwnership = "renounce_ownership",
-}
-
-export interface UpdateTokenMetadata {
-    token_id:   string;
-    token_uri?: null | string;
 }
 
 // Converts JSON strings to/from your types
@@ -335,7 +348,7 @@ const typeMap: any = {
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
         { json: "burn", js: "burn", typ: u(undefined, r("Burn")) },
         { json: "extension", js: "extension", typ: u(undefined, r("Extension")) },
-        { json: "update_token_metadata", js: "update_token_metadata", typ: u(undefined, r("UpdateTokenMetadata")) },
+        { json: "update_collection_info", js: "update_collection_info", typ: u(undefined, r("UpdateCollectionInfo")) },
         { json: "update_ownership", js: "update_ownership", typ: u(undefined, u(r("ActionClass"), r("ActionEnum"))) },
     ], false),
     "Approve": o([
@@ -382,16 +395,27 @@ const typeMap: any = {
         { json: "recipient", js: "recipient", typ: "" },
         { json: "token_id", js: "token_id", typ: "" },
     ], false),
+    "UpdateCollectionInfo": o([
+        { json: "collection_info", js: "collection_info", typ: r("UpdateCollectionInfoMsgForRoyaltyInfoResponse") },
+    ], false),
+    "UpdateCollectionInfoMsgForRoyaltyInfoResponse": o([
+        { json: "creator", js: "creator", typ: u(undefined, u(null, "")) },
+        { json: "description", js: "description", typ: u(undefined, u(null, "")) },
+        { json: "explicit_content", js: "explicit_content", typ: u(undefined, u(true, null)) },
+        { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
+        { json: "image", js: "image", typ: u(undefined, u(null, "")) },
+        { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },
+    ], false),
+    "RoyaltyInfoResponse": o([
+        { json: "payment_address", js: "payment_address", typ: "" },
+        { json: "share", js: "share", typ: "" },
+    ], false),
     "ActionClass": o([
         { json: "transfer_ownership", js: "transfer_ownership", typ: r("TransferOwnership") },
     ], false),
     "TransferOwnership": o([
         { json: "expiry", js: "expiry", typ: u(undefined, u(r("Expiration"), null)) },
         { json: "new_owner", js: "new_owner", typ: "" },
-    ], false),
-    "UpdateTokenMetadata": o([
-        { json: "token_id", js: "token_id", typ: "" },
-        { json: "token_uri", js: "token_uri", typ: u(undefined, u(null, "")) },
     ], false),
     "ActionEnum": [
         "accept_ownership",
