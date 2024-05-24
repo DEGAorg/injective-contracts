@@ -6,13 +6,11 @@ use dega_inj::minter::{AdminsResponse, CheckSigResponse, DegaMinterConfigRespons
 use dega_inj::minter::MigrateMsg;
 use dega_inj::minter::ExecuteMsg;
 use dega_inj::minter::QueryMsg;
-use sg4::{StatusResponse};
 
 #[cw_serde]
 struct QueryResponses {
     dega_minter_config_response: DegaMinterConfigResponse,
     check_sig_response: CheckSigResponse,
-    status_response: StatusResponse,
     admins_response: AdminsResponse,
 }
 

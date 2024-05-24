@@ -2,8 +2,6 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::Coin;
 
 pub mod msg;
-pub mod query;
-pub mod tests;
 
 pub type CodeId = u64;
 

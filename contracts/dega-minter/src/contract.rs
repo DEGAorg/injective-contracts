@@ -6,7 +6,6 @@ use base_minter::{
     contract::{
         instantiate as sg_base_minter_instantiate,
         execute as sg_base_minter_execute,
-        query as sg_base_minter_query,
         query_config as query_config_base,
     },
     error::{
@@ -70,7 +69,6 @@ pub fn query(
         },
         QueryMsg::Config {} => to_json_binary(&query_config(deps, env)?),
         QueryMsg::Admins {} => to_json_binary(&query_admins(deps, env)?),
-        _ => sg_base_minter_query(deps, env, msg.into()),
     }
 }
 pub(crate) fn query_config(deps: Deps, _env: Env) -> StdResult<DegaMinterConfigResponse> {

@@ -28,9 +28,6 @@ use base_minter::{
     // }
 };
 
-#[cfg(not(target_arch = "wasm32"))]
-use sg4::StatusResponse;
-
 use sg4::{
     QueryMsg as SgBaseMinterQueryMsg,
 };
@@ -169,9 +166,6 @@ pub enum QueryMsg {
     #[returns(DegaMinterConfigResponse)]
     Config {},
 
-    #[returns(StatusResponse)]
-    Status {},
-
     #[returns(CheckSigResponse)]
     CheckSig {
         message: VerifiableMsg,
@@ -203,7 +197,6 @@ impl From<QueryMsg> for SgBaseMinterQueryMsg {
     fn from(msg: QueryMsg) -> SgBaseMinterQueryMsg {
         match msg {
             QueryMsg::Config {} => SgBaseMinterQueryMsg::Config {},
-            QueryMsg::Status {} => SgBaseMinterQueryMsg::Status {},
             _ => unreachable!("cannot convert {:?} to SgBaseMinterQueryMsg", msg),
         }
     }

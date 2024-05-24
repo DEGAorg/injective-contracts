@@ -16,7 +16,7 @@ use cw2981_royalties::msg::{
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary};
 // SG721 BASE IMPORTS
-use sg721::{InstantiateMsg as Sg721BaseInstantiateMsg};
+use sg721::{InstantiateMsg as Sg721BaseInstantiateMsg, RoyaltyInfoResponse, UpdateCollectionInfoMsg};
 // use sg721_base::{
 //     //entry::{
 //         //instantiate as base_sg721_instantiate,
@@ -102,6 +102,10 @@ pub enum ExecuteMsg {
 
     /// Extension msg
     Extension { msg: Empty },
+
+    UpdateCollectionInfo {
+        collection_info: UpdateCollectionInfoMsg<RoyaltyInfoResponse>,
+    },
 
     // Added to SG Base by DEGA
     UpdateTokenMetadata {

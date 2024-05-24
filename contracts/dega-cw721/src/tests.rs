@@ -1,15 +1,18 @@
-use cosmwasm_std::{Api, ContractInfoResponse, ContractResult, Decimal, DepsMut, Empty, Env, OwnedDeps, QuerierResult, SystemError, SystemResult, to_json_binary, WasmQuery};
+use cosmwasm_std::{Api, Binary, Coin, ContractInfoResponse, ContractResult, Decimal, DepsMut, Empty, Env, from_json, OwnedDeps, QuerierResult, SystemError, to_json_binary, Uint128, WasmQuery};
 use cosmwasm_std::testing::{MOCK_CONTRACT_ADDR, mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage};
 use cw721::Cw721Query;
 use cw_ownable::assert_owner;
 use injective_cosmwasm::OwnedDepsExt;
 use dega_inj::cw721::DegaCW721Contract;
+use dega_inj::minter::{AdminsResponse, DegaMinterConfigResponse, DegaMinterConfigSettings};
+use sg2::MinterParams;
 
-//use crate::contract::*;
+use crate::contract::*;
 
 use sg721::{CollectionInfo, InstantiateMsg as Sg721BaseInstantiateMsg, InstantiateMsg, RoyaltyInfoResponse};
 
-const _COLLECTION_CONTRACT_ADDR: &str = MOCK_CONTRACT_ADDR;
+
+const COLLECTION_CONTRACT_ADDR: &str = MOCK_CONTRACT_ADDR;
 const MINTER_CONTRACT_ADDR: &str = "minter_contract_addr";
 const MINTER_OWNER_ADDR: &str = "minter_owner_addr";
 const CREATOR_ADDR: &str = "creator_addr";
@@ -18,9 +21,19 @@ const ROYALTY_PAYMENT_ADDR: &str = "royalty_payment_address";
 const ROYALTY_SHARE: Decimal = Decimal::percent(5);
 const COLLECTION_OWNER_ADDR: &str = MINTER_CONTRACT_ADDR;
 const MINTER_CODE_ID: u64 = 1234;
+const COLLECTION_CODE_ID: u64 = 4321;
+const INJ_DENOM: &str = "inj";
+const MINTER_SIGNER_PUBKEY: &str = "minter_signer_pubkey";
+const ADMIN_ONE_ADDR: &str = "admin_one_addr";
+const ADMIN_TWO_ADDR: &str = "admin_two_addr";
+const ADMIN_ONE_LIST: u8 = 1;
+const ADMIN_TWO_LIST: u8 = 2;
+const ADMIN_BOTH_LIST: u8 = 3;
 
 #[test]
 fn normal_initialization() {
+    //let mut deps_wrapper = DepsWrapper::create();
+    //let mut deps = &deps_wrapper.deps;
     let mut deps = create_dega_cw721_deps();
     let env = mock_env();
 
@@ -49,6 +62,28 @@ fn normal_initialization() {
 
     assert!(!default_contract.frozen_collection_info.load(&deps.storage).unwrap());
     assert_eq!(default_contract.royalty_updated_at.load(&deps.storage).unwrap(), env.block.time);
+}
+
+#[test]
+fn query_minter_settings() {
+    //let mut deps_wrapper = DepsWrapper::create();
+    //let mut deps = &deps_wrapper.deps;
+    let mut deps = create_dega_cw721_deps();
+    let env = mock_env();
+
+    template_collection(&mut deps.as_mut_deps(), env.clone());
+
+    let config_response = load_dega_minter_settings(&deps.as_ref()).unwrap();
+
+    assert_eq!(config_response.collection_address, COLLECTION_CONTRACT_ADDR);
+    assert_eq!(config_response.base_minter_config.collection_code_id, COLLECTION_CODE_ID);
+    assert!(!config_response.dega_minter_settings.minting_paused);
+    assert_eq!(config_response.dega_minter_settings.signer_pub_key, MINTER_SIGNER_PUBKEY);
+
+    update_wasm_query_behavior::<true, ADMIN_ONE_LIST>(&mut deps);
+
+    let config_response_two = load_dega_minter_settings(&deps.as_ref()).unwrap();
+    assert!(config_response_two.dega_minter_settings.minting_paused);
 }
 
 fn template_collection(deps: &mut DepsMut, env: Env) {
@@ -83,21 +118,31 @@ fn template_instantiate_msg() -> InstantiateMsg {
 }
 
 
+
+
 fn create_dega_cw721_deps() -> OwnedDeps<MockStorage, MockApi, MockQuerier, Empty> {
     let mut deps = mock_dependencies();
     deps.querier.update_wasm(wasm_query_handler);
-
     deps
 }
 
-fn wasm_query_handler(request: &WasmQuery) -> QuerierResult {
-    let err = match request {
-        WasmQuery::Smart { contract_addr, .. } => SystemError::NoSuchContract {
-            addr: contract_addr.clone(),
+
+
+pub fn wasm_query_handler(request: &WasmQuery) -> QuerierResult {
+    match request {
+        WasmQuery::Smart { contract_addr, msg, .. } => {
+            match contract_addr.as_str() {
+                MINTER_CONTRACT_ADDR => {
+                    QuerierResult::Ok(mock_query_minter(from_json::<dega_inj::minter::QueryMsg>(msg.as_slice()).unwrap()))
+                },
+                _ => QuerierResult::Err(SystemError::NoSuchContract {
+                    addr: contract_addr.clone(),
+                }),
+            }
         },
-        WasmQuery::Raw { contract_addr, .. } => SystemError::NoSuchContract {
+        WasmQuery::Raw { contract_addr, .. } => QuerierResult::Err(SystemError::NoSuchContract {
             addr: contract_addr.clone(),
-        },
+        }),
         WasmQuery::ContractInfo { contract_addr, .. } => {
             match contract_addr.as_str() {
                 MINTER_CONTRACT_ADDR => {
@@ -105,20 +150,163 @@ fn wasm_query_handler(request: &WasmQuery) -> QuerierResult {
                     response.code_id = MINTER_CODE_ID;
                     response.creator = MINTER_OWNER_ADDR.to_string();
                     response.admin = Some(MINTER_OWNER_ADDR.to_string());
-                    return QuerierResult::Ok(ContractResult::Ok(to_json_binary(&response).unwrap()));
-                }
-                _ => SystemError::NoSuchContract {
+                    QuerierResult::Ok(ContractResult::Ok(to_json_binary(&response).unwrap()))
+                },
+                _ => QuerierResult::Err(SystemError::NoSuchContract {
                     addr: contract_addr.clone(),
-                }
+                }),
             }
         },
         #[cfg(feature = "cosmwasm_1_2")]
         WasmQuery::CodeInfo { code_id, .. } => {
             SystemError::NoSuchCode { code_id: *code_id }
         }
-        &_ => SystemError::UnsupportedRequest {
+        &_ => QuerierResult::Err(SystemError::UnsupportedRequest {
             kind: stringify!(&_).to_string(),
+        }),
+    }
+}
+
+pub fn mock_query_minter(query: dega_inj::minter::QueryMsg) -> ContractResult<Binary> {
+    match query {
+        dega_inj::minter::QueryMsg::Config {} => {
+            ContractResult::Ok(to_json_binary(
+                &DegaMinterConfigResponse {
+                    base_minter_config: base_minter::state::Config {
+                        collection_code_id: COLLECTION_CODE_ID,
+                        mint_price: Coin {
+                            denom: INJ_DENOM.to_string(),
+                            amount: Uint128::zero(),
+                        },
+                        extension: MinterParams {
+                            frozen: false,
+                            creation_fee: Default::default(),
+                            min_mint_price: Default::default(),
+                            mint_fee_bps: 0,
+                            max_trading_offset_secs: 0,
+                            extension: Empty {},
+                        },
+                    },
+                    dega_minter_settings: DegaMinterConfigSettings {
+                        signer_pub_key: MINTER_SIGNER_PUBKEY.to_string(),
+                        minting_paused: false,
+                    },
+                    collection_address: COLLECTION_CONTRACT_ADDR.to_string(),
+                }
+            ).unwrap())
         },
-    };
-    SystemResult::Err(err)
+        _ => ContractResult::Err("Unsupported query".to_string())
+    }
+}
+
+
+
+fn update_wasm_query_behavior
+<
+    const MINTING_PAUSED: bool,
+    const ADMIN_LIST_CODE: u8,
+>
+(owned_deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>) {
+    owned_deps.querier.update_wasm(wasm_query_handler_template::<MINTING_PAUSED, ADMIN_LIST_CODE>);
+}
+
+
+pub fn wasm_query_handler_template
+<
+    const MINTING_PAUSED: bool,
+    const ADMIN_LIST_CODE: u8,
+>
+(request: &WasmQuery) -> QuerierResult {
+    match request {
+        WasmQuery::Smart { contract_addr, msg, .. } => {
+            match contract_addr.as_str() {
+                MINTER_CONTRACT_ADDR => {
+                    QuerierResult::Ok(mock_query_minter_template::<MINTING_PAUSED, ADMIN_LIST_CODE>(
+                        from_json::<dega_inj::minter::QueryMsg>(msg.as_slice()).unwrap()))
+                },
+                _ => QuerierResult::Err(SystemError::NoSuchContract {
+                    addr: contract_addr.clone(),
+                }),
+            }
+        },
+        WasmQuery::Raw { contract_addr, .. } => QuerierResult::Err(SystemError::NoSuchContract {
+            addr: contract_addr.clone(),
+        }),
+        WasmQuery::ContractInfo { contract_addr, .. } => {
+            match contract_addr.as_str() {
+                MINTER_CONTRACT_ADDR => {
+                    let mut response = ContractInfoResponse::default();
+                    response.code_id = MINTER_CODE_ID;
+                    response.creator = MINTER_OWNER_ADDR.to_string();
+                    response.admin = Some(MINTER_OWNER_ADDR.to_string());
+                    QuerierResult::Ok(ContractResult::Ok(to_json_binary(&response).unwrap()))
+                },
+                _ => QuerierResult::Err(SystemError::NoSuchContract {
+                    addr: contract_addr.clone(),
+                }),
+            }
+        },
+        #[cfg(feature = "cosmwasm_1_2")]
+        WasmQuery::CodeInfo { code_id, .. } => {
+            SystemError::NoSuchCode { code_id: *code_id }
+        }
+        &_ => QuerierResult::Err(SystemError::UnsupportedRequest {
+            kind: stringify!(&_).to_string(),
+        }),
+    }
+}
+
+pub fn mock_query_minter_template
+<
+    const MINTING_PAUSED: bool,
+    const ADMIN_LIST_CODE: u8,
+>
+(query: dega_inj::minter::QueryMsg) -> ContractResult<Binary>
+{
+    match query {
+        dega_inj::minter::QueryMsg::Config {} => {
+            ContractResult::Ok(to_json_binary(
+                &DegaMinterConfigResponse {
+                    base_minter_config: base_minter::state::Config {
+                        collection_code_id: COLLECTION_CODE_ID,
+                        mint_price: Coin {
+                            denom: INJ_DENOM.to_string(),
+                            amount: Uint128::zero(),
+                        },
+                        extension: MinterParams {
+                            frozen: false,
+                            creation_fee: Default::default(),
+                            min_mint_price: Default::default(),
+                            mint_fee_bps: 0,
+                            max_trading_offset_secs: 0,
+                            extension: Empty {},
+                        },
+                    },
+                    dega_minter_settings: DegaMinterConfigSettings {
+                        signer_pub_key: MINTER_SIGNER_PUBKEY.to_string(),
+                        minting_paused: MINTING_PAUSED,
+                    },
+                    collection_address: COLLECTION_CONTRACT_ADDR.to_string(),
+                }
+            ).unwrap())
+        },
+        dega_inj::minter::QueryMsg::Admins { } => {
+            ContractResult::Ok(to_json_binary(
+                &AdminsResponse {
+                    admins: get_admin_list_for_code(ADMIN_LIST_CODE),
+                }
+            ).unwrap())
+        },
+        _ => ContractResult::Err("Unsupported query".to_string())
+    }
+}
+
+
+fn get_admin_list_for_code(code: u8) -> Vec<String> {
+    match code {
+        ADMIN_ONE_LIST => vec![ADMIN_ONE_ADDR.to_string()],
+        ADMIN_TWO_LIST => vec![ADMIN_TWO_ADDR.to_string()],
+        ADMIN_BOTH_LIST => vec![ADMIN_ONE_ADDR.to_string(), ADMIN_TWO_ADDR.to_string()],
+        _ => panic!("Invalid admin list code")
+    }
 }

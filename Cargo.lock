@@ -1613,6 +1613,7 @@ checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
 name = "dega-cw721"
 version = "1.0.0"
 dependencies = [
+ "base-minter",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
@@ -1630,6 +1631,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_repr",
+ "sg2",
  "sg721",
  "sg721-base",
  "subtle-encoding",

@@ -222,7 +222,6 @@ fn check_sig_string() {
     let signing_key_one = SigningKey::random(&mut OsRng);
     let signer_pub_key = get_signer_pub_key(&signing_key_one);
 
-
     // Create a second keypair to manually test against
     let signing_key_two = SigningKey::random(&mut OsRng);
     let signer_pub_key_two = get_signer_pub_key(&signing_key_two);

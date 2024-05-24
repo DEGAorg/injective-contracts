@@ -50,7 +50,7 @@ pub fn _execute(
 }
 
 
-fn load_dega_minter_settings(deps: &Deps) -> Result<DegaMinterConfigResponse, ContractError> {
+pub(crate) fn load_dega_minter_settings(deps: &Deps) -> Result<DegaMinterConfigResponse, ContractError> {
     let minter_addr = get_owner_minter(deps.storage)
         .map_err(|e| ContractError::Base721("Error during query for owner minter".to_string(), e))?;
 

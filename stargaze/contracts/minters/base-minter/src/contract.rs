@@ -1,6 +1,6 @@
 use crate::error::ContractError;
 use crate::msg::{ConfigResponse, ExecuteMsg};
-use crate::state::{increment_token_index, Config, COLLECTION_ADDRESS, CONFIG, STATUS};
+use crate::state::{increment_token_index, Config, COLLECTION_ADDRESS, CONFIG};
 use sg_mod::base_factory::msg::{BaseMinterCreateMsg}; // DEGA MOD (added sg_mod)
 use sg_mod::base_factory::state::Extension; // DEGA MOD (added sg_mod)
 #[cfg(not(feature = "library"))]
@@ -12,7 +12,7 @@ use cw_utils::{nonpayable, parse_reply_instantiate_data};
 // DEGA MOD (removed unused imports)
 //use sg1::checked_fair_burn; // DEGA MOD (removed dependency)
 //use sg2::query::Sg2QueryMsg; // DEGA MOD (removed dependency)
-use sg4::{QueryMsg, Status, StatusResponse, SudoMsg};
+use sg4::{QueryMsg};
 use sg721::{ExecuteMsg as Sg721ExecuteMsg, InstantiateMsg as Sg721InstantiateMsg};
 use sg721_base::msg::{CollectionInfoResponse, QueryMsg as Sg721QueryMsg};
 //use sg_mod::sg_std::NATIVE_DENOM; // DEGA MOD (added sg_mod / removed unused import)
@@ -36,9 +36,6 @@ pub fn instantiate(
     //set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?; // DEGA MOD - set in the child
 
     let factory = info.sender.clone();
-
-    // set default status so it can be queried without failing
-    STATUS.save(deps.storage, &Status::default())?;
 
     // DEGA MOD (No factor concept so no need for info from factory)
     // Make sure the sender is the factory contract
@@ -230,39 +227,12 @@ pub fn execute_update_start_trading_time(
         .add_message(msg))
 }
 
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn sudo(deps: DepsMut, _env: Env, msg: SudoMsg) -> Result<Response, ContractError> {
-    match msg {
-        SudoMsg::UpdateStatus {
-            is_verified,
-            is_blocked,
-            is_explicit,
-        } => update_status(deps, is_verified, is_blocked, is_explicit)
-            .map_err(|_| ContractError::UpdateStatus {}),
-    }
-}
 
-/// Only governance can update contract params
-pub fn update_status(
-    deps: DepsMut,
-    is_verified: bool,
-    is_blocked: bool,
-    is_explicit: bool,
-) -> StdResult<Response> {
-    let mut status = STATUS.load(deps.storage)?;
-    status.is_verified = is_verified;
-    status.is_blocked = is_blocked;
-    status.is_explicit = is_explicit;
-    STATUS.save(deps.storage, &status)?;
-
-    Ok(Response::new().add_attribute("action", "sudo_update_status"))
-}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
-        QueryMsg::Status {} => to_json_binary(&query_status(deps)?),
     }
 }
 
@@ -275,12 +245,6 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         collection_address: collection_address.to_string(),
         config,
     })
-}
-
-pub fn query_status(deps: Deps) -> StdResult<StatusResponse> {
-    let status = STATUS.load(deps.storage)?;
-
-    Ok(StatusResponse { status })
 }
 
 // Reply callback triggered from sg721 contract instantiation in instantiate()
