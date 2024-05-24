@@ -160,22 +160,11 @@ async function createInstantiateMsg() {
             symbol: "TEST"
         },
         minter_params: {
-            creation_fee: {
-                amount: "0",
-                denom: "inj"
+            dega_minter_settings: {
+                signer_pub_key: appContext.signerCompressedPublicKey.toString("base64"),
+                minting_paused: false
             },
-            extension: {
-                dega_minter_settings: {
-                    signer_pub_key: appContext.signerCompressedPublicKey.toString("base64"),
-                    minting_paused: false
-                },
-                initial_admin: appContext.primaryAddress,
-            },
-            min_mint_price: {
-                amount: "0",
-                denom: "inj"
-            },
-            mint_fee_bps: 0
+            initial_admin: appContext.primaryAddress,
         },
         cw721_contract_label: "DEGA Collection - Test Collection",
         cw721_contract_admin: appContext.primaryAddress

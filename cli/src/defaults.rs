@@ -1,4 +1,4 @@
-use cosmwasm_std::{Binary, Coin, Decimal};
+use cosmwasm_std::{Binary, Decimal};
 // Use this file to define the various default message you want deploy to use
 use lazy_static::lazy_static;
 use dega_inj::minter::DegaMinterParams;
@@ -58,24 +58,12 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &[ContractInfo]) -> de
     };
 
     dega_inj::minter::InstantiateMsg {
-        minter_params: sg2::MinterParams {
-            //allowed_sg721_code_ids: vec![],
-            creation_fee: Coin {
-                denom: "uinj".into(),
-                amount: 0u128.into(),
+        minter_params: DegaMinterParams {
+            dega_minter_settings: dega_inj::minter::DegaMinterConfigSettings {
+                signer_pub_key,
+                minting_paused: false,
             },
-            min_mint_price: Coin {
-                denom: "uinj".into(),
-                amount: 0u128.into(),
-            },
-            mint_fee_bps: 0u64,
-            extension: DegaMinterParams {
-                dega_minter_settings: dega_inj::minter::DegaMinterConfigSettings {
-                    signer_pub_key,
-                    minting_paused: false,
-                },
-                initial_admin: ADMIN.into(),
-            },
+            initial_admin: ADMIN.into(),
         },
         collection_params: sg2::msg::CollectionParams {
             code_id,

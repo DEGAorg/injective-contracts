@@ -11,7 +11,7 @@ export interface DegaMinterInstantiateMsg {
     collection_params:     CollectionParams;
     cw721_contract_admin?: null | string;
     cw721_contract_label:  string;
-    minter_params:         MinterParamsForDegaMinterParams;
+    minter_params:         DegaMinterParams;
 }
 
 export interface CollectionParams {
@@ -25,39 +25,16 @@ export interface CollectionParams {
 }
 
 export interface CollectionInfoForRoyaltyInfoResponse {
-    creator:             string;
-    description:         string;
-    explicit_content?:   boolean | null;
-    external_link?:      null | string;
-    image:               string;
-    royalty_info?:       RoyaltyInfoResponse | null;
-    start_trading_time?: null | string;
+    creator:        string;
+    description:    string;
+    external_link?: null | string;
+    image:          string;
+    royalty_info?:  RoyaltyInfoResponse | null;
 }
 
 export interface RoyaltyInfoResponse {
     payment_address: string;
     share:           string;
-}
-
-/**
- * Common params for all minters used for storage
- */
-export interface MinterParamsForDegaMinterParams {
-    creation_fee: Coin;
-    extension:    DegaMinterParams;
-    /**
-     * The minter code id
-     */
-    frozen:                  boolean;
-    max_trading_offset_secs: number;
-    min_mint_price:          Coin;
-    mint_fee_bps:            number;
-}
-
-export interface Coin {
-    amount: string;
-    denom:  string;
-    [property: string]: any;
 }
 
 export interface DegaMinterParams {
@@ -239,7 +216,7 @@ const typeMap: any = {
         { json: "collection_params", js: "collection_params", typ: r("CollectionParams") },
         { json: "cw721_contract_admin", js: "cw721_contract_admin", typ: u(undefined, u(null, "")) },
         { json: "cw721_contract_label", js: "cw721_contract_label", typ: "" },
-        { json: "minter_params", js: "minter_params", typ: r("MinterParamsForDegaMinterParams") },
+        { json: "minter_params", js: "minter_params", typ: r("DegaMinterParams") },
     ], false),
     "CollectionParams": o([
         { json: "code_id", js: "code_id", typ: 0 },
@@ -250,28 +227,14 @@ const typeMap: any = {
     "CollectionInfoForRoyaltyInfoResponse": o([
         { json: "creator", js: "creator", typ: "" },
         { json: "description", js: "description", typ: "" },
-        { json: "explicit_content", js: "explicit_content", typ: u(undefined, u(true, null)) },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: "" },
         { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },
-        { json: "start_trading_time", js: "start_trading_time", typ: u(undefined, u(null, "")) },
     ], false),
     "RoyaltyInfoResponse": o([
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
     ], false),
-    "MinterParamsForDegaMinterParams": o([
-        { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
-        { json: "extension", js: "extension", typ: r("DegaMinterParams") },
-        { json: "frozen", js: "frozen", typ: true },
-        { json: "max_trading_offset_secs", js: "max_trading_offset_secs", typ: 0 },
-        { json: "min_mint_price", js: "min_mint_price", typ: r("Coin") },
-        { json: "mint_fee_bps", js: "mint_fee_bps", typ: 0 },
-    ], false),
-    "Coin": o([
-        { json: "amount", js: "amount", typ: "" },
-        { json: "denom", js: "denom", typ: "" },
-    ], "any"),
     "DegaMinterParams": o([
         { json: "dega_minter_settings", js: "dega_minter_settings", typ: r("DegaMinterConfigSettings") },
         { json: "initial_admin", js: "initial_admin", typ: "" },

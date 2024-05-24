@@ -10,9 +10,6 @@ pub enum ContractError {
     #[error("( Error in DEGA Minter: ( {0} ) | Caused by Payment Error: ( {1} ) )")]
     Payment(String, PaymentError),
 
-    #[error("( Error in DEGA Minter: ( {0} ) | Caused by Base Minter Error: ( {1} ) )")]
-    BaseMinter(String, base_minter::ContractError),
-
     #[error("( Error initializing DEGA Minter: ( {0} ) )")]
     InitializationError(String),
 

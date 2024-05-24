@@ -1,7 +1,7 @@
 use cosmwasm_std::{BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, Reply, StdError, SubMsgResponse, SubMsgResult, Timestamp, to_json_binary, Uint128, Uint256, WasmMsg};
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR, mock_dependencies};
 use digest::Digest;
-use injective_cosmwasm::OwnedDepsExt;
+//use injective_cosmwasm::OwnedDepsExt;
 use prost::Message;
 use dega_inj::minter::{DegaMinterConfigResponse, DegaMinterConfigSettings, DegaMinterParams, InstantiateMsg, MintRequest, SignerSourceType, UpdateAdminCommand, VerifiableMsg};
 
@@ -58,14 +58,11 @@ fn normal_initialization() {
     let signing_key = SigningKey::random(&mut OsRng);
     let signer_pub_key = get_signer_pub_key(&signing_key);
 
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     let admins = query_admins(deps.as_ref(), mock_env()).unwrap();
 
     assert_eq!(admins.admins, vec![USER_ADMIN_ADDR.to_string()]);
-
-    let base_config = base_minter::contract::query_config(deps.as_ref()).unwrap();
-    assert_eq!(base_config.collection_address, COLLECTION_CONTRACT_ADDR.to_string());
 
     let config: DegaMinterConfigResponse = query_config(deps.as_ref(), mock_env()).unwrap();
 
@@ -88,14 +85,14 @@ fn access_restriction() {
 
     // Try to update settings as a regular user (should error)
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
     let unauthed_update_settings_err = execute_update_settings(&mut deps.as_mut(), &mock_env(), &normal_user_msg_info, &new_settings_pause).unwrap_err();
     assert_eq!(unauthed_update_settings_err, ContractError::Unauthorized("Only admins can update settings".to_string()));
     assert!(!query_config(deps.as_ref(), mock_env()).unwrap().dega_minter_settings.minting_paused);
 
     // Try to update admins as a regular user (should error)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
     let unauthed_update_admin_err = execute_update_admin(
         &mut deps.as_mut(), &mock_env(), &normal_user_msg_info, NORMAL_USER_ADDR.to_string(), UpdateAdminCommand::Add).unwrap_err();
     assert_eq!(unauthed_update_admin_err, ContractError::Unauthorized("Only admins can update admins.".to_string()));
@@ -113,7 +110,7 @@ fn updating_admin() {
 
     // Ensure we canot remove ourself as the only admin
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
     let remove_only_admin_err = execute_update_admin(
         &mut deps.as_mut(), &mock_env(), &admin_msg_info, USER_ADMIN_ADDR.to_string(), UpdateAdminCommand::Remove).unwrap_err();
     assert_eq!(remove_only_admin_err, ContractError::GenericError("Cannot remove admin when one or none exists.".to_string()));
@@ -121,7 +118,7 @@ fn updating_admin() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Update admins as an admin, should succeed
     execute_update_admin(
@@ -136,7 +133,7 @@ fn updating_admin() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Update admins as an admin, should succeed
     execute_update_admin(
@@ -170,7 +167,7 @@ fn updating_settings() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Should be starting unpaused
     assert!(!query_config(deps.as_ref(), mock_env()).unwrap().dega_minter_settings.minting_paused);
@@ -234,7 +231,7 @@ fn check_sig_string() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Check the signed text message against a provided pubkey
     assert!(query_check_sig(deps.as_ref(), mock_env(), test_msg_wrapped.clone(),
@@ -292,7 +289,7 @@ fn check_sig_mint_request() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Check the signed mint message against a provided pubkey
     assert!(query_check_sig(deps.as_ref(), mock_env(), mint_msg_wrapped.clone(), mint_msg_sig_two.clone(),
@@ -321,7 +318,7 @@ fn valid_mint() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     let mock_env = mock_env();
 
@@ -384,7 +381,7 @@ fn mint_pausing() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Confirm we are able to mint before pausing
     execute_mint(deps.as_mut(), mock_env.clone(), normal_user_msg_info.clone(), mint_msg.clone(), mint_sig.clone()).unwrap();
@@ -413,7 +410,7 @@ fn mint_pausing() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Pause minting again
     execute_update_settings(&mut deps.as_mut(), &cosmwasm_std::testing::mock_env(),
@@ -465,7 +462,7 @@ fn mint_timing() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
     
     // Error due to minting too early
     mock_env.block.time = Timestamp::from_seconds(acceptable_start_time - 30);
@@ -480,7 +477,7 @@ fn mint_timing() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Error due to minting too late
     mock_env.block.time = Timestamp::from_seconds(acceptable_end_time + 30);
@@ -517,7 +514,7 @@ fn mint_payment() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Error due to no payment
     let nopay_msg_info = mock_info(NORMAL_USER_ADDR, &[]);
@@ -527,7 +524,7 @@ fn mint_payment() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Error due to multiple payment currencies
     let usdc_denom = "usdc";
@@ -541,7 +538,7 @@ fn mint_payment() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Error due to underpayment
     let underpay_price = price_wei.checked_sub(Uint128::new(10000)).unwrap();
@@ -558,7 +555,7 @@ fn mint_payment() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Error due to overpayment
     let overpay_price = price_wei.checked_add(Uint128::new(10000)).unwrap();
@@ -575,7 +572,7 @@ fn mint_payment() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Error due to wrong currency
     let wrong_currency_msg_info = mock_info(NORMAL_USER_ADDR, &[
@@ -591,7 +588,7 @@ fn mint_payment() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Correctly pay and process the transaction
     let correct_msg_info = mock_info(NORMAL_USER_ADDR, &[
@@ -625,7 +622,7 @@ fn mint_invalid_addresses() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Test for invalid buyer address
     let mut mint_msg_invalid_buyer_addr = template_mint_msg.clone();
@@ -639,7 +636,7 @@ fn mint_invalid_addresses() {
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Test for invalid primary sale recipient address
     let mut mint_msg_invalid_sale_recipient_addr = template_mint_msg.clone();
@@ -671,7 +668,7 @@ fn mint_already_used_uuid() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Mint to use the UUID
     let mint_msg = template_mint_msg(&mock_env, price_wei);
@@ -700,7 +697,7 @@ fn mint_invalid_uri() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
     // Mint to use the UUID
     let mut mint_msg = template_mint_msg(&mock_env, price_wei);
@@ -728,7 +725,7 @@ fn mint_invalid_signature() {
 
     // Initialize fresh DB and minter
     let mut deps = mock_dependencies();
-    template_minter(&mut deps.as_mut_deps(), signer_pub_key.clone());
+    template_minter(&mut deps.as_mut(), signer_pub_key.clone());
 
 
     let bad_signer = SigningKey::random(&mut OsRng);
@@ -798,24 +795,13 @@ fn sign_msg_bytes(signing_key: SigningKey, msg_bytes: &[u8]) -> String {
 
 fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
     let msg = InstantiateMsg {
-        minter_params: sg2::MinterParams {
-            creation_fee: Coin {
-                denom: INJ_DENOM.into(),
-                amount: 0u128.into(),
-            },
-            min_mint_price: Coin {
-                denom: INJ_DENOM.into(),
-                amount: 0u128.into(),
-            },
-            mint_fee_bps: 0u64,
-            extension: DegaMinterParams {
+        minter_params: DegaMinterParams {
                 dega_minter_settings: DegaMinterConfigSettings {
                     signer_pub_key,
                     minting_paused: false,
                 },
                 initial_admin: USER_ADMIN_ADDR.into(),
             },
-        },
         collection_params: sg2::msg::CollectionParams {
             code_id: 0u64,
             name: "TestCollection".into(),
@@ -837,7 +823,7 @@ fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
 
     let info = mock_info(MINTER_OWNER_ADDR, &[]);
 
-    crate::entry::instantiate(deps.branch(), mock_env(), info.clone(), msg.clone()).unwrap();
+    instantiate(deps.branch(), mock_env(), info.clone(), msg.clone()).unwrap();
 
     let instantiate_reply = MsgInstantiateContractResponse {
         contract_address: COLLECTION_CONTRACT_ADDR.to_string(),
@@ -856,5 +842,5 @@ fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
         }),
     };
 
-    crate::entry::reply(deps.branch(), mock_env(), reply_msg.clone()).unwrap();
+    reply(deps.branch(), mock_env(), reply_msg.clone()).unwrap();
 }

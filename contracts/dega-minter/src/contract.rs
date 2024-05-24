@@ -1,50 +1,80 @@
-use cosmwasm_std::{BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, Event, MessageInfo, Order, Response, StdError, StdResult, to_json_binary, Uint128, Uint256, WasmMsg};
-
+use cosmwasm_std::{Addr, BankMsg, Binary, CosmosMsg, Deps, DepsMut, Empty, entry_point, Env, Event, MessageInfo, Order, Reply, Response, StdError, StdResult, SubMsg, to_json_binary, Uint128, Uint256, WasmMsg};
+use cw2::set_contract_version;
+use cw_utils::parse_reply_instantiate_data;
 use hex;
 
-use base_minter::{
-    contract::{
-        instantiate as sg_base_minter_instantiate,
-        query_config as query_config_base,
-    },
-    error::{
-        ContractError as SgBaseMinterContractError
-    },
-};
-
-use dega_inj::minter::{QueryMsg, CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg, DegaMinterConfigResponse, DegaMinterConfigSettings, UpdateAdminCommand, AdminsResponse};
+use dega_inj::minter::{QueryMsg, CheckSigResponse, ExecuteMsg, InstantiateMsg, MintRequest, SignerSourceType, VerifiableMsg, DegaMinterConfigResponse, DegaMinterConfigSettings, UpdateAdminCommand, AdminsResponse, MigrateMsg};
 
 use sha2::{Digest, Sha256};
-use base_minter::state::{COLLECTION_ADDRESS, increment_token_index};
+use crate::state::{COLLECTION_ADDRESS, increment_token_index};
 use url::Url;
 use crate::error::ContractError;
 use crate::state::{ADMIN_LIST, DEGA_MINTER_SETTINGS, UUID_REGISTRY};
+use sg721::{InstantiateMsg as Sg721InstantiateMsg};
 
+
+const CONTRACT_NAME: &str = "DEGA Minter";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const INSTANTIATE_SG721_REPLY_ID: u64 = 1;
+
+#[entry_point]
 pub fn instantiate(
-    mut deps: DepsMut,
+    deps: DepsMut,
     env: Env,
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
 
-    let base_instantiate_response = sg_base_minter_instantiate(deps.branch(), env, info, msg.clone().into())
-        .map_err(| e: SgBaseMinterContractError | {
-            ContractError::InitializationError(format!("Error while initializing base contract: {}", e).to_string())
-        })?;
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+        .map_err(|e| ContractError::Std("Error setting contract version".to_string(), e))?;
 
-    let dega_minter_settings = msg.minter_params.extension.dega_minter_settings;
+    let collection_info = msg.collection_params.info.clone();
+
+    let cw721_admin_addr = match msg.cw721_contract_admin {
+        Some(admin) => {
+            let addr = deps.api.addr_validate(&admin)
+                .map_err(|e| ContractError::Std("Invalid CW721 admin address".to_string(), e))?;
+            Some(addr.to_string())
+        },
+        None => None,
+    };
+
+    let wasm_msg = WasmMsg::Instantiate {
+        code_id: msg.collection_params.code_id,
+        msg: to_json_binary(&Sg721InstantiateMsg {
+            name: msg.collection_params.name.clone(),
+            symbol: msg.collection_params.symbol,
+            minter: env.contract.address.to_string(),
+            collection_info,
+        }).map_err(|e| ContractError::Std("Error serializing collection instantiate message".to_string(), e))?,
+        funds: info.funds,
+        admin: cw721_admin_addr,
+        label: msg.cw721_contract_label,
+    };
+
+    let reply_sub_msg = SubMsg::reply_on_success(wasm_msg, INSTANTIATE_SG721_REPLY_ID);
+
+    let dega_minter_settings = msg.minter_params.dega_minter_settings;
 
     DEGA_MINTER_SETTINGS.save(deps.storage, &dega_minter_settings)
         .map_err(|e| ContractError::Std("Error while saving dega minter settings".to_string(), e))?;
 
-    ADMIN_LIST.save(deps.storage, msg.minter_params.extension.initial_admin, &Empty {})
+    ADMIN_LIST.save(deps.storage, msg.minter_params.initial_admin, &Empty {})
         .map_err(|e| ContractError::Std("Error while saving initial admin".to_string(), e))?;
 
-    Ok(base_instantiate_response
-        .add_attribute("signer", dega_minter_settings.signer_pub_key)
+    Ok(
+        Response::new()
+            .add_attribute("action", "instantiate")
+            .add_attribute("sender", info.sender.clone())
+            .add_attribute("contract_name", CONTRACT_NAME)
+            .add_attribute("contract_version", CONTRACT_VERSION)
+            .add_attribute("signer_pub_key", dega_minter_settings.signer_pub_key)
+            .add_submessage(reply_sub_msg)
     )
 }
 
+#[entry_point]
 pub fn query(
     deps: Deps,
     env: Env,
@@ -71,16 +101,15 @@ pub fn query(
     }
 }
 pub(crate) fn query_config(deps: Deps, _env: Env) -> StdResult<DegaMinterConfigResponse> {
-    let base_config_query_result = query_config_base(deps)
-        .map_err(|e| StdError::generic_err(format!("Error during base config query: {}", e)))?;
-
     let dega_minter_settings = DEGA_MINTER_SETTINGS.load(deps.storage)
         .map_err(|e| StdError::generic_err(format!("Error during dega minter settings query: {}", e)))?;
 
+    let collection_address = COLLECTION_ADDRESS.load(deps.storage)
+        .map_err(|e| StdError::generic_err(format!("Error during collection address query: {}", e)))?;
+
     Ok(DegaMinterConfigResponse {
-        base_minter_config: base_config_query_result.config,
         dega_minter_settings,
-        collection_address: base_config_query_result.collection_address,
+        collection_address: collection_address.to_string(),
     })
 }
 
@@ -99,6 +128,7 @@ pub(crate) fn query_admins(deps: Deps, _env: Env) -> StdResult<AdminsResponse> {
     })
 }
 
+#[entry_point]
 pub fn execute(
     mut deps: DepsMut,
     env: Env,
@@ -389,4 +419,37 @@ pub fn query_check_sig(deps: Deps, _env: Env, message: VerifiableMsg, signature:
         verifying_key_len: verifying_pub_key_bytes.len(),
         error,
     })
+}
+
+#[entry_point]
+pub fn reply(deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
+    if msg.id != INSTANTIATE_SG721_REPLY_ID {
+        return Err(ContractError::InitializationError("Invalid reply ID during collection instantiation".to_string()));
+    }
+
+    let reply = parse_reply_instantiate_data(msg);
+    match reply {
+        Ok(res) => {
+            let collection_address = res.contract_address;
+            COLLECTION_ADDRESS.save(deps.storage, &Addr::unchecked(collection_address.clone()))
+                .map_err(|e| ContractError::Std("Could not save collection address".to_string(), e))?;
+            Ok(Response::default()
+                .add_attribute("action", "instantiate_base_721_reply")
+                .add_attribute("collection_address", collection_address))
+        }
+        Err(_) => Err(ContractError::InitializationError("Error instantiating collection contract".to_string())),
+    }
+}
+
+#[entry_point]
+pub fn migrate(
+    deps: DepsMut,
+    _env: Env,
+    _msg: MigrateMsg,
+) -> Result<Response, ContractError> {
+
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+        .map_err(|e| ContractError::Std("Error setting contract version".to_string(), e))?;
+
+    Ok(Response::default())
 }

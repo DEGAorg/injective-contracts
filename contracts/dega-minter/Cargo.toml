@@ -43,9 +43,9 @@ cw721                   = { workspace = true }
 cw721-base              = { workspace = true, features = ["library"] }
 cw-utils                = { workspace = true }
 cw-ownable              = { workspace = true }
-injective-cosmwasm      = { workspace = true }
+#injective-cosmwasm      = { workspace = true }
 #injective-std           = { workspace = true }
-injective-math          = { workspace = true }
+#injective-math          = { workspace = true }
 ethereum-types          = { workspace = true }
 schemars                = { workspace = true }
 serde                   = { workspace = true }
@@ -56,10 +56,8 @@ sha2                    = { workspace = true }
 hex                     = { workspace = true }
 
 sg2                     = { workspace = true }
-sg4                     = { workspace = true }
 sg721                   = { workspace = true }
 sg-mod                  = { workspace = true }
-base-minter             = { workspace = true, features = ["library"] }
 sg721-base              = { workspace = true, features = ["library"] }
 
 dega-inj                = { workspace = true }

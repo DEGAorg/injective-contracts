@@ -25,39 +25,8 @@ export interface CheckSigResponse {
 }
 
 export interface DegaMinterConfigResponse {
-    base_minter_config:   MinterConfigForMinterParamsForEmpty;
     collection_address:   string;
     dega_minter_settings: DegaMinterConfigSettings;
-}
-
-/**
- * Saved in every minter
- */
-export interface MinterConfigForMinterParamsForEmpty {
-    collection_code_id: number;
-    extension:          MinterParamsForEmpty;
-    mint_price:         Coin;
-}
-
-/**
- * Common params for all minters used for storage
- */
-export interface MinterParamsForEmpty {
-    creation_fee: Coin;
-    extension:    { [key: string]: any };
-    /**
-     * The minter code id
-     */
-    frozen:                  boolean;
-    max_trading_offset_secs: number;
-    min_mint_price:          Coin;
-    mint_fee_bps:            number;
-}
-
-export interface Coin {
-    amount: string;
-    denom:  string;
-    [property: string]: any;
 }
 
 export interface DegaMinterConfigSettings {
@@ -245,27 +214,9 @@ const typeMap: any = {
         { json: "verifying_key_len", js: "verifying_key_len", typ: 0 },
     ], false),
     "DegaMinterConfigResponse": o([
-        { json: "base_minter_config", js: "base_minter_config", typ: r("MinterConfigForMinterParamsForEmpty") },
         { json: "collection_address", js: "collection_address", typ: "" },
         { json: "dega_minter_settings", js: "dega_minter_settings", typ: r("DegaMinterConfigSettings") },
     ], false),
-    "MinterConfigForMinterParamsForEmpty": o([
-        { json: "collection_code_id", js: "collection_code_id", typ: 0 },
-        { json: "extension", js: "extension", typ: r("MinterParamsForEmpty") },
-        { json: "mint_price", js: "mint_price", typ: r("Coin") },
-    ], false),
-    "MinterParamsForEmpty": o([
-        { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
-        { json: "extension", js: "extension", typ: m("any") },
-        { json: "frozen", js: "frozen", typ: true },
-        { json: "max_trading_offset_secs", js: "max_trading_offset_secs", typ: 0 },
-        { json: "min_mint_price", js: "min_mint_price", typ: r("Coin") },
-        { json: "mint_fee_bps", js: "mint_fee_bps", typ: 0 },
-    ], false),
-    "Coin": o([
-        { json: "amount", js: "amount", typ: "" },
-        { json: "denom", js: "denom", typ: "" },
-    ], "any"),
     "DegaMinterConfigSettings": o([
         { json: "minting_paused", js: "minting_paused", typ: true },
         { json: "signer_pub_key", js: "signer_pub_key", typ: "" },

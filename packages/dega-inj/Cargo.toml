@@ -37,8 +37,8 @@ cw721-base              = { workspace = true }
 cw-utils                = { workspace = true }
 cw-ownable              = { workspace = true }
 cw2981-royalties        = { workspace = true, features = ["library"] }
-injective-cosmwasm      = { workspace = true }
-injective-math          = { workspace = true }
+#injective-cosmwasm      = { workspace = true }
+#injective-math          = { workspace = true }
 ethereum-types          = { workspace = true }
 schemars                = { workspace = true }
 serde                   = { workspace = true }
@@ -46,8 +46,6 @@ serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 sg2                     = { workspace = true }
-sg4                     = { workspace = true }
-base-minter             = { workspace = true, features = ["library"] }
 sg-mod                  = { workspace = true }
 sg721                   = { workspace = true }
 sg721-base              = { workspace = true, features = ["library"] }

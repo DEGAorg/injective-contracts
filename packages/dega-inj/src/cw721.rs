@@ -21,7 +21,8 @@ use cw721_base::msg::MinterResponse;
 use cosmwasm_std::Empty;
 use cw_utils::Expiration;
 use sg721_base::Sg721Contract;
-use sg_mod::base_factory::state::Extension;
+
+pub type Extension = Option<Empty>;
 
 pub type DegaCW721Contract<'a> = Sg721Contract<'a, Extension>;
 

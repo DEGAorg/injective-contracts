@@ -114,13 +114,11 @@ export interface CheckRoyaltiesResponse {
 }
 
 export interface CollectionInfoResponse {
-    creator:             string;
-    description:         string;
-    explicit_content?:   boolean | null;
-    external_link?:      null | string;
-    image:               string;
-    royalty_info?:       RoyaltyInfoResponse | null;
-    start_trading_time?: null | string;
+    creator:        string;
+    description:    string;
+    external_link?: null | string;
+    image:          string;
+    royalty_info?:  RoyaltyInfoResponse | null;
 }
 
 export interface RoyaltyInfoResponse {
@@ -381,11 +379,9 @@ const typeMap: any = {
     "CollectionInfoResponse": o([
         { json: "creator", js: "creator", typ: "" },
         { json: "description", js: "description", typ: "" },
-        { json: "explicit_content", js: "explicit_content", typ: u(undefined, u(true, null)) },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: "" },
         { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },
-        { json: "start_trading_time", js: "start_trading_time", typ: u(undefined, u(null, "")) },
     ], false),
     "RoyaltyInfoResponse": o([
         { json: "payment_address", js: "payment_address", typ: "" },

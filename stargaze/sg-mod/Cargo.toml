@@ -30,9 +30,8 @@ library = []
 [dependencies]
 cosmwasm-std                = { workspace = true }
 cosmwasm-schema             = { workspace = true }
-injective-cosmwasm          = { workspace = true }
+#injective-cosmwasm          = { workspace = true }
 sg2                         = { workspace = true }
-sg4                         = { workspace = true }
 sg721                       = { workspace = true }
 
 [dev-dependencies]

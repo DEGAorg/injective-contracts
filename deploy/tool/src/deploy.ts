@@ -213,8 +213,6 @@ const deploySpec = t.type({
     collectionDescription: t.string,
     collectionImageURL: t.string,
     collectionExternalLinkURL: t.string,
-    collectionExplicitContent: t.union([t.boolean, t.undefined, t.null]),
-    collectionStartTradingTime: t.union([t.string, t.undefined, t.null]),
     collectionSecondaryRoyaltyPaymentAddress: t.string,
     collectionSecondaryRoyaltyShare: t.string,
     cw721ContractLabel: t.string,
@@ -871,31 +869,16 @@ async function instantiate(context: DeployContext) {
                 description: context.spec.collectionDescription,
                 image: context.spec.collectionImageURL,
                 external_link: context.spec.collectionExternalLinkURL,
-                explicit_content: context.spec.collectionExplicitContent,
-                start_trading_time: context.spec.collectionStartTradingTime,
                 royalty_info: royalty_info,
             },
 
         },
         minter_params: {
-            creation_fee: {
-                amount: "0",
-                denom: "inj"
+            dega_minter_settings: {
+                signer_pub_key: context.spec.minterSignerPubKeyBase64,
+                minting_paused: context.spec.minterMintingPaused,
             },
-            extension: {
-                dega_minter_settings: {
-                    signer_pub_key: context.spec.minterSignerPubKeyBase64,
-                    minting_paused: context.spec.minterMintingPaused,
-                },
-                initial_admin: context.spec.minterInitialAdmin,
-            },
-            frozen: false,
-            max_trading_offset_secs: 0,
-            min_mint_price: {
-                amount: "0",
-                denom: "inj"
-            },
-            mint_fee_bps: 0
+            initial_admin: context.spec.minterInitialAdmin,
         },
         cw721_contract_label: context.spec.cw721ContractLabel,
         cw721_contract_admin: cw721MigrateAdmin,

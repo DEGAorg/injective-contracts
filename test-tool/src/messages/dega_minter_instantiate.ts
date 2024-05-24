@@ -11,7 +11,7 @@ export interface DegaMinterInstantiateMsg {
     collection_params:     CollectionParams;
     cw721_contract_admin?: null | string;
     cw721_contract_label:  string;
-    minter_params:         MinterParamsForDegaMinterParams;
+    minter_params:         DegaMinterParams;
 }
 
 export interface CollectionParams {
@@ -35,28 +35,6 @@ export interface CollectionInfoForRoyaltyInfoResponse {
 export interface RoyaltyInfoResponse {
     payment_address: string;
     share:           string;
-}
-
-/**
- * Common params for all minters used for storage
- */
-export interface MinterParamsForDegaMinterParams {
-    /**
-     * The minter code id
-     */
-    creation_fee:   Coin;
-    extension:      DegaMinterParams;
-    min_mint_price: Coin;
-    mint_fee_bps:   number;
-}
-
-/**
- * The minter code id
- */
-export interface Coin {
-    amount: string;
-    denom:  string;
-    [property: string]: any;
 }
 
 export interface DegaMinterParams {
@@ -238,7 +216,7 @@ const typeMap: any = {
         { json: "collection_params", js: "collection_params", typ: r("CollectionParams") },
         { json: "cw721_contract_admin", js: "cw721_contract_admin", typ: u(undefined, u(null, "")) },
         { json: "cw721_contract_label", js: "cw721_contract_label", typ: "" },
-        { json: "minter_params", js: "minter_params", typ: r("MinterParamsForDegaMinterParams") },
+        { json: "minter_params", js: "minter_params", typ: r("DegaMinterParams") },
     ], false),
     "CollectionParams": o([
         { json: "code_id", js: "code_id", typ: 0 },
@@ -257,16 +235,6 @@ const typeMap: any = {
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
     ], false),
-    "MinterParamsForDegaMinterParams": o([
-        { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
-        { json: "extension", js: "extension", typ: r("DegaMinterParams") },
-        { json: "min_mint_price", js: "min_mint_price", typ: r("Coin") },
-        { json: "mint_fee_bps", js: "mint_fee_bps", typ: 0 },
-    ], false),
-    "Coin": o([
-        { json: "amount", js: "amount", typ: "" },
-        { json: "denom", js: "denom", typ: "" },
-    ], "any"),
     "DegaMinterParams": o([
         { json: "dega_minter_settings", js: "dega_minter_settings", typ: r("DegaMinterConfigSettings") },
         { json: "initial_admin", js: "initial_admin", typ: "" },

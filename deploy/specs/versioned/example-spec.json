@@ -20,8 +20,6 @@
   "collectionDescription": "This is a test collection",
   "collectionImageURL": "https://storage.googleapis.com/dega-banner/banner.png",
   "collectionExternalLinkURL": "https://realms.degaplatform.com/",
-  "collectionExplicitContent": null,
-  "collectionStartTradingTime": null,
   "collectionSecondaryRoyaltyPaymentAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
   "collectionSecondaryRoyaltyShare": "0.05",
   "cw721ContractLabel": "DEGA Collection - Test Collection",

@@ -4,7 +4,6 @@ members = [
     "stargaze/packages/sg721",
     "stargaze/sg-mod",
     "stargaze/contracts/collections/sg721-base",
-    "stargaze/contracts/minters/base-minter",
     "contracts/dega-cw721",
     "contracts/dega-minter",
     "stargaze/sg-mod",
@@ -35,8 +34,8 @@ cw-utils                = { version = "1.0.1" }
 cw-multi-test           = { version = "0.16.2" }
 cw-ownable              = { version = "0.5.1" }
 #injective-std           = { version = "0.1.3" } # Removed due to incompatibility building without more recent version of rust
-injective-cosmwasm      = { version = "0.1.39" }
-injective-math          = { version = "0.1.23" }
+#injective-cosmwasm      = { version = "0.1.39" }
+#injective-math          = { version = "0.1.23" }
 ethereum-types          = { version = "0.5.2" }
 schemars                = { version = "0.8.8" }
 serde                   = { version = "1.0.136", default-features = false, features = ["derive"] }
@@ -48,31 +47,10 @@ thiserror               = { version = "1.0.31" }
 sha2                    = { version = "0.10" }
 hex                     = { version = "0.4.3" }
 
-# Stargate packages
-#base-factory               = { version = "3.5.0", path = "stargate/contracts/factories/base-factory" }
-base-minter                = { version = "3.5.0", path = "stargaze/contracts/minters/base-minter" }
-#sg1                        = { version = "3.5.0", path = "stargate/packages/sg1" }
+# Stargaze packages
 sg2                        = { version = "3.5.0", path = "stargaze/packages/sg2" }
-sg4                        = { version = "3.5.0", path = "stargaze/packages/sg4" }
 sg721                      = { version = "3.5.0", path = "stargaze/packages/sg721" }
 sg721-base                 = { version = "3.5.0", path = "stargaze/contracts/collections/sg721-base" }
-#sg721-nt                   = { version = "3.5.0", path = "stargate/contracts/collections/sg721-nt" }
-#sg721-updatable            = { version = "3.5.0", path = "stargate/contracts/collections/sg721-updatable" }
-#sg-controllers             = { version = "3.5.0", path = "stargate/packages/controllers" }
-#sg-metadata                = { version = "3.5.0", path = "stargate/packages/sg-metadata" }
-#sg-mint-hooks              = { version = "3.5.0", path = "stargate/packages/mint-hooks" }
-#sg-splits                  = { version = "3.5.0", path = "stargate/contracts/splits" }
-#sg-whitelist               = { version = "3.5.0", path = "stargate/contracts/whitelists/whitelist" }
-#whitelist-mtree            = { version = "3.5.0", path = "stargate/contracts/whitelists/whitelist-merkletree" }
-#vending-minter-merkle-wl   = { version = "3.5.0", path = "stargate/contracts/minters/vending-minter-merkle-wl" }
-#vending-factory            = { version = "3.5.0", path = "stargate/contracts/factories/vending-factory" }
-#vending-minter             = { version = "3.5.0", path = "stargate/contracts/minters/vending-minter" }
-#open-edition-factory       = { version = "3.5.0", path = "stargate/contracts/factories/open-edition-factory" }
-#open-edition-minter        = { version = "3.5.0", path = "stargate/contracts/minters/open-edition-minter" }
-#whitelist-immutable        = { version = "3.5.0", path = "stargate/contracts/whitelists/whitelist-immutable" }
-#sg-whitelist-flex          = { version = "3.5.0", path = "stargate/contracts/whitelists/whitelist-flex" }
-#ethereum-verify            = { version = "3.5.0", path = "stargate/packages/ethereum-verify" }
-#sg-eth-airdrop             = { version = "3.5.0", path = "stargate/contracts/sg-eth-airdrop" }
 url                        = { version = "2.2.2" }
 
 sg-mod                     = { version = "3.5.0", path = "stargaze/sg-mod" }

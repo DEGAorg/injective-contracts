@@ -454,28 +454,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "base-minter"
-version = "3.5.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.15.1",
- "cw-utils 1.0.3",
- "cw2 1.1.2",
- "cw721 0.18.0",
- "cw721-base 0.18.0",
- "schemars",
- "serde",
- "sg-mod",
- "sg2",
- "sg4",
- "sg721",
- "sg721-base",
- "thiserror",
- "url",
-]
-
-[[package]]
 name = "base16ct"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -510,16 +488,6 @@ name = "bech32"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
-
-[[package]]
-name = "bigint"
-version = "4.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0e8c8a600052b52482eff2cf4d810e462fdff1f656ac1ecb6232132a1ed7def"
-dependencies = [
- "byteorder",
- "crunchy 0.1.6",
-]
 
 [[package]]
 name = "bip32"
@@ -1190,12 +1158,6 @@ dependencies = [
 
 [[package]]
 name = "crunchy"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2f4a431c5c9f662e1200b7c7f02c34e91361150e382089a8f2dec3ba680cbda"
-
-[[package]]
-name = "crunchy"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
@@ -1613,7 +1575,6 @@ checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
 name = "dega-cw721"
 version = "1.0.0"
 dependencies = [
- "base-minter",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-multi-test",
@@ -1626,8 +1587,6 @@ dependencies = [
  "cw721-base 0.18.0",
  "dega-inj",
  "ethereum-types 0.5.2",
- "injective-cosmwasm",
- "injective-math",
  "schemars",
  "serde",
  "serde_repr",
@@ -1642,7 +1601,6 @@ dependencies = [
 name = "dega-inj"
 version = "1.0.0"
 dependencies = [
- "base-minter",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-ownable",
@@ -1653,14 +1611,11 @@ dependencies = [
  "cw721 0.18.0",
  "cw721-base 0.18.0",
  "ethereum-types 0.5.2",
- "injective-cosmwasm",
- "injective-math",
  "schemars",
  "serde",
  "serde_repr",
  "sg-mod",
  "sg2",
- "sg4",
  "sg721",
  "sg721-base",
  "subtle-encoding",
@@ -1699,8 +1654,6 @@ dependencies = [
  "ethers-signers",
  "hex",
  "hex-literal",
- "injective-cosmwasm",
- "injective-math",
  "interactive-parse",
  "k256 0.13.3",
  "lazy_static",
@@ -1730,7 +1683,6 @@ dependencies = [
 name = "dega-minter"
 version = "1.0.0"
 dependencies = [
- "base-minter",
  "base64 0.13.1",
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1745,8 +1697,6 @@ dependencies = [
  "digest 0.10.7",
  "ethereum-types 0.5.2",
  "hex",
- "injective-cosmwasm",
- "injective-math",
  "k256 0.13.3",
  "prost 0.12.6",
  "schemars",
@@ -1754,7 +1704,6 @@ dependencies = [
  "serde_repr",
  "sg-mod",
  "sg2",
- "sg4",
  "sg721",
  "sg721-base",
  "sha2 0.10.8",
@@ -2157,7 +2106,7 @@ version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3932e82d64d347a045208924002930dc105a138995ccdc1479d0f05f0359f17c"
 dependencies = [
- "crunchy 0.2.2",
+ "crunchy",
  "fixed-hash 0.3.2",
  "impl-rlp 0.2.1",
  "impl-serde 0.2.3",
@@ -2170,7 +2119,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c22d4b5885b6aa2fe5e8b9329fb8d232bf739e434e6b87347c63bdd00c120f60"
 dependencies = [
- "crunchy 0.2.2",
+ "crunchy",
  "fixed-hash 0.8.0",
  "impl-codec",
  "impl-rlp 0.3.0",
@@ -2185,7 +2134,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b054df51e53f253837ea422681215b42823c02824bde982699d0dceecf6165a1"
 dependencies = [
- "crunchy 0.2.2",
+ "crunchy",
  "ethbloom 0.6.4",
  "ethereum-types-serialize",
  "fixed-hash 0.3.2",
@@ -2990,9 +2939,6 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "hex-literal"
@@ -3361,37 +3307,6 @@ checksum = "b4eecd90f87bea412eac91c6ef94f6b1e390128290898cbe14f2b926787ae1fb"
 dependencies = [
  "base64 0.13.1",
  "serde",
-]
-
-[[package]]
-name = "injective-cosmwasm"
-version = "0.1.105"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74b2d3b5cfe251bfe4d7f1aea33ad98886f2a01cefafaac4e14e86ad23822729"
-dependencies = [
- "cosmwasm-std",
- "cw-storage-plus 0.15.1",
- "ethereum-types 0.5.2",
- "hex",
- "injective-math",
- "schemars",
- "serde",
- "serde_repr",
- "subtle-encoding",
-]
-
-[[package]]
-name = "injective-math"
-version = "0.1.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8b28dc06633a0fc1ac0345d350ff6ecead60989119a985c94053ce9448c1aa9"
-dependencies = [
- "bigint",
- "cosmwasm-std",
- "ethereum-types 0.5.2",
- "schemars",
- "serde",
- "subtle-encoding",
 ]
 
 [[package]]
@@ -5278,9 +5193,7 @@ version = "3.5.0"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
- "injective-cosmwasm",
  "sg2",
- "sg4",
  "sg721",
 ]
 
@@ -5295,17 +5208,6 @@ dependencies = [
  "schemars",
  "serde",
  "sg721",
- "thiserror",
-]
-
-[[package]]
-name = "sg4"
-version = "3.5.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "schemars",
- "serde",
  "thiserror",
 ]
 
@@ -5937,7 +5839,7 @@ version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d8a021c69bb74a44ccedb824a046447e2c84a01df9e5c20779750acb38e11b2"
 dependencies = [
- "crunchy 0.2.2",
+ "crunchy",
 ]
 
 [[package]]
@@ -5946,7 +5848,7 @@ version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
 dependencies = [
- "crunchy 0.2.2",
+ "crunchy",
 ]
 
 [[package]]
@@ -6324,7 +6226,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "082df6964410f6aa929a61ddfafc997e4f32c62c22490e439ac351cec827f436"
 dependencies = [
  "byteorder",
- "crunchy 0.2.2",
+ "crunchy",
  "heapsize",
  "rustc-hex",
 ]
@@ -6336,7 +6238,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76f64bba2c53b04fcab63c01a7d7427eadc821e3bc48c34dc9ba29c501164b52"
 dependencies = [
  "byteorder",
- "crunchy 0.2.2",
+ "crunchy",
  "hex",
  "static_assertions 1.1.0",
 ]
