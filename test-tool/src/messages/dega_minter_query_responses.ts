@@ -43,17 +43,18 @@ export interface MinterConfigForMinterParamsForEmpty {
  * Common params for all minters used for storage
  */
 export interface MinterParamsForEmpty {
-    creation_fee: Coin;
-    extension:    { [key: string]: any };
     /**
      * The minter code id
      */
-    frozen:                  boolean;
-    max_trading_offset_secs: number;
-    min_mint_price:          Coin;
-    mint_fee_bps:            number;
+    creation_fee:   Coin;
+    extension:      { [key: string]: any };
+    min_mint_price: Coin;
+    mint_fee_bps:   number;
 }
 
+/**
+ * The minter code id
+ */
 export interface Coin {
     amount: string;
     denom:  string;
@@ -257,8 +258,6 @@ const typeMap: any = {
     "MinterParamsForEmpty": o([
         { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
         { json: "extension", js: "extension", typ: m("any") },
-        { json: "frozen", js: "frozen", typ: true },
-        { json: "max_trading_offset_secs", js: "max_trading_offset_secs", typ: 0 },
         { json: "min_mint_price", js: "min_mint_price", typ: r("Coin") },
         { json: "mint_fee_bps", js: "mint_fee_bps", typ: 0 },
     ], false),

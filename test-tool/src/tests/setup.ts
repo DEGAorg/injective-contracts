@@ -171,8 +171,6 @@ async function createInstantiateMsg() {
                 },
                 initial_admin: appContext.primaryAddress,
             },
-            frozen: false,
-            max_trading_offset_secs: 0,
             min_mint_price: {
                 amount: "0",
                 denom: "inj"

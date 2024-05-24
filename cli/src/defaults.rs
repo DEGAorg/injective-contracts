@@ -60,7 +60,6 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &[ContractInfo]) -> de
     dega_inj::minter::InstantiateMsg {
         minter_params: sg2::MinterParams {
             //allowed_sg721_code_ids: vec![],
-            frozen: false,
             creation_fee: Coin {
                 denom: "uinj".into(),
                 amount: 0u128.into(),
@@ -70,7 +69,6 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &[ContractInfo]) -> de
                 amount: 0u128.into(),
             },
             mint_fee_bps: 0u64,
-            max_trading_offset_secs: 0u64,
             extension: DegaMinterParams {
                 dega_minter_settings: dega_inj::minter::DegaMinterConfigSettings {
                     signer_pub_key,
@@ -88,8 +86,6 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &[ContractInfo]) -> de
                 description: "Test Collection".into(),
                 image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
                 external_link: Some("https://realms.degaplatform.com/".into()),
-                explicit_content: Some(false),
-                start_trading_time: None,
                 royalty_info: Some(sg721::RoyaltyInfoResponse {
                     payment_address: ADMIN.into(),
                     share: Decimal::percent(2),

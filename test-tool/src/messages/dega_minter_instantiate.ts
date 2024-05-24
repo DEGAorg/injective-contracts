@@ -25,13 +25,11 @@ export interface CollectionParams {
 }
 
 export interface CollectionInfoForRoyaltyInfoResponse {
-    creator:             string;
-    description:         string;
-    explicit_content?:   boolean | null;
-    external_link?:      null | string;
-    image:               string;
-    royalty_info?:       RoyaltyInfoResponse | null;
-    start_trading_time?: null | string;
+    creator:        string;
+    description:    string;
+    external_link?: null | string;
+    image:          string;
+    royalty_info?:  RoyaltyInfoResponse | null;
 }
 
 export interface RoyaltyInfoResponse {
@@ -43,17 +41,18 @@ export interface RoyaltyInfoResponse {
  * Common params for all minters used for storage
  */
 export interface MinterParamsForDegaMinterParams {
-    creation_fee: Coin;
-    extension:    DegaMinterParams;
     /**
      * The minter code id
      */
-    frozen:                  boolean;
-    max_trading_offset_secs: number;
-    min_mint_price:          Coin;
-    mint_fee_bps:            number;
+    creation_fee:   Coin;
+    extension:      DegaMinterParams;
+    min_mint_price: Coin;
+    mint_fee_bps:   number;
 }
 
+/**
+ * The minter code id
+ */
 export interface Coin {
     amount: string;
     denom:  string;
@@ -250,11 +249,9 @@ const typeMap: any = {
     "CollectionInfoForRoyaltyInfoResponse": o([
         { json: "creator", js: "creator", typ: "" },
         { json: "description", js: "description", typ: "" },
-        { json: "explicit_content", js: "explicit_content", typ: u(undefined, u(true, null)) },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: "" },
         { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },
-        { json: "start_trading_time", js: "start_trading_time", typ: u(undefined, u(null, "")) },
     ], false),
     "RoyaltyInfoResponse": o([
         { json: "payment_address", js: "payment_address", typ: "" },
@@ -263,8 +260,6 @@ const typeMap: any = {
     "MinterParamsForDegaMinterParams": o([
         { json: "creation_fee", js: "creation_fee", typ: r("Coin") },
         { json: "extension", js: "extension", typ: r("DegaMinterParams") },
-        { json: "frozen", js: "frozen", typ: true },
-        { json: "max_trading_offset_secs", js: "max_trading_offset_secs", typ: 0 },
         { json: "min_mint_price", js: "min_mint_price", typ: r("Coin") },
         { json: "mint_fee_bps", js: "mint_fee_bps", typ: 0 },
     ], false),

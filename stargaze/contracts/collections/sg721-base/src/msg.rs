@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_schema::QueryResponses;
 use cosmwasm_std::{
-    coin, Addr, BankMsg, Binary, Empty, Event, StdError, StdResult, Timestamp, Uint128,
+    coin, Addr, BankMsg, Binary, Empty, Event, StdError, StdResult, Uint128,
 };
 #[cfg(not(target_arch = "wasm32"))] // DEGA MOD (Added to fix warning about unused imports)
 use cw721::{
@@ -195,8 +195,6 @@ pub struct CollectionInfoResponse {
     pub description: String,
     pub image: String,
     pub external_link: Option<String>,
-    pub explicit_content: Option<bool>,
-    pub start_trading_time: Option<Timestamp>,
     pub royalty_info: Option<RoyaltyInfoResponse>,
 }
 

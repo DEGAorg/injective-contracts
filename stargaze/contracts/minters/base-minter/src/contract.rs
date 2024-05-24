@@ -5,20 +5,13 @@ use sg_mod::base_factory::msg::{BaseMinterCreateMsg}; // DEGA MOD (added sg_mod)
 use sg_mod::base_factory::state::Extension; // DEGA MOD (added sg_mod)
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdResult, SubMsg, Timestamp, WasmMsg};
-//use cw2::set_contract_version; // DEGA MOD (removed dependency)
-use cw_utils::{nonpayable, parse_reply_instantiate_data};
-//use serde::Serialize; // DEGA MOD (removed dependency)
-// DEGA MOD (removed unused imports)
-//use sg1::checked_fair_burn; // DEGA MOD (removed dependency)
-//use sg2::query::Sg2QueryMsg; // DEGA MOD (removed dependency)
+use cosmwasm_std::{to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Empty, Env, MessageInfo, Reply, Response, StdResult, SubMsg, WasmMsg};
+use cw_utils::{parse_reply_instantiate_data};
 use sg4::{QueryMsg};
 use sg721::{ExecuteMsg as Sg721ExecuteMsg, InstantiateMsg as Sg721InstantiateMsg};
 use sg721_base::msg::{CollectionInfoResponse, QueryMsg as Sg721QueryMsg};
-//use sg_mod::sg_std::NATIVE_DENOM; // DEGA MOD (added sg_mod / removed unused import)
 use url::Url;
 use sg2::{
-    // CodeId, // DEGA MOD (removed dependency)
     MinterParams
 };
 
@@ -51,25 +44,15 @@ pub fn instantiate(
         // 100% is fair burned
         mint_price: msg.init_msg.min_mint_price.clone(), // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
         extension: MinterParams {
-            //allowed_sg721_code_ids: msg.init_msg.allowed_sg721_code_ids,
-            frozen: msg.init_msg.frozen,
             creation_fee: msg.init_msg.creation_fee,
             min_mint_price: msg.init_msg.min_mint_price,
             mint_fee_bps: msg.init_msg.mint_fee_bps,
-            max_trading_offset_secs: msg.init_msg.max_trading_offset_secs,
             extension: Empty {},
         },
     };
 
     // Use default start trading time if not provided
-    let mut collection_info = msg.collection_params.info.clone();
-    let offset = msg.init_msg.max_trading_offset_secs; // DEGA MOD (grabbed from minter params in create_msg now instead of factory)
-    let start_trading_time = msg
-        .collection_params
-        .info
-        .start_trading_time
-        .or_else(|| Some(env.block.time.plus_seconds(offset)));
-    collection_info.start_trading_time = start_trading_time;
+    let collection_info = msg.collection_params.info.clone();
 
     CONFIG.save(deps.storage, &config)?;
 
@@ -106,15 +89,12 @@ pub fn instantiate(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Mint { token_uri } => execute_mint_sender(deps, info, token_uri),
-        ExecuteMsg::UpdateStartTradingTime(time) => {
-            execute_update_start_trading_time(deps, env, info, time)
-        }
     }
 }
 
@@ -144,23 +124,6 @@ pub fn execute_mint_sender(
 
     let mut res = Response::new();
 
-    // DEGA MOD - Comment out fair burn logic. Note, might be helpful later as secondary market royalty example.
-    // let factory: ParamsResponse = deps
-    //     .querier
-    //     .query_wasm_smart(config.factory, &Sg2QueryMsg::Params {})?;
-    // let factory_params = factory.params;
-    //
-    // let funds_sent = must_pay(&info, NATIVE_DENOM)?;
-    //
-    // // Create network fee msgs
-    // let mint_fee_percent = Decimal::bps(factory_params.mint_fee_bps);
-    // let network_fee = config.mint_price.amount * mint_fee_percent;
-    // // For the base 1/1 minter, the entire mint price should be Fair Burned
-    // if network_fee != funds_sent {
-    //     return Err(ContractError::InvalidMintPrice {});
-    // }
-    // checked_fair_burn(&info, network_fee.u128(), None, &mut res)?;
-
     // Create mint msgs
     let mint_msg = Sg721ExecuteMsg::<Extension, Empty>::Mint {
         token_id: increment_token_index(deps.storage)?.to_string(),
@@ -179,55 +142,8 @@ pub fn execute_mint_sender(
         .add_attribute("action", "mint")
         .add_attribute("sender", info.sender)
         .add_attribute("token_uri", token_uri)
-        //.add_attribute("network_fee", network_fee.to_string()) // DEGA MOD - network fee removed
     )
 }
-
-pub fn execute_update_start_trading_time(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    start_time: Option<Timestamp>,
-) -> Result<Response, ContractError> {
-    nonpayable(&info)?;
-    let sg721_contract_addr = COLLECTION_ADDRESS.load(deps.storage)?;
-
-    let collection_info: CollectionInfoResponse = deps.querier.query_wasm_smart(
-        sg721_contract_addr.clone(),
-        &Sg721QueryMsg::CollectionInfo {},
-    )?;
-    if info.sender != collection_info.creator {
-        return Err(ContractError::Unauthorized(
-            "Sender is not creator".to_owned(),
-        ));
-    }
-
-    // add custom rules here
-    if let Some(start_time) = start_time {
-        if env.block.time > start_time {
-            return Err(ContractError::InvalidStartTradingTime(
-                env.block.time,
-                start_time,
-            ));
-        }
-    }
-
-    // execute sg721 contract
-    let msg = WasmMsg::Execute {
-        contract_addr: sg721_contract_addr.to_string(),
-        msg: to_json_binary(
-            &Sg721ExecuteMsg::<Extension, Empty>::UpdateStartTradingTime(start_time),
-        )?,
-        funds: vec![],
-    };
-
-    Ok(Response::new()
-        .add_attribute("action", "update_start_time")
-        .add_attribute("sender", info.sender)
-        .add_message(msg))
-}
-
-
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {

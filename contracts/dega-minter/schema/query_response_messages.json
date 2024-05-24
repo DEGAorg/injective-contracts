@@ -147,26 +147,20 @@
       "required": [
         "creation_fee",
         "extension",
-        "frozen",
-        "max_trading_offset_secs",
         "min_mint_price",
         "mint_fee_bps"
       ],
       "properties": {
         "creation_fee": {
-          "$ref": "#/definitions/Coin"
+          "description": "The minter code id",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Coin"
+            }
+          ]
         },
         "extension": {
           "$ref": "#/definitions/Empty"
-        },
-        "frozen": {
-          "description": "The minter code id",
-          "type": "boolean"
-        },
-        "max_trading_offset_secs": {
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
         },
         "min_mint_price": {
           "$ref": "#/definitions/Coin"

@@ -8,10 +8,9 @@
 // match the expected interface, even if the JSON is valid.
 
 export interface DegaMinterExecuteMsg {
-    mint?:                      Mint;
-    update_settings?:           UpdateSettings;
-    update_admin?:              UpdateAdmin;
-    update_start_trading_time?: null | string;
+    mint?:            Mint;
+    update_settings?: UpdateSettings;
+    update_admin?:    UpdateAdmin;
 }
 
 export interface Mint {
@@ -219,7 +218,6 @@ const typeMap: any = {
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
         { json: "update_settings", js: "update_settings", typ: u(undefined, r("UpdateSettings")) },
         { json: "update_admin", js: "update_admin", typ: u(undefined, r("UpdateAdmin")) },
-        { json: "update_start_trading_time", js: "update_start_trading_time", typ: u(undefined, u(null, "")) },
     ], false),
     "Mint": o([
         { json: "request", js: "request", typ: r("MintRequest") },

@@ -127,12 +127,11 @@ export interface UpdateCollectionInfo {
 }
 
 export interface UpdateCollectionInfoMsgForRoyaltyInfoResponse {
-    creator?:          null | string;
-    description?:      null | string;
-    explicit_content?: boolean | null;
-    external_link?:    null | string;
-    image?:            null | string;
-    royalty_info?:     RoyaltyInfoResponse | null;
+    creator?:       null | string;
+    description?:   null | string;
+    external_link?: null | string;
+    image?:         null | string;
+    royalty_info?:  RoyaltyInfoResponse | null;
 }
 
 export interface RoyaltyInfoResponse {
@@ -401,7 +400,6 @@ const typeMap: any = {
     "UpdateCollectionInfoMsgForRoyaltyInfoResponse": o([
         { json: "creator", js: "creator", typ: u(undefined, u(null, "")) },
         { json: "description", js: "description", typ: u(undefined, u(null, "")) },
-        { json: "explicit_content", js: "explicit_content", typ: u(undefined, u(true, null)) },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: u(undefined, u(null, "")) },
         { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },

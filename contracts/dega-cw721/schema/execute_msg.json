@@ -453,12 +453,6 @@
             "null"
           ]
         },
-        "explicit_content": {
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "external_link": {
           "type": [
             "string",

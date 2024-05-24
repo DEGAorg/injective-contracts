@@ -5,7 +5,6 @@ use hex;
 use base_minter::{
     contract::{
         instantiate as sg_base_minter_instantiate,
-        execute as sg_base_minter_execute,
         query_config as query_config_base,
     },
     error::{
@@ -116,10 +115,6 @@ pub fn execute(
         }
         ExecuteMsg::UpdateAdmin { address, command } => {
             execute_update_admin(&mut deps, &env, &info, address, command)
-        }
-        _ => {
-            sg_base_minter_execute(deps, env, info, msg.into())
-                .map_err(| e | ContractError::BaseMinter("Error during pass-thru base execution".to_string(), e))
         }
     }
 

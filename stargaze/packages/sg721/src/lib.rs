@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{Addr, Binary, Decimal, Timestamp};
+use cosmwasm_std::{Addr, Binary, Decimal};
 use cw_ownable::cw_ownable_execute;
 use cw_utils::Expiration;
 
@@ -65,10 +65,6 @@ pub enum ExecuteMsg<T, E> {
     UpdateCollectionInfo {
         collection_info: UpdateCollectionInfoMsg<RoyaltyInfoResponse>,
     },
-    /// Called by the minter to update trading start time
-    UpdateStartTradingTime(Option<Timestamp>),
-    // Freeze collection info from further updates
-    FreezeCollectionInfo,
 }
 
 #[cw_serde]
@@ -77,8 +73,6 @@ pub struct CollectionInfo<T> {
     pub description: String,
     pub image: String,
     pub external_link: Option<String>,
-    pub explicit_content: Option<bool>,
-    pub start_trading_time: Option<Timestamp>,
     pub royalty_info: Option<T>,
 }
 
@@ -87,7 +81,6 @@ pub struct UpdateCollectionInfoMsg<T> {
     pub description: Option<String>,
     pub image: Option<String>,
     pub external_link: Option<Option<String>>,
-    pub explicit_content: Option<bool>,
     pub royalty_info: Option<Option<T>>,
     pub creator: Option<String>,
 }

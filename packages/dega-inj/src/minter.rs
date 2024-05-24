@@ -1,31 +1,17 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Empty, Timestamp, Uint128, Uint256};
+use cosmwasm_std::{Empty, Uint128, Uint256};
 use sg2::{MinterParams};
 
 use sg2::msg::{CollectionParams};
 use sg4::{
-    //MinterConfig as BaseMinterConfig,
     MinterConfigResponse as BaseMinterConfigResponse,
 };
 
 // SGBaseMinter Imports
 use base_minter::{
-    //contract::{
-        //instantiate as sg_base_minter_instantiate,
-        //execute as sg_base_minter_execute,
-        //query as sg_base_minter_query,
-        //reply as sg_base_minter_reply
-    //},
-    msg::{
-        //InstantiateMsg as SgBaseMinterInstantiateMsg, // Specified in messages but not actually what the base minter uses...
-        ExecuteMsg as SgBaseMinterExecuteMsg,
-    },
     state::{
         Config as MinterConfigBase,
     }
-    // error::{
-    //     ContractError as SgBaseMinterContractError,
-    // }
 };
 
 use sg4::{
@@ -37,15 +23,6 @@ use sg_mod::base_factory::{
         BaseMinterCreateMsg as SgBaseMinterInstantiateMsg,
     }
 };
-
-
-
-//pub type InstantiateMsg = SgBaseMinterInstantiateMsg;
-//pub type ExecuteMsg = SgBaseMinterExecuteMsg;
-//pub type QueryMsg = SgBaseMinterQueryMsg;
-// use base_minter::state::{
-//     Config as MinterBaseConfig
-// };
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -59,12 +36,9 @@ impl From<InstantiateMsg> for SgBaseMinterInstantiateMsg {
     fn from(msg: InstantiateMsg) -> SgBaseMinterInstantiateMsg {
         SgBaseMinterInstantiateMsg {
             init_msg: MinterParams {
-                //allowed_sg721_code_ids: msg.minter_params.allowed_sg721_code_ids,
-                frozen: msg.minter_params.frozen,
                 creation_fee: msg.minter_params.creation_fee,
                 min_mint_price: msg.minter_params.min_mint_price,
                 mint_fee_bps: msg.minter_params.mint_fee_bps,
-                max_trading_offset_secs: msg.minter_params.max_trading_offset_secs,
                 extension: Empty {},
             },
             collection_params: msg.collection_params,
@@ -114,7 +88,6 @@ pub enum ExecuteMsg {
         address: String,
         command: UpdateAdminCommand,
     },
-    UpdateStartTradingTime(Option<Timestamp>)
 }
 
 #[cw_serde]
@@ -123,15 +96,13 @@ pub enum UpdateAdminCommand {
     Remove,
 }
 
-impl From<ExecuteMsg> for SgBaseMinterExecuteMsg {
-    fn from(msg: ExecuteMsg) -> SgBaseMinterExecuteMsg {
-        match msg {
-            ExecuteMsg::UpdateStartTradingTime( maybe_stamp ) =>
-                SgBaseMinterExecuteMsg::UpdateStartTradingTime ( maybe_stamp ),
-            _ => unreachable!("cannot convert {:?} to SgBaseMinterQueryMsg", msg),
-        }
-    }
-}
+// impl From<ExecuteMsg> for SgBaseMinterExecuteMsg {
+//     fn from(msg: ExecuteMsg) -> SgBaseMinterExecuteMsg {
+//         // match msg {
+//             _ => unreachable!("cannot convert {:?} to SgBaseMinterQueryMsg", msg),
+//         //}
+//     }
+// }
 
 #[cw_serde]
 pub struct MintRequest {

@@ -41,12 +41,6 @@ pub enum ContractError {
     #[error("Description too long")]
     DescriptionTooLong {},
 
-    #[error("InvalidStartTradingTime")]
-    InvalidStartTradingTime {},
-
-    #[error("CollectionInfoFrozen")]
-    CollectionInfoFrozen {},
-
     #[error("MinterNotFound")]
     MinterNotFound {},
 

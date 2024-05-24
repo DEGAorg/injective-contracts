@@ -166,12 +166,6 @@
         "description": {
           "type": "string"
         },
-        "explicit_content": {
-          "type": [
-            "boolean",
-            "null"
-          ]
-        },
         "external_link": {
           "type": [
             "string",
@@ -185,16 +179,6 @@
           "anyOf": [
             {
               "$ref": "#/definitions/RoyaltyInfoResponse"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "start_trading_time": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Timestamp"
             },
             {
               "type": "null"

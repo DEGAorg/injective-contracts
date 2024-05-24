@@ -1,13 +1,3 @@
-// use crate::{
-//     Cw721BaseExecuteMsg,
-//     Cw721BaseQueryMsg,
-// };
-// use cw721_base::{
-//     msg::{
-//         InstantiateMsg as Cw721BaseInstantiateMsg,
-//     }
-// };
-
 use cw_ownable::{cw_ownable_execute, cw_ownable_query};
 use cw2981_royalties::msg::{
     Cw2981QueryMsg,
@@ -17,18 +7,6 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Binary};
 // SG721 BASE IMPORTS
 use sg721::{InstantiateMsg as Sg721BaseInstantiateMsg, RoyaltyInfoResponse, UpdateCollectionInfoMsg};
-// use sg721_base::{
-//     //entry::{
-//         //instantiate as base_sg721_instantiate,
-//         //execute as base_sg721_execute,
-//         //query as base_sg721_query
-//     //},
-//     // msg::{
-//     //     //ExecuteMsg as Sg721BaseExecuteMsgTemplate,
-//     //     //QueryMsg as Sg721BaseQueryMsg,
-//     // },
-//     //ExecuteMsg as Sg721BaseExecuteMsg,
-// };
 
 #[cfg(not(target_arch = "wasm32"))]
 use sg721_base::msg::CollectionInfoResponse;
@@ -107,7 +85,7 @@ pub enum ExecuteMsg {
         collection_info: UpdateCollectionInfoMsg<RoyaltyInfoResponse>,
     },
 
-    // Added to SG Base by DEGA
+    // Disabled
     // UpdateTokenMetadata {
     //     token_id: String,
     //     token_uri: Option<String>,
@@ -159,6 +137,9 @@ impl From<ExecuteMsg> for sg721::ExecuteMsg<Extension, Empty> {
             },
             ExecuteMsg::Burn { token_id } => sg721::ExecuteMsg::Burn { token_id },
             ExecuteMsg::Extension { msg } => sg721::ExecuteMsg::Extension { msg },
+            ExecuteMsg::UpdateCollectionInfo { collection_info } => {
+                sg721::ExecuteMsg::UpdateCollectionInfo { collection_info }
+            }
             _ => unreachable!("cannot convert {:?} to Base 721 ExecuteMsg", msg),
         }
     }

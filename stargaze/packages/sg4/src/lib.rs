@@ -16,19 +16,6 @@ pub struct MinterConfigResponse<T> {
     pub collection_address: String,
 }
 
-// #[cw_serde]
-// #[derive(Default)]
-// pub struct Status {
-//     pub is_verified: bool,
-//     pub is_blocked: bool,
-//     pub is_explicit: bool,
-// }
-
-// #[cw_serde]
-// pub struct StatusResponse {
-//     pub status: Status,
-// }
-
 #[cw_serde]
 pub enum QueryMsg {
     /// Returns `MinterConfigResponse<T>`

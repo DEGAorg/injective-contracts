@@ -3,7 +3,7 @@ use url::Url;
 
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, ContractInfoResponse, Decimal, Deps, DepsMut, Empty, Env, Event,
-    MessageInfo, Response, StdError, StdResult, Storage, Timestamp, WasmQuery,
+    MessageInfo, Response, StdError, StdResult, Storage, WasmQuery,
 };
 
 use cw721::{ContractInfoResponse as CW721ContractInfoResponse, Cw721Execute};
@@ -82,14 +82,10 @@ where
             description: msg.collection_info.description,
             image: msg.collection_info.image,
             external_link: msg.collection_info.external_link,
-            explicit_content: msg.collection_info.explicit_content,
-            start_trading_time: msg.collection_info.start_trading_time,
             royalty_info,
         };
 
         self.collection_info.save(deps.storage, &collection_info)?;
-
-        self.frozen_collection_info.save(deps.storage, &false)?;
 
         self.royalty_updated_at
             .save(deps.storage, &env.block.time)?;
@@ -153,10 +149,6 @@ where
             ExecuteMsg::UpdateCollectionInfo { collection_info } => {
                 self.update_collection_info(deps, env, info, collection_info)
             }
-            ExecuteMsg::UpdateStartTradingTime(start_time) => {
-                self.update_start_trading_time(deps, env, info, start_time)
-            }
-            ExecuteMsg::FreezeCollectionInfo {} => self.freeze_collection_info(deps, env, info),
             ExecuteMsg::Mint {
                 token_id,
                 token_uri,
@@ -197,10 +189,6 @@ where
     ) -> Result<Response, ContractError> {
         let mut collection = self.collection_info.load(deps.storage)?;
 
-        if self.frozen_collection_info.load(deps.storage)? {
-            return Err(ContractError::CollectionInfoFrozen {});
-        }
-
         // only creator can update collection info
         if collection.creator != info.sender {
             return Err(ContractError::Unauthorized {});
@@ -229,8 +217,6 @@ where
         if collection.external_link.as_ref().is_some() {
             Url::parse(collection.external_link.as_ref().unwrap())?;
         }
-
-        collection.explicit_content = collection_msg.explicit_content;
 
         if let Some(Some(new_royalty_info_response)) = collection_msg.royalty_info {
             let last_royalty_update = self.royalty_updated_at.load(deps.storage)?;
@@ -272,42 +258,6 @@ where
         self.collection_info.save(deps.storage, &collection)?;
 
         let event = Event::new("update_collection_info").add_attribute("sender", info.sender);
-        Ok(Response::new().add_event(event))
-    }
-
-    /// Called by the minter reply handler after custom validations on trading start time.
-    /// Minter has start_time, default offset, makes sense to execute from minter.
-    pub fn update_start_trading_time(
-        &self,
-        deps: DepsMut,
-        _env: Env,
-        info: MessageInfo,
-        start_time: Option<Timestamp>,
-    ) -> Result<Response, ContractError> {
-        assert_minter_owner(deps.storage, &info.sender)?;
-
-        let mut collection_info = self.collection_info.load(deps.storage)?;
-        collection_info.start_trading_time = start_time;
-        self.collection_info.save(deps.storage, &collection_info)?;
-
-        let event = Event::new("update_start_trading_time").add_attribute("sender", info.sender);
-        Ok(Response::new().add_event(event))
-    }
-
-    pub fn freeze_collection_info(
-        &self,
-        deps: DepsMut,
-        _env: Env,
-        info: MessageInfo,
-    ) -> Result<Response, ContractError> {
-        let collection = self.query_collection_info(deps.as_ref())?;
-        if collection.creator != info.sender {
-            return Err(ContractError::Unauthorized {});
-        }
-
-        let frozen = true;
-        self.frozen_collection_info.save(deps.storage, &frozen)?;
-        let event = Event::new("freeze_collection").add_attribute("sender", info.sender);
         Ok(Response::new().add_event(event))
     }
 
@@ -378,8 +328,6 @@ where
             description: info.description,
             image: info.image,
             external_link: info.external_link,
-            explicit_content: info.explicit_content,
-            start_trading_time: info.start_trading_time,
             royalty_info: royalty_info_res,
         })
     }

@@ -799,7 +799,6 @@ fn sign_msg_bytes(signing_key: SigningKey, msg_bytes: &[u8]) -> String {
 fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
     let msg = InstantiateMsg {
         minter_params: sg2::MinterParams {
-            frozen: false,
             creation_fee: Coin {
                 denom: INJ_DENOM.into(),
                 amount: 0u128.into(),
@@ -809,7 +808,6 @@ fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
                 amount: 0u128.into(),
             },
             mint_fee_bps: 0u64,
-            max_trading_offset_secs: 0u64,
             extension: DegaMinterParams {
                 dega_minter_settings: DegaMinterConfigSettings {
                     signer_pub_key,
@@ -827,8 +825,6 @@ fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
                 description: "Test Collection".into(),
                 image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
                 external_link: Some("https://realms.degaplatform.com/".into()),
-                explicit_content: Some(false),
-                start_trading_time: None,
                 royalty_info: Some(sg721::RoyaltyInfoResponse {
                     payment_address: ROYALTY_PAYMENT_ADDR.into(),
                     share: Decimal::percent(2),

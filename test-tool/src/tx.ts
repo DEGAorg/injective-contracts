@@ -699,8 +699,6 @@ async function instantiate(args: string[]) {
                 },
                 initial_admin: context.primaryAddress,
             },
-            frozen: false,
-            max_trading_offset_secs: 0,
             min_mint_price: {
                 amount: "0",
                 denom: "inj"

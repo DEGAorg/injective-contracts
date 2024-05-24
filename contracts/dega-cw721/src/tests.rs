@@ -56,11 +56,8 @@ fn normal_initialization() {
     assert_eq!(collection_info.description, msg.collection_info.description);
     assert_eq!(collection_info.image, msg.collection_info.image);
     assert_eq!(collection_info.external_link, msg.collection_info.external_link);
-    assert_eq!(collection_info.explicit_content, msg.collection_info.explicit_content);
-    assert_eq!(collection_info.start_trading_time, msg.collection_info.start_trading_time);
     assert_eq!(collection_info.royalty_info.unwrap(), msg.collection_info.royalty_info.unwrap());
 
-    assert!(!default_contract.frozen_collection_info.load(&deps.storage).unwrap());
     assert_eq!(default_contract.royalty_updated_at.load(&deps.storage).unwrap(), env.block.time);
 }
 
@@ -107,8 +104,6 @@ fn template_instantiate_msg() -> InstantiateMsg {
             description: "Test Description".to_string(),
             image: "https://example.com/image.png".to_string(),
             external_link: None,
-            explicit_content: None,
-            start_trading_time: None,
             royalty_info: Some(RoyaltyInfoResponse {
                 payment_address: ROYALTY_PAYMENT_ADDR.to_string(),
                 share: ROYALTY_SHARE,
@@ -179,11 +174,9 @@ pub fn mock_query_minter(query: dega_inj::minter::QueryMsg) -> ContractResult<Bi
                             amount: Uint128::zero(),
                         },
                         extension: MinterParams {
-                            frozen: false,
                             creation_fee: Default::default(),
                             min_mint_price: Default::default(),
                             mint_fee_bps: 0,
-                            max_trading_offset_secs: 0,
                             extension: Empty {},
                         },
                     },
@@ -274,11 +267,9 @@ pub fn mock_query_minter_template
                             amount: Uint128::zero(),
                         },
                         extension: MinterParams {
-                            frozen: false,
                             creation_fee: Default::default(),
                             min_mint_price: Default::default(),
                             mint_fee_bps: 0,
-                            max_trading_offset_secs: 0,
                             extension: Empty {},
                         },
                     },

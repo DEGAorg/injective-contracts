@@ -12,9 +12,6 @@ where
 {
     pub parent: Parent<'a, T>,
     pub collection_info: Item<'a, CollectionInfo<RoyaltyInfo>>,
-
-    /// Instantiate set to false by the minter, then true by creator to freeze collection info
-    pub frozen_collection_info: Item<'a, bool>,
     pub royalty_updated_at: Item<'a, Timestamp>,
 }
 
@@ -26,7 +23,6 @@ where
         Sg721Contract {
             parent: cw721_base::Cw721Contract::default(),
             collection_info: Item::new("collection_info"),
-            frozen_collection_info: Item::new("frozen_collection_info"),
             royalty_updated_at: Item::new("royalty_updated_at"),
         }
     }
