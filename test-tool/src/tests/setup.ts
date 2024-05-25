@@ -152,7 +152,6 @@ async function createInstantiateMsg() {
         collection_params: {
             code_id: appContext.cw721CodeId,
             info: {
-                creator: appContext.primaryAddress,
                 description: "A simple test collection description",
                 image: "https://storage.googleapis.com/dega-banner/banner.png"
             },

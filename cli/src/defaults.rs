@@ -58,7 +58,6 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &[ContractInfo]) -> de
             name: "TestCollection".into(),
             symbol: "TEST_COLLECTION".into(),
             info: CollectionInfoResponse {
-                creator: "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6".into(),
                 description: "Test Collection".into(),
                 image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
                 external_link: Some("https://realms.degaplatform.com/".into()),

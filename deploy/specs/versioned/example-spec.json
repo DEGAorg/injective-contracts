@@ -16,7 +16,6 @@
   "cw721AddressForMigration": null,
   "collectionName": "Test collection",
   "collectionSymbol": "TEST",
-  "collectionCreator": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
   "collectionDescription": "This is a test collection",
   "collectionImageURL": "https://storage.googleapis.com/dega-banner/banner.png",
   "collectionExternalLinkURL": "https://realms.degaplatform.com/",

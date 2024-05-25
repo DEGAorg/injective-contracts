@@ -230,7 +230,6 @@ pub struct CollectionParams {
 
 #[cw_serde]
 pub struct CollectionInfo {
-    pub creator: String,
     pub description: String,
     pub image: String,
     pub external_link: Option<String>,
@@ -239,7 +238,6 @@ pub struct CollectionInfo {
 
 #[cw_serde]
 pub struct CollectionInfoResponse {
-    pub creator: String,
     pub description: String,
     pub image: String,
     pub external_link: Option<String>,
@@ -252,7 +250,6 @@ pub struct UpdateCollectionInfoMsg {
     pub image: Option<String>,
     pub external_link: Option<Option<String>>,
     pub royalty_settings: Option<Option<RoyaltySettingsResponse>>,
-    pub creator: Option<String>,
 }
 
 #[cw_serde]

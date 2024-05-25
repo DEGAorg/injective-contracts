@@ -35,7 +35,6 @@ impl<'a> DegaCw721Contract<'a>
         };
 
         Ok(CollectionInfoResponse {
-            creator: info.creator,
             description: info.description,
             image: info.image,
             external_link: info.external_link,

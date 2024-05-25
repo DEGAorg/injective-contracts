@@ -41,12 +41,12 @@ export enum UpdateAdminCommand {
 }
 
 export interface UpdateSettings {
-    settings: DegaMinterConfigSettings;
+    settings: UpdateDegaMinterConfigSettingsMsg;
 }
 
-export interface DegaMinterConfigSettings {
-    minting_paused: boolean;
-    signer_pub_key: string;
+export interface UpdateDegaMinterConfigSettingsMsg {
+    minting_paused?: boolean | null;
+    signer_pub_key?: null | string;
 }
 
 // Converts JSON strings to/from your types
@@ -239,11 +239,11 @@ const typeMap: any = {
         { json: "command", js: "command", typ: r("UpdateAdminCommand") },
     ], false),
     "UpdateSettings": o([
-        { json: "settings", js: "settings", typ: r("DegaMinterConfigSettings") },
+        { json: "settings", js: "settings", typ: r("UpdateDegaMinterConfigSettingsMsg") },
     ], false),
-    "DegaMinterConfigSettings": o([
-        { json: "minting_paused", js: "minting_paused", typ: true },
-        { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
+    "UpdateDegaMinterConfigSettingsMsg": o([
+        { json: "minting_paused", js: "minting_paused", typ: u(undefined, u(true, null)) },
+        { json: "signer_pub_key", js: "signer_pub_key", typ: u(undefined, u(null, "")) },
     ], false),
     "UpdateAdminCommand": [
         "add",

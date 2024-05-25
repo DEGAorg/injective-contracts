@@ -680,7 +680,6 @@ async function instantiate(args: string[]) {
         collection_params: {
             code_id: context.cw721CodeId,
             info: {
-                creator: context.primaryAddress,
                 description: "A simple test collection description",
                 image: "https://storage.googleapis.com/dega-banner/banner.png"
             },

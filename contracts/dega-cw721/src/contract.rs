@@ -64,19 +64,22 @@ impl<'a> DegaCw721Contract<'a>
         }
 
         let royalty_info: Option<RoyaltySettings> = match msg.collection_info.royalty_settings {
-            Some(royalty_info) => Some(RoyaltySettings {
-                payment_address: deps.api.addr_validate(&royalty_info.payment_address)
-                    .map_err(|e| ContractError::Std("Invalid payment address".to_string(), e))?,
-                share: share_validate(royalty_info.share)?,
-            }),
+            Some(royalty_settings) => {
+                let payment_address = deps.api.addr_validate(&royalty_settings.payment_address)
+                                              .map_err(|e| ContractError::Std("Invalid royalty payment address".to_string(), e))?;
+
+                let share = share_validate(royalty_settings.share)
+                    .map_err(|e| ContractError::Std("Invalid royalty share".to_string(), e))?;
+
+                Some(RoyaltySettings {
+                    payment_address,
+                    share,
+                })
+            },
             None => None,
         };
 
-        deps.api.addr_validate(&msg.collection_info.creator)
-            .map_err(|e| ContractError::Std("Invalid creator address".to_string(), e))?;
-
         let collection_info = CollectionInfo {
-            creator: msg.collection_info.creator,
             description: msg.collection_info.description,
             image: msg.collection_info.image,
             external_link: msg.collection_info.external_link,
@@ -90,7 +93,6 @@ impl<'a> DegaCw721Contract<'a>
             .add_attribute("action", "instantiate")
             .add_attribute("collection_name", info.name)
             .add_attribute("collection_symbol", info.symbol)
-            .add_attribute("collection_creator", collection_info.creator)
             .add_attribute("minter", msg.minter)
             .add_attribute("image", image.to_string()))
     }

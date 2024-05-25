@@ -419,12 +419,6 @@
     "UpdateCollectionInfoMsg": {
       "type": "object",
       "properties": {
-        "creator": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "description": {
           "type": [
             "string",

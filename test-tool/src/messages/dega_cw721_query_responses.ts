@@ -114,7 +114,6 @@ export interface CheckRoyaltiesResponse {
 }
 
 export interface CollectionInfoResponse {
-    creator:           string;
     description:       string;
     external_link?:    null | string;
     image:             string;
@@ -377,7 +376,6 @@ const typeMap: any = {
         { json: "royalty_payments", js: "royalty_payments", typ: true },
     ], false),
     "CollectionInfoResponse": o([
-        { json: "creator", js: "creator", typ: "" },
         { json: "description", js: "description", typ: "" },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: "" },

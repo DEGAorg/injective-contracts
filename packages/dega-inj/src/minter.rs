@@ -104,6 +104,11 @@ pub enum QueryMsg {
 
     #[returns(AdminsResponse)]
     Admins {},
+
+    #[returns(bool)]
+    IsAdmin {
+        address: String,
+    },
 }
 
 #[cw_serde]

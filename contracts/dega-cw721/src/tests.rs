@@ -13,8 +13,6 @@ use crate::helpers::get_dega_minter_settings;
 const COLLECTION_CONTRACT_ADDR: &str = MOCK_CONTRACT_ADDR;
 const MINTER_CONTRACT_ADDR: &str = "minter_contract_addr";
 const MINTER_OWNER_ADDR: &str = "minter_owner_addr";
-const CREATOR_ADDR: &str = "creator_addr";
-
 const ROYALTY_PAYMENT_ADDR: &str = "royalty_payment_address";
 const ROYALTY_SHARE: Decimal = Decimal::percent(5);
 const COLLECTION_OWNER_ADDR: &str = MINTER_CONTRACT_ADDR;
@@ -48,7 +46,6 @@ fn normal_initialization() {
     assert_eq!(contract_info.symbol, msg.symbol);
 
     let collection_info = default_contract.query_collection_info(deps.as_ref()).unwrap();
-    assert_eq!(collection_info.creator, msg.collection_info.creator);
     assert_eq!(collection_info.description, msg.collection_info.description);
     assert_eq!(collection_info.image, msg.collection_info.image);
     assert_eq!(collection_info.external_link, msg.collection_info.external_link);
@@ -93,7 +90,6 @@ fn template_instantiate_msg() -> InstantiateMsg {
         symbol: "TEST".to_string(),
         minter: MINTER_CONTRACT_ADDR.to_string(),
         collection_info: CollectionInfoResponse {
-            creator: CREATOR_ADDR.to_string(),
             description: "Test Description".to_string(),
             image: "https://example.com/image.png".to_string(),
             external_link: None,

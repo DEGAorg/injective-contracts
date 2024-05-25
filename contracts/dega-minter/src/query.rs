@@ -28,6 +28,7 @@ pub fn run_query(
         },
         QueryMsg::Config {} => to_json_binary(&query_config(deps, env)?),
         QueryMsg::Admins {} => to_json_binary(&query_admins(deps, env)?),
+        QueryMsg::IsAdmin { address } => to_json_binary(&query_is_admin(deps, env, address)?),
     }
 }
 
@@ -107,4 +108,12 @@ pub fn query_check_sig(deps: Deps, _env: Env, message: VerifiableMsg, signature:
         message_hash_hex: hash_hex_string,
         error,
     })
+}
+
+pub(crate) fn query_is_admin(deps: Deps, _env: Env, address: String) -> StdResult<bool> {
+
+    deps.api.addr_validate(&address)
+        .map_err(|e| StdError::generic_err(format!("Invalid address: {}", e)))?;
+
+    Ok(ADMIN_LIST.has(deps.storage, address))
 }

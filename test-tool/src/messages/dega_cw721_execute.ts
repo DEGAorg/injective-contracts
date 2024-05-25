@@ -120,7 +120,6 @@ export interface UpdateCollectionInfo {
 }
 
 export interface UpdateCollectionInfoMsg {
-    creator?:          null | string;
     description?:      null | string;
     external_link?:    null | string;
     image?:            null | string;
@@ -387,7 +386,6 @@ const typeMap: any = {
         { json: "collection_info", js: "collection_info", typ: r("UpdateCollectionInfoMsg") },
     ], false),
     "UpdateCollectionInfoMsg": o([
-        { json: "creator", js: "creator", typ: u(undefined, u(null, "")) },
         { json: "description", js: "description", typ: u(undefined, u(null, "")) },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: u(undefined, u(null, "")) },

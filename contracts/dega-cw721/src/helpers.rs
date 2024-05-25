@@ -1,11 +1,11 @@
-use cosmwasm_std::{Addr, Decimal, Deps, Storage};
+use cosmwasm_std::{Addr, Decimal, Deps, StdError, StdResult, Storage};
+use cw_ownable::OwnershipError;
 use dega_inj::minter::DegaMinterConfigResponse;
-use crate::error::ContractError;
 
 
-pub(crate) fn share_validate(share: Decimal) -> Result<Decimal, ContractError> {
+pub(crate) fn share_validate(share: Decimal) -> StdResult<Decimal> {
     if share > Decimal::one() {
-        return Err(ContractError::Generic(
+        return Err(StdError::generic_err(
             "Share cannot be greater than 100%".to_string(),
         ));
     }
@@ -13,31 +13,54 @@ pub(crate) fn share_validate(share: Decimal) -> Result<Decimal, ContractError> {
     Ok(share)
 }
 
-pub(crate) fn get_owner_minter(storage: &dyn Storage) -> Result<Addr, ContractError> {
+pub(crate) fn get_owner_minter(storage: &dyn Storage) -> StdResult<Addr> {
     let ownership = cw_ownable::get_ownership(storage)
-        .map_err(|e| ContractError::Std("Error during query for owner minter".to_string(), e))?;
+        .map_err(|e| StdError::generic_err(format!("Error during query for owner minter: {}", e)))?;
 
     match ownership.owner {
         Some(owner_value) => Ok(owner_value),
-        None => Err(ContractError::Generic("No owner set".to_string())),
+        None => Err(StdError::generic_err("No owner set".to_string())),
     }
 }
 
-pub(crate) fn assert_minter_owner(storage: &mut dyn Storage, sender: &Addr) -> Result<(), ContractError> {
+pub(crate) fn assert_minter_owner(storage: &mut dyn Storage, sender: &Addr) -> StdResult<()> {
     let res = cw_ownable::assert_owner(storage, sender);
     match res {
         Ok(_) => Ok(()),
-        Err(_) => Err(ContractError::Unauthorized("Action only available to minter".to_string())),
+        Err(e) => {
+            let err = match e {
+                OwnershipError::NotOwner |
+                OwnershipError::NotPendingOwner => StdError::generic_err("Action only available to minter".to_string()),
+                _ => StdError::generic_err(format!("Error checking for minter ownership: {}", e))
+            };
+            Err(err)
+        },
     }
 }
 
-pub(crate) fn get_dega_minter_settings(deps: &Deps) -> Result<DegaMinterConfigResponse, ContractError> {
-    let minter_addr = get_owner_minter(deps.storage)?;
+pub(crate) fn get_dega_minter_settings(deps: &Deps) -> StdResult<DegaMinterConfigResponse> {
+    let minter_addr = get_owner_minter(deps.storage)
+        .map_err(|e| StdError::generic_err(format!("Error getting minter address: {}", e)))?;
 
     let config_response: DegaMinterConfigResponse = deps.querier.query_wasm_smart(
         minter_addr.clone(),
         &dega_inj::minter::QueryMsg::Config {},
-    ).map_err(|e| ContractError::Std("Error during query for minter config".to_string(), e))?;
+    ).map_err(|e| StdError::generic_err(format!("Error during query for minter config: {}", e)))?;
 
     Ok(config_response)
+}
+
+pub(crate) fn is_minter_admin(deps: &Deps, address: &Addr) -> StdResult<bool> {
+
+    let minter_addr = get_owner_minter(deps.storage)
+        .map_err(|e| StdError::generic_err(format!("Error getting minter address: {}", e)))?;
+
+    let is_admin: bool = deps.querier.query_wasm_smart(
+        minter_addr.clone(),
+        &dega_inj::minter::QueryMsg::IsAdmin {
+            address: address.to_string(),
+        },
+    ).map_err(|e| StdError::generic_err(format!("Error during minter admin check query: {}", e)))?;
+
+    Ok(is_admin)
 }

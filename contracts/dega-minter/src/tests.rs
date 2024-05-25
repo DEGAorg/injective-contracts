@@ -41,7 +41,6 @@ const _MINTER_CONTRACT_ADDR: &str = MOCK_CONTRACT_ADDR;
 const COLLECTION_CONTRACT_ADDR: &str = "collection_contract_addr";
 const MINTER_OWNER_ADDR: &str = "minter_owner_addr";
 const COLLECTION_OWNER_ADDR: &str = "collection_owner_addr";
-const CREATOR_ADDR: &str = "creator_addr";
 const USER_ADMIN_ADDR: &str = "user_admin_addr";
 const NEW_ADMIN_ADDR: &str = "new_admin_addr";
 const NORMAL_USER_ADDR: &str = "normal_user_addr";
@@ -808,7 +807,6 @@ fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
             name: "TestCollection".into(),
             symbol: "TEST_COLLECTION".into(),
             info: CollectionInfoResponse {
-                creator: CREATOR_ADDR.into(),
                 description: "Test Collection".into(),
                 image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
                 external_link: Some("https://realms.degaplatform.com/".into()),

@@ -142,9 +142,6 @@ already on the chain to use for instantiating the minter smart contract instance
 `"collectionSymbol": "TEST",` - The ticker symbol of the collection in the collection properties of the CW721 contract.
 Note, this shows up as the "Denom" in the injective finder.
 
-`"collectionCreator": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` - The injective address of the creator of the collection,
-as exists in the default implementation of the stargate NFT contracts.
-
 `"collectionDescription": "This is a test collection",` - A description for the collection stored and queryable in the 
 smart contract.
 

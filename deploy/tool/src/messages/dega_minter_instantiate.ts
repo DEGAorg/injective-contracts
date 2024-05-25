@@ -19,20 +19,19 @@ export interface CollectionParams {
      * The collection code id
      */
     code_id: number;
-    info:    CollectionInfoForRoyaltyInfoResponse;
+    info:    CollectionInfoResponse;
     name:    string;
     symbol:  string;
 }
 
-export interface CollectionInfoForRoyaltyInfoResponse {
-    creator:        string;
-    description:    string;
-    external_link?: null | string;
-    image:          string;
-    royalty_info?:  RoyaltyInfoResponse | null;
+export interface CollectionInfoResponse {
+    description:       string;
+    external_link?:    null | string;
+    image:             string;
+    royalty_settings?: RoyaltySettingsResponse | null;
 }
 
-export interface RoyaltyInfoResponse {
+export interface RoyaltySettingsResponse {
     payment_address: string;
     share:           string;
 }
@@ -220,18 +219,17 @@ const typeMap: any = {
     ], false),
     "CollectionParams": o([
         { json: "code_id", js: "code_id", typ: 0 },
-        { json: "info", js: "info", typ: r("CollectionInfoForRoyaltyInfoResponse") },
+        { json: "info", js: "info", typ: r("CollectionInfoResponse") },
         { json: "name", js: "name", typ: "" },
         { json: "symbol", js: "symbol", typ: "" },
     ], false),
-    "CollectionInfoForRoyaltyInfoResponse": o([
-        { json: "creator", js: "creator", typ: "" },
+    "CollectionInfoResponse": o([
         { json: "description", js: "description", typ: "" },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: "" },
-        { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },
+        { json: "royalty_settings", js: "royalty_settings", typ: u(undefined, u(r("RoyaltySettingsResponse"), null)) },
     ], false),
-    "RoyaltyInfoResponse": o([
+    "RoyaltySettingsResponse": o([
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
     ], false),

@@ -1,10 +1,10 @@
-use cosmwasm_std::{Decimal, DepsMut, Env, Event, MessageInfo, Response, StdError};
+use cosmwasm_std::{DepsMut, Env, Event, MessageInfo, Response, StdError};
 use cw721::Cw721Execute;
 use cw721_base::state::TokenInfo;
 use cw_utils::nonpayable;
 use url::Url;
-use dega_inj::cw721::{CollectionInfoResponse, ExecuteMsg, NftParams, RoyaltySettings, UpdateCollectionInfoMsg};
-use crate::helpers::{assert_minter_owner, get_dega_minter_settings, share_validate};
+use dega_inj::cw721::{ExecuteMsg, NftParams, RoyaltySettings, UpdateCollectionInfoMsg};
+use crate::helpers::{assert_minter_owner, get_dega_minter_settings, is_minter_admin, share_validate};
 use crate::error::ContractError;
 use crate::state::DegaCw721Contract;
 
@@ -104,9 +104,12 @@ impl<'a> DegaCw721Contract<'a>
         info: MessageInfo,
         nft_data: NftParams,
     ) -> Result<Response, ContractError> {
-        assert_minter_owner(deps.storage, &info.sender)?;
+        assert_minter_owner(deps.storage, &info.sender)
+            .map_err(|e| ContractError::Unauthorized(e.to_string()))?;
 
-        let minter_config = get_dega_minter_settings(&deps.as_ref())?;
+        let minter_config = get_dega_minter_settings(&deps.as_ref())
+            .map_err(|e| ContractError::Std("Unable to get minter settings".to_string(), e))?;
+
         if minter_config.dega_minter_settings.minting_paused {
             return Err(ContractError::MintingPaused)
         }
@@ -157,6 +160,14 @@ impl<'a> DegaCw721Contract<'a>
         collection_msg: UpdateCollectionInfoMsg,
     ) -> Result<Response, ContractError> {
 
+        let is_minter_admin = is_minter_admin(&deps.as_ref(), &info.sender)
+            .map_err(|e| ContractError::Std("Unable to check for admin permission".to_string(), e))?;
+
+        // only minter admin can update collection info
+        if !is_minter_admin {
+            return Err(ContractError::Unauthorized("Only minter admins can update collection info".to_string()));
+        }
+
         let mut event =
             Event::new("update_collection_info")
                 .add_attribute("sender", info.sender.clone());
@@ -164,19 +175,6 @@ impl<'a> DegaCw721Contract<'a>
         let mut collection_info = self.collection_info.load(deps.storage)
                                       .map_err(|e| ContractError::Std("Unable to load collection info".to_string(), e))?;
 
-        // only creator can update collection info
-        if collection_info.creator != info.sender {
-            return Err(ContractError::Unauthorized("Only creator can update collection info".to_string()));
-        }
-
-        if let Some(new_creator) = collection_msg.creator {
-            deps.api.addr_validate(&new_creator)
-                .map_err(|e| ContractError::Std("Invalid creator address".to_string(), e))?;
-
-            collection_info.creator.clone_from(&new_creator);
-
-            event = event.add_attribute("creator", new_creator);
-        }
 
         if let Some(new_description) = collection_msg.description {
             if new_description.len() > crate::contract::MAX_DESCRIPTION_LENGTH as usize {
@@ -212,18 +210,16 @@ impl<'a> DegaCw721Contract<'a>
         if let Some(maybe_new_royalty_setting) = collection_msg.royalty_settings {
 
             if let Some(new_royalty_setting) = maybe_new_royalty_setting {
-                if new_royalty_setting.share > Decimal::one() {
-                    return Err(ContractError::Generic(
-                        "Royalty share cannot be greater than 100%".to_string(),
-                    ));
-                }
+
+                let new_payment_address = deps.api.addr_validate(&new_royalty_setting.payment_address)
+                    .map_err(|e| ContractError::Std("Invalid royalty payment address".to_string(), e))?;
+
+                let new_share = share_validate(new_royalty_setting.share)
+                    .map_err(|e| ContractError::Std("Invalid royalty share".to_string(), e))?;
 
                 let new_royalty_info = RoyaltySettings {
-                    payment_address: deps
-                        .api
-                        .addr_validate(&new_royalty_setting.payment_address)
-                        .map_err(|e| ContractError::Std("Invalid royalty payment address".to_string(), e))?,
-                    share: share_validate(new_royalty_setting.share)?,
+                    payment_address: new_payment_address,
+                    share: new_share
                 };
 
                 collection_info.royalty_info = Some(new_royalty_info.clone());
@@ -251,14 +247,12 @@ impl<'a> DegaCw721Contract<'a>
         token_uri: Option<String>,
     ) -> Result<Response, ContractError> {
 
-        // Check if sender is minter
-        let owner = deps.api.addr_validate(info.sender.as_ref())
-                        .map_err(|e| ContractError::Std("Could not validate sender address.".to_string(), e))?;
-        let collection_info: CollectionInfoResponse =
-            self.query_collection_info(deps.as_ref())
-                .map_err(|e| ContractError::Std("Unable to query collection info.".to_string(), e))?;
-        if owner != collection_info.creator {
-            return Err(ContractError::Unauthorized("Sender is not creator.".to_string()));
+        let is_minter_admin = is_minter_admin(&deps.as_ref(), &info.sender)
+            .map_err(|e| ContractError::Std("Unable to check for admin permission".to_string(), e))?;
+
+        // only minter admin can update token metadata
+        if !is_minter_admin {
+            return Err(ContractError::Unauthorized("Only minter admins can update collection info".to_string()));
         }
 
         // Update token metadata

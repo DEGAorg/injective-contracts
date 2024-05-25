@@ -8,21 +8,20 @@
 // match the expected interface, even if the JSON is valid.
 
 export interface DegaCw721InstantiateMsg {
-    collection_info: CollectionInfoForRoyaltyInfoResponse;
+    collection_info: CollectionInfoResponse;
     minter:          string;
     name:            string;
     symbol:          string;
 }
 
-export interface CollectionInfoForRoyaltyInfoResponse {
-    creator:        string;
-    description:    string;
-    external_link?: null | string;
-    image:          string;
-    royalty_info?:  RoyaltyInfoResponse | null;
+export interface CollectionInfoResponse {
+    description:       string;
+    external_link?:    null | string;
+    image:             string;
+    royalty_settings?: RoyaltySettingsResponse | null;
 }
 
-export interface RoyaltyInfoResponse {
+export interface RoyaltySettingsResponse {
     payment_address: string;
     share:           string;
 }
@@ -193,19 +192,18 @@ function r(name: string) {
 
 const typeMap: any = {
     "DegaCw721InstantiateMsg": o([
-        { json: "collection_info", js: "collection_info", typ: r("CollectionInfoForRoyaltyInfoResponse") },
+        { json: "collection_info", js: "collection_info", typ: r("CollectionInfoResponse") },
         { json: "minter", js: "minter", typ: "" },
         { json: "name", js: "name", typ: "" },
         { json: "symbol", js: "symbol", typ: "" },
     ], false),
-    "CollectionInfoForRoyaltyInfoResponse": o([
-        { json: "creator", js: "creator", typ: "" },
+    "CollectionInfoResponse": o([
         { json: "description", js: "description", typ: "" },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: "" },
-        { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },
+        { json: "royalty_settings", js: "royalty_settings", typ: u(undefined, u(r("RoyaltySettingsResponse"), null)) },
     ], false),
-    "RoyaltyInfoResponse": o([
+    "RoyaltySettingsResponse": o([
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
     ], false),
