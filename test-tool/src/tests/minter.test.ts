@@ -10,6 +10,8 @@ import { SignerSourceTypeEnum } from "../messages/dega_minter_query";
 import { AppContext, getAppContext } from "../context";
 import { TestContext, getTestContext } from "./testContext";
 import { info } from "../query";
+import { logObjectFullDepth } from "./setup";
+import { compareWasmError } from "../helpers/wasm";
 
 const getNFTWeiPrice = (nftPrice: number): string => {
     return new BigNumberInBase(nftPrice).toWei().toFixed();
@@ -86,6 +88,12 @@ const createExecuteMintMessage = (appContext: AppContext, mintRequestMsg: MintRe
     return execMsg;
 }
 
+// Invalid Price is the same as signature since the validation of the message will not pass
+const ERROR_MESSAGES = {
+    invalidSignature: `( Error during execution of DEGA Minter: ( Signature is invalid ) ): execute wasm contract failed`,
+    invalidPrice: `( Error during execution of DEGA Minter: ( Signature is invalid ) ): execute wasm contract failed`,
+}
+
 describe('Dega Minter', () => {
     it('should mint an NFT successfully', async () => {
         const appContext = await getAppContext();
@@ -148,13 +156,18 @@ describe('Dega Minter', () => {
         await info([]);
 
         console.log(`Minter Address: `, appContext.minterAddress);
-
-        const response = await appContext.primaryBroadcaster.broadcast({
-            msgs: execMsg,
-            gas: appContext.gasSettings,
-        })
-
-        expect(response.code).not.toEqual(0);
+        let wasmErrorComparison = false;
+        // catch the error
+        try {
+            const response = await appContext.primaryBroadcaster.broadcast({
+                msgs: execMsg,
+                gas: appContext.gasSettings,
+            })
+        } catch (error: any) {
+            logObjectFullDepth(error)
+            wasmErrorComparison = compareWasmError(ERROR_MESSAGES.invalidSignature, error);
+        }
+        expect(wasmErrorComparison).toEqual(true);
     });
 
     // create a test with a executed mint request with a bad price
@@ -186,11 +199,17 @@ describe('Dega Minter', () => {
 
         console.log(`Minter Address: `, appContext.minterAddress);
 
-        const response = await appContext.primaryBroadcaster.broadcast({
-            msgs: execMsg,
-            gas: appContext.gasSettings,
-        })
-
-        expect(response.code).not.toEqual(0);
+        let wasmErrorComparison = false;
+        // catch the error
+        try {
+            const response = await appContext.primaryBroadcaster.broadcast({
+                msgs: execMsg,
+                gas: appContext.gasSettings,
+            })
+        } catch (error: any) {
+            logObjectFullDepth(error)
+            wasmErrorComparison = compareWasmError(ERROR_MESSAGES.invalidPrice, error);
+        }
+        expect(wasmErrorComparison).toEqual(true);
     });
 });

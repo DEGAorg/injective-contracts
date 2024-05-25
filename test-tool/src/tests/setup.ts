@@ -197,7 +197,7 @@ async function createInstantiateMsg() {
     return instantiateMsg;
 }
 
-function logObjectFullDepth(obj: any) {
+export function logObjectFullDepth(obj: any) {
     console.log(util.inspect(obj, {showHidden: false, depth: null, colors: true}));
 }
 
