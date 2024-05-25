@@ -6,7 +6,7 @@
   "scripts": {
     "tsc": "npx tsc",
     "run": "npx tsc && node dist/main.js",
-    "test": "npx tsc && npx jest"
+    "test": "npx tsc && npx jest --detectOpenHandles"
   },
   "author": "Unamint Studios, Will Stahl <will@stahl.cc>",
   "license": "None (all rights reserved)",

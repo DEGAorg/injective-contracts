@@ -128,7 +128,7 @@ async function fillTestWallets() {
     const appContext = await getAppContext();
     let sendMessages: MsgSend[] = [];
 
-    sendMessages = await addMsgForFillingTestAddress(appContext.primaryAddress, 50, sendMessages);
+    sendMessages = await addMsgForFillingTestAddress(appContext.primaryAddress, 1000, sendMessages);
     sendMessages = await addMsgForFillingTestAddress(appContext.signerAddress, 50, sendMessages);
     sendMessages = await addMsgForFillingTestAddress(testContext.testAddressOne, 50, sendMessages);
     sendMessages = await addMsgForFillingTestAddress(testContext.testAddressTwo, 50, sendMessages);
