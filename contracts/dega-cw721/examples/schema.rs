@@ -4,11 +4,10 @@ use std::fs::create_dir_all;
 use cosmwasm_schema::{cw_serde, export_schema, export_schema_with_title, remove_schemas, schema_for};
 use cw2981_royalties::msg::{CheckRoyaltiesResponse, RoyaltiesInfoResponse};
 use cw721_base::Extension;
-use dega_inj::cw721::InstantiateMsg;
+use dega_inj::cw721::{CollectionInfoResponse, InstantiateMsg};
 use dega_inj::cw721::MigrateMsg;
 use dega_inj::cw721::ExecuteMsg;
 use dega_inj::cw721::QueryMsg;
-use sg721_base::msg::CollectionInfoResponse;
 
 #[cw_serde]
 struct QueryResponses {

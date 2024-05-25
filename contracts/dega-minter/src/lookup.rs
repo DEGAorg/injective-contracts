@@ -4,21 +4,21 @@
 //
 // #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 // #[serde(rename_all = "snake_case")]
-// pub enum DegaInjRoute {
+// pub(crate) enum DegaInjRoute {
 //     Auth,
 // }
 //
 // #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 // #[serde(rename_all = "snake_case")]
-// pub struct DegaInjQueryWrapper {
-//     pub route: DegaInjRoute,
-//     pub query_data: DegaInjectiveQuery,
+// pub(crate) struct DegaInjQueryWrapper {
+//     pub(crate) route: DegaInjRoute,
+//     pub(crate) query_data: DegaInjectiveQuery,
 // }
 //
 // /// InjectiveQuery is an override of QueryRequest::Custom to access Injective-specific modules
 // #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 // #[serde(rename_all = "snake_case")]
-// pub enum DegaInjectiveQuery {
+// pub(crate) enum DegaInjectiveQuery {
 //
 //     Account {
 //         address: String
@@ -33,7 +33,7 @@
 //     }
 // }
 //
-// pub fn _query_account(deps: Deps, address: String) -> StdResult<Binary> {
+// pub(crate) fn _query_account(deps: Deps, address: String) -> StdResult<Binary> {
 //
 //     // let res: GranterGrantsResponse = deps.querier.query(&request.into())?;
 //     //let res = deps.querier.query(&request.into())?;
@@ -97,34 +97,34 @@
 // }
 //
 // #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-// pub struct QueryAccountInfoRequest {
+// pub(crate) struct QueryAccountInfoRequest {
 //     /// address is the account address string.
 //     //#[prost(string, tag = "1")]
-//     pub address: String,
+//     pub(crate) address: String,
 // }
 //
 // #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-// pub struct QueryAccountInfoResponse {
-//     pub info: Option<BaseAccount>,
+// pub(crate) struct QueryAccountInfoResponse {
+//     pub(crate) info: Option<BaseAccount>,
 // }
 //
 // #[allow(clippy::derive_partial_eq_without_eq)]
 // #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-// pub struct BaseAccount {
+// pub(crate) struct BaseAccount {
 //
-//     pub address: String,
+//     pub(crate) address: String,
 //
-//     pub pub_key: Option<Any>,
+//     pub(crate) pub_key: Option<Any>,
 //
-//     pub account_number: u64,
+//     pub(crate) account_number: u64,
 //
-//     pub sequence: u64,
+//     pub(crate) sequence: u64,
 // }
 //
 // #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-// pub struct Any {
-//     pub type_url: String,
-//     pub value: Vec<u8>,
+// pub(crate) struct Any {
+//     pub(crate) type_url: String,
+//     pub(crate) value: Vec<u8>,
 // }
 
 // fn get_pubkey_for_address(deps: &Deps, address: String) -> Result<Vec<u8>, StdError> {

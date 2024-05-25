@@ -27,8 +27,6 @@
  *
  * Burn an NFT the sender has access to
  *
- * Extension msg
- *
  * Update the contract's ownership. The `action` to be provided can be either to propose
  * transferring ownership to an account, accept a pending ownership transfer, or renounce
  * the ownership permanently.
@@ -42,7 +40,6 @@ export interface DegaCw721ExecuteMsg {
     revoke_all?:             RevokeAll;
     mint?:                   Mint;
     burn?:                   Burn;
-    extension?:              Extension;
     update_collection_info?: UpdateCollectionInfo;
     update_ownership?:       ActionClass | ActionEnum;
 }
@@ -76,10 +73,6 @@ export interface ApproveAll {
 
 export interface Burn {
     token_id: string;
-}
-
-export interface Extension {
-    msg: { [key: string]: any };
 }
 
 export interface Mint {
@@ -123,18 +116,18 @@ export interface TransferNft {
 }
 
 export interface UpdateCollectionInfo {
-    collection_info: UpdateCollectionInfoMsgForRoyaltyInfoResponse;
+    collection_info: UpdateCollectionInfoMsg;
 }
 
-export interface UpdateCollectionInfoMsgForRoyaltyInfoResponse {
-    creator?:       null | string;
-    description?:   null | string;
-    external_link?: null | string;
-    image?:         null | string;
-    royalty_info?:  RoyaltyInfoResponse | null;
+export interface UpdateCollectionInfoMsg {
+    creator?:          null | string;
+    description?:      null | string;
+    external_link?:    null | string;
+    image?:            null | string;
+    royalty_settings?: RoyaltySettingsResponse | null;
 }
 
-export interface RoyaltyInfoResponse {
+export interface RoyaltySettingsResponse {
     payment_address: string;
     share:           string;
 }
@@ -346,7 +339,6 @@ const typeMap: any = {
         { json: "revoke_all", js: "revoke_all", typ: u(undefined, r("RevokeAll")) },
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
         { json: "burn", js: "burn", typ: u(undefined, r("Burn")) },
-        { json: "extension", js: "extension", typ: u(undefined, r("Extension")) },
         { json: "update_collection_info", js: "update_collection_info", typ: u(undefined, r("UpdateCollectionInfo")) },
         { json: "update_ownership", js: "update_ownership", typ: u(undefined, u(r("ActionClass"), r("ActionEnum"))) },
     ], false),
@@ -368,9 +360,6 @@ const typeMap: any = {
     ], false),
     "Burn": o([
         { json: "token_id", js: "token_id", typ: "" },
-    ], false),
-    "Extension": o([
-        { json: "msg", js: "msg", typ: m("any") },
     ], false),
     "Mint": o([
         { json: "extension", js: "extension", typ: u(undefined, u(m("any"), null)) },
@@ -395,16 +384,16 @@ const typeMap: any = {
         { json: "token_id", js: "token_id", typ: "" },
     ], false),
     "UpdateCollectionInfo": o([
-        { json: "collection_info", js: "collection_info", typ: r("UpdateCollectionInfoMsgForRoyaltyInfoResponse") },
+        { json: "collection_info", js: "collection_info", typ: r("UpdateCollectionInfoMsg") },
     ], false),
-    "UpdateCollectionInfoMsgForRoyaltyInfoResponse": o([
+    "UpdateCollectionInfoMsg": o([
         { json: "creator", js: "creator", typ: u(undefined, u(null, "")) },
         { json: "description", js: "description", typ: u(undefined, u(null, "")) },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: u(undefined, u(null, "")) },
-        { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },
+        { json: "royalty_settings", js: "royalty_settings", typ: u(undefined, u(r("RoyaltySettingsResponse"), null)) },
     ], false),
-    "RoyaltyInfoResponse": o([
+    "RoyaltySettingsResponse": o([
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
     ], false),

@@ -45,9 +45,5 @@ serde                   = { workspace = true }
 serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
-sg2                     = { workspace = true }
-sg-mod                  = { workspace = true }
-sg721                   = { workspace = true }
-sg721-base              = { workspace = true, features = ["library"] }
 
 [dev-dependencies]

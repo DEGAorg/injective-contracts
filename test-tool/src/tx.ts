@@ -4,7 +4,7 @@ import {
     DegaMinterInstantiateMsg, DegaMinterQueryMsg
 } from "./messages";
 import {
-    DegaMinterConfigSettings,
+    UpdateDegaMinterConfigSettingsMsg,
     MintRequest, UpdateAdminCommand
 } from "./messages/dega_minter_execute";
 import {Config} from "./config";
@@ -1126,8 +1126,7 @@ async function pause(args: string[]) {
     //
     // newSettings.minting_paused = newSetting;
 
-    const newSettings: DegaMinterConfigSettings = {
-        signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
+    const newSettings: UpdateDegaMinterConfigSettingsMsg = {
         minting_paused: newSetting
     };
 
@@ -1155,12 +1154,21 @@ async function pause(args: string[]) {
 
 async function migrate(args: string[]) {
 
+    if (args.length < 1) {
+        throw new Error("Missing argument. Usage: tx migrate <dev-version>");
+    }
+
     const context = await getAppContext();
+
+    const devVersion = args[0];
 
     {
         const minterCodeId = context.minterCodeId;
         const minterAddress = context.minterAddress
-        const migrateMinterMsg: DegaMinterMigrateMsg = {};
+        const migrateMinterMsg: DegaMinterMigrateMsg = {
+            is_dev: true,
+            dev_version: devVersion,
+        };
 
         await migrateContract(
             minterCodeId,
@@ -1173,7 +1181,10 @@ async function migrate(args: string[]) {
     {
         let cw721CodeId = context.cw721CodeId;
         const cw721Address = context.cw721Address;
-        const migrateCw721Msg: DegaCw721MigrateMsg = {};
+        const migrateCw721Msg: DegaCw721MigrateMsg = {
+            is_dev: true,
+            dev_version: devVersion,
+        };
 
         await migrateContract(
             cw721CodeId,

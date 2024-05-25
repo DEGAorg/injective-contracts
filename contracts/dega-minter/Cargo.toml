@@ -55,11 +55,6 @@ thiserror               = { workspace = true }
 sha2                    = { workspace = true }
 hex                     = { workspace = true }
 
-sg2                     = { workspace = true }
-sg721                   = { workspace = true }
-sg-mod                  = { workspace = true }
-sg721-base              = { workspace = true, features = ["library"] }
-
 dega-inj                = { workspace = true }
 url = "2.5.0"
 

@@ -1,12 +1,8 @@
 [workspace]
 members = [
     "packages/dega-inj",
-    "stargaze/packages/sg721",
-    "stargaze/sg-mod",
-    "stargaze/contracts/collections/sg721-base",
     "contracts/dega-cw721",
     "contracts/dega-minter",
-    "stargaze/sg-mod",
     "packages/wasm-deploy",
     "cli",
 ]
@@ -30,6 +26,7 @@ cw-storage-plus         = { version = "0.15.0" }
 cw2                     = { version = "1.1.2" }
 cw721                   = { version = "0.18.0" }
 cw721-base              = { version = "0.18.0", library = true }
+cw2981-royalties        = { version = "0.18.0" }
 cw-utils                = { version = "1.0.1" }
 cw-multi-test           = { version = "0.16.2" }
 cw-ownable              = { version = "0.5.1" }
@@ -46,16 +43,7 @@ thiserror               = { version = "1.0.31" }
 #sha256                  = { version = "1.5.0", default-features = false } # Removed in liue of sha2 which cosmwasm's crypto-verify sample uses
 sha2                    = { version = "0.10" }
 hex                     = { version = "0.4.3" }
-
-# Stargaze packages
-sg2                        = { version = "3.5.0", path = "stargaze/packages/sg2" }
-sg721                      = { version = "3.5.0", path = "stargaze/packages/sg721" }
-sg721-base                 = { version = "3.5.0", path = "stargaze/contracts/collections/sg721-base" }
-url                        = { version = "2.2.2" }
-
-sg-mod                     = { version = "3.5.0", path = "stargaze/sg-mod" }
-
-cw2981-royalties           = { version = "0.18.0" }
+url                     = { version = "2.2.2" }
 
 # DEGA packages
 dega-inj                = { version = "1.0.0", path = "packages/dega-inj" }

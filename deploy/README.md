@@ -153,10 +153,6 @@ stored and queryable in the smart contract.
 
 `"collectionExternalLinkURL": "https://realms.degaplatform.com/",` - An external link for the collection stored and queryable in the smart contract.
 
-`"collectionExplicitContent": null,` (Optional) - Whether the collection contains explicit content. Stored and queryable in the smart contract.
-
-`"collectionStartTradingTime": null,` (Optional) - A holdover from the Stargaze CW721 contract, does not work outside the stargaze chain but could be implemented.
-
 `"collectionSecondaryRoyaltyPaymentAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` - The injective address of the secondary royalty payment address for the collection.
 
 `"collectionSecondaryRoyaltyShare": "0.05",` - The secondary market royalty share to use across the collection. .05 = 5%

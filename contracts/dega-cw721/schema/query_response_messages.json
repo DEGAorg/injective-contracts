@@ -175,10 +175,10 @@
         "image": {
           "type": "string"
         },
-        "royalty_info": {
+        "royalty_settings": {
           "anyOf": [
             {
-              "$ref": "#/definitions/RoyaltyInfoResponse"
+              "$ref": "#/definitions/RoyaltySettingsResponse"
             },
             {
               "type": "null"
@@ -374,7 +374,7 @@
       },
       "additionalProperties": false
     },
-    "RoyaltyInfoResponse": {
+    "RoyaltySettingsResponse": {
       "type": "object",
       "required": [
         "payment_address",

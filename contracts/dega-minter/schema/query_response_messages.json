@@ -39,8 +39,7 @@
       "type": "object",
       "required": [
         "is_valid",
-        "message_hash_hex",
-        "verifying_key_len"
+        "message_hash_hex"
       ],
       "properties": {
         "error": {
@@ -54,11 +53,6 @@
         },
         "message_hash_hex": {
           "type": "string"
-        },
-        "verifying_key_len": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
         }
       },
       "additionalProperties": false

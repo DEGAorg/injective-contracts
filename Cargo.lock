@@ -1590,11 +1590,9 @@ dependencies = [
  "schemars",
  "serde",
  "serde_repr",
- "sg2",
- "sg721",
- "sg721-base",
  "subtle-encoding",
  "thiserror",
+ "url",
 ]
 
 [[package]]
@@ -1614,10 +1612,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_repr",
- "sg-mod",
- "sg2",
- "sg721",
- "sg721-base",
  "subtle-encoding",
  "thiserror",
 ]
@@ -1666,9 +1660,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_repr",
- "sg2",
- "sg721",
- "sg721-base",
  "sha2 0.10.8",
  "sha3",
  "strum 0.25.0",
@@ -1702,10 +1693,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_repr",
- "sg-mod",
- "sg2",
- "sg721",
- "sg721-base",
  "sha2 0.10.8",
  "subtle-encoding",
  "thiserror",
@@ -5185,63 +5172,6 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
-]
-
-[[package]]
-name = "sg-mod"
-version = "3.5.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "sg2",
- "sg721",
-]
-
-[[package]]
-name = "sg2"
-version = "3.5.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus 0.15.1",
- "cw-utils 1.0.3",
- "schemars",
- "serde",
- "sg721",
- "thiserror",
-]
-
-[[package]]
-name = "sg721"
-version = "3.5.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-multi-test",
- "cw-ownable",
- "cw-utils 1.0.3",
- "cw721-base 0.18.0",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "sg721-base"
-version = "3.5.0"
-dependencies = [
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-ownable",
- "cw-storage-plus 0.15.1",
- "cw-utils 1.0.3",
- "cw2 1.1.2",
- "cw721 0.18.0",
- "cw721-base 0.18.0",
- "serde",
- "sg-mod",
- "sg721",
- "thiserror",
- "url",
 ]
 
 [[package]]

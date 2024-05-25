@@ -18,10 +18,9 @@ export interface AdminsResponse {
 }
 
 export interface CheckSigResponse {
-    error?:            null | string;
-    is_valid:          boolean;
-    message_hash_hex:  string;
-    verifying_key_len: number;
+    error?:           null | string;
+    is_valid:         boolean;
+    message_hash_hex: string;
 }
 
 export interface DegaMinterConfigResponse {
@@ -211,7 +210,6 @@ const typeMap: any = {
         { json: "error", js: "error", typ: u(undefined, u(null, "")) },
         { json: "is_valid", js: "is_valid", typ: true },
         { json: "message_hash_hex", js: "message_hash_hex", typ: "" },
-        { json: "verifying_key_len", js: "verifying_key_len", typ: 0 },
     ], false),
     "DegaMinterConfigResponse": o([
         { json: "collection_address", js: "collection_address", typ: "" },

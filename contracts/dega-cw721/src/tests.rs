@@ -2,12 +2,12 @@ use cosmwasm_std::{Api, Binary, ContractInfoResponse, ContractResult, Decimal, E
 use cosmwasm_std::testing::{MOCK_CONTRACT_ADDR, mock_dependencies, mock_env, mock_info, MockApi, MockQuerier, MockStorage};
 use cw721::Cw721Query;
 use cw_ownable::assert_owner;
-use dega_inj::cw721::DegaCW721Contract;
+use dega_inj::cw721::{CollectionInfoResponse, InstantiateMsg, RoyaltySettingsResponse};
+use crate::state::DegaCw721Contract;
 use dega_inj::minter::{AdminsResponse, DegaMinterConfigResponse, DegaMinterConfigSettings};
 
-use crate::contract::*;
-
-use sg721::{CollectionInfo, InstantiateMsg as Sg721BaseInstantiateMsg, InstantiateMsg, RoyaltyInfoResponse};
+use crate::entry::instantiate;
+use crate::helpers::get_dega_minter_settings;
 
 
 const COLLECTION_CONTRACT_ADDR: &str = MOCK_CONTRACT_ADDR;
@@ -40,7 +40,7 @@ fn normal_initialization() {
 
     let msg = template_instantiate_msg();
 
-    let default_contract = DegaCW721Contract::default();
+    let default_contract = DegaCw721Contract::default();
     let contract_info = default_contract.parent.contract_info(deps.as_ref()).unwrap();
 
     // Check that the SG base constructor ran properly
@@ -52,21 +52,17 @@ fn normal_initialization() {
     assert_eq!(collection_info.description, msg.collection_info.description);
     assert_eq!(collection_info.image, msg.collection_info.image);
     assert_eq!(collection_info.external_link, msg.collection_info.external_link);
-    assert_eq!(collection_info.royalty_info.unwrap(), msg.collection_info.royalty_info.unwrap());
-
-    assert_eq!(default_contract.royalty_updated_at.load(&deps.storage).unwrap(), env.block.time);
+    assert_eq!(collection_info.royalty_settings.unwrap(), msg.collection_info.royalty_settings.unwrap());
 }
 
 #[test]
 fn query_minter_settings() {
-    //let mut deps_wrapper = DepsWrapper::create();
-    //let mut deps = &deps_wrapper.deps;
     let mut deps = mock_dependencies();
     let env = mock_env();
 
     template_collection(&mut deps, env.clone());
 
-    let config_response = load_dega_minter_settings(&deps.as_ref()).unwrap();
+    let config_response = get_dega_minter_settings(&deps.as_ref()).unwrap();
 
     assert_eq!(config_response.collection_address, COLLECTION_CONTRACT_ADDR);
     assert!(!config_response.dega_minter_settings.minting_paused);
@@ -74,7 +70,7 @@ fn query_minter_settings() {
 
     update_wasm_query_behavior::<true, ADMIN_ONE_LIST>(&mut deps);
 
-    let config_response_two = load_dega_minter_settings(&deps.as_ref()).unwrap();
+    let config_response_two = get_dega_minter_settings(&deps.as_ref()).unwrap();
     assert!(config_response_two.dega_minter_settings.minting_paused);
 }
 
@@ -86,22 +82,22 @@ fn template_collection(deps: &mut OwnedDeps<MockStorage, MockApi, MockQuerier>, 
 
     let info = mock_info(COLLECTION_OWNER_ADDR, &[]);
 
-    let response = crate::entry::instantiate(deps.as_mut(), env, info.clone(), msg.clone()).unwrap();
+    let response = instantiate(deps.as_mut(), env, info.clone(), msg.clone()).unwrap();
 
     assert!(response.messages.is_empty())
 }
 
 fn template_instantiate_msg() -> InstantiateMsg {
-    Sg721BaseInstantiateMsg {
+    InstantiateMsg {
         name: "Test Collection".to_string(),
         symbol: "TEST".to_string(),
         minter: MINTER_CONTRACT_ADDR.to_string(),
-        collection_info: CollectionInfo {
+        collection_info: CollectionInfoResponse {
             creator: CREATOR_ADDR.to_string(),
             description: "Test Description".to_string(),
             image: "https://example.com/image.png".to_string(),
             external_link: None,
-            royalty_info: Some(RoyaltyInfoResponse {
+            royalty_settings: Some(RoyaltySettingsResponse {
                 payment_address: ROYALTY_PAYMENT_ADDR.to_string(),
                 share: ROYALTY_SHARE,
             }),
@@ -120,7 +116,7 @@ fn update_wasm_query_behavior
 }
 
 
-pub fn wasm_query_handler
+fn wasm_query_handler
 <
     const MINTING_PAUSED: bool,
     const ADMIN_LIST_CODE: u8,
@@ -165,7 +161,7 @@ pub fn wasm_query_handler
     }
 }
 
-pub fn mock_query_minter
+fn mock_query_minter
 <
     const MINTING_PAUSED: bool,
     const ADMIN_LIST_CODE: u8,

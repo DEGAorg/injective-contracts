@@ -26,7 +26,7 @@
   },
   "additionalProperties": false,
   "definitions": {
-    "CollectionInfo_for_RoyaltyInfoResponse": {
+    "CollectionInfoResponse": {
       "type": "object",
       "required": [
         "creator",
@@ -49,10 +49,10 @@
         "image": {
           "type": "string"
         },
-        "royalty_info": {
+        "royalty_settings": {
           "anyOf": [
             {
-              "$ref": "#/definitions/RoyaltyInfoResponse"
+              "$ref": "#/definitions/RoyaltySettingsResponse"
             },
             {
               "type": "null"
@@ -78,7 +78,7 @@
           "minimum": 0.0
         },
         "info": {
-          "$ref": "#/definitions/CollectionInfo_for_RoyaltyInfoResponse"
+          "$ref": "#/definitions/CollectionInfoResponse"
         },
         "name": {
           "type": "string"
@@ -125,7 +125,7 @@
       },
       "additionalProperties": false
     },
-    "RoyaltyInfoResponse": {
+    "RoyaltySettingsResponse": {
       "type": "object",
       "required": [
         "payment_address",

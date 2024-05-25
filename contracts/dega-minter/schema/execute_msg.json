@@ -40,7 +40,7 @@
           ],
           "properties": {
             "settings": {
-              "$ref": "#/definitions/DegaMinterConfigSettings"
+              "$ref": "#/definitions/UpdateDegaMinterConfigSettingsMsg"
             }
           },
           "additionalProperties": false
@@ -75,22 +75,6 @@
     }
   ],
   "definitions": {
-    "DegaMinterConfigSettings": {
-      "type": "object",
-      "required": [
-        "minting_paused",
-        "signer_pub_key"
-      ],
-      "properties": {
-        "minting_paused": {
-          "type": "boolean"
-        },
-        "signer_pub_key": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
     "MintRequest": {
       "type": "object",
       "required": [
@@ -149,6 +133,24 @@
         "add",
         "remove"
       ]
+    },
+    "UpdateDegaMinterConfigSettingsMsg": {
+      "type": "object",
+      "properties": {
+        "minting_paused": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "signer_pub_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

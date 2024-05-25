@@ -1,11 +1,9 @@
 use cosmwasm_std::{BankMsg, Coin, CosmosMsg, Decimal, DepsMut, Env, Reply, StdError, SubMsgResponse, SubMsgResult, Timestamp, to_json_binary, Uint128, Uint256, WasmMsg};
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR, mock_dependencies};
 use digest::Digest;
-//use injective_cosmwasm::OwnedDepsExt;
 use prost::Message;
-use dega_inj::minter::{DegaMinterConfigResponse, DegaMinterConfigSettings, DegaMinterParams, InstantiateMsg, MintRequest, SignerSourceType, UpdateAdminCommand, VerifiableMsg};
+use dega_inj::minter::{DegaMinterConfigResponse, DegaMinterConfigSettings, DegaMinterParams, InstantiateMsg, MintRequest, SignerSourceType, UpdateAdminCommand, UpdateDegaMinterConfigSettingsMsg, VerifiableMsg};
 
-use crate::contract::*;
 use crate::error::ContractError;
 
 use k256::{ecdsa::signature::DigestSigner, ecdsa::SigningKey};
@@ -18,19 +16,24 @@ use sha2::{
         Update,
     }
 };
+use dega_inj::cw721::{CollectionInfoResponse, CollectionParams, RoyaltySettingsResponse};
+use crate::contract::INSTANTIATE_DEGA_CW721_REPLY_ID;
+use crate::entry::{instantiate, reply};
+use crate::execute::{execute_mint, execute_update_admin, execute_update_settings};
+use crate::query::{query_admins, query_check_sig, query_config};
 
 #[derive(Clone, PartialEq, Message)]
 struct MsgInstantiateContractResponse {
     #[prost(string, tag = "1")]
-    pub contract_address: ::prost::alloc::string::String,
+    pub(crate) contract_address: ::prost::alloc::string::String,
     #[prost(bytes, tag = "2")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    pub(crate) data: ::prost::alloc::vec::Vec<u8>,
 }
 
 #[derive(Clone, PartialEq, Message)]
 struct MsgExecuteContractResponse {
     #[prost(bytes, tag = "1")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
+    pub(crate) data: ::prost::alloc::vec::Vec<u8>,
 }
 
 const _MINTER_CONTRACT_ADDR: &str = MOCK_CONTRACT_ADDR;
@@ -44,7 +47,6 @@ const NEW_ADMIN_ADDR: &str = "new_admin_addr";
 const NORMAL_USER_ADDR: &str = "normal_user_addr";
 const ROYALTY_PAYMENT_ADDR: &str = "royalty_payment_addr";
 const INJ_DENOM: &str = "inj";
-const INSTANTIATE_SG721_REPLY_ID : u64 = 1;
 const BUYER_ADDR: &str = "buyer_addr";
 const PRIMARY_SALE_RECIPIENT_ADDR: &str = "primary_sale_recipient_addr";
 const MINT_URI: &str = "http://example.com/";
@@ -78,9 +80,9 @@ fn access_restriction() {
 
     let normal_user_msg_info = mock_info(NORMAL_USER_ADDR, &[]);
 
-    let new_settings_pause = DegaMinterConfigSettings {
-        signer_pub_key: signer_pub_key.to_string(),
-        minting_paused: true,
+    let new_settings_pause = UpdateDegaMinterConfigSettingsMsg {
+        signer_pub_key: None,
+        minting_paused: Some(true),
     };
 
     // Try to update settings as a regular user (should error)
@@ -113,7 +115,7 @@ fn updating_admin() {
     template_minter(&mut deps.as_mut(), signer_pub_key.clone());
     let remove_only_admin_err = execute_update_admin(
         &mut deps.as_mut(), &mock_env(), &admin_msg_info, USER_ADMIN_ADDR.to_string(), UpdateAdminCommand::Remove).unwrap_err();
-    assert_eq!(remove_only_admin_err, ContractError::GenericError("Cannot remove admin when one or none exists.".to_string()));
+    assert_eq!(remove_only_admin_err, ContractError::Generic("Cannot remove admin when one or none exists.".to_string()));
     assert_eq!(query_admins(deps.as_ref(), mock_env()).unwrap().admins, vec![USER_ADMIN_ADDR.to_string()]);
 
     // Reset DB and minter after error (clean up to simulate rollback)
@@ -128,7 +130,7 @@ fn updating_admin() {
     // Ensure proper error when removing non admin address
     let remove_non_admin_err = execute_update_admin(
         &mut deps.as_mut(), &mock_env(), &admin_msg_info, NORMAL_USER_ADDR.to_string(), UpdateAdminCommand::Remove).unwrap_err();
-    assert_eq!(remove_non_admin_err, ContractError::GenericError("Address to remove as admin is not an admin.".to_string()));
+    assert_eq!(remove_non_admin_err, ContractError::Generic("Address to remove as admin is not an admin.".to_string()));
     assert_eq!(query_admins(deps.as_ref(), mock_env()).unwrap().admins, vec![NEW_ADMIN_ADDR.to_string(), USER_ADMIN_ADDR.to_string()]);
 
     // Reset DB and minter after error (clean up to simulate rollback)
@@ -172,14 +174,14 @@ fn updating_settings() {
     // Should be starting unpaused
     assert!(!query_config(deps.as_ref(), mock_env()).unwrap().dega_minter_settings.minting_paused);
 
-    let new_settings_pause = DegaMinterConfigSettings {
-        signer_pub_key: signer_pub_key.to_string(),
-        minting_paused: true,
+    let new_settings_pause = UpdateDegaMinterConfigSettingsMsg {
+        signer_pub_key: None,
+        minting_paused: Some(true),
     };
 
-    let new_settings_unpause = DegaMinterConfigSettings {
-        signer_pub_key: signer_pub_key.to_string(),
-        minting_paused: false,
+    let new_settings_unpause = UpdateDegaMinterConfigSettingsMsg {
+        signer_pub_key: None,
+        minting_paused: Some(false),
     };
 
     let admin_msg_info = mock_info(USER_ADMIN_ADDR, &[]);
@@ -263,10 +265,9 @@ fn check_sig_string() {
 
 
     let invalid_pub_key = base64::encode("invalid_pubkey");
-    let bad_check_sig = query_check_sig(deps.as_ref(), mock_env(), test_msg_wrapped.clone(),
-                                         test_msg_sig_two.clone(), SignerSourceType::PubKeyBinary(invalid_pub_key.clone())).unwrap();
-    assert!(!bad_check_sig.is_valid);
-    assert_eq!(bad_check_sig.error, Some("Generic error: Error during secp256k1_verify: Invalid public key format".to_string()));
+    let bad_pub_key_err = query_check_sig(deps.as_ref(), mock_env(), test_msg_wrapped.clone(),
+                                         test_msg_sig_two.clone(), SignerSourceType::PubKeyBinary(invalid_pub_key.clone())).unwrap_err();
+    assert_eq!(bad_pub_key_err, StdError::generic_err("Invalid compressed public key, not 33 bytes long".to_string()));
 }
 
 #[test]
@@ -387,9 +388,9 @@ fn mint_pausing() {
     execute_mint(deps.as_mut(), mock_env.clone(), normal_user_msg_info.clone(), mint_msg.clone(), mint_sig.clone()).unwrap();
 
     // Pause minting
-    let new_settings_pause = DegaMinterConfigSettings {
-        signer_pub_key: signer_pub_key.to_string(),
-        minting_paused: true,
+    let new_settings_pause = UpdateDegaMinterConfigSettingsMsg {
+        signer_pub_key: None,
+        minting_paused: Some(true),
     };
     let admin_msg_info = mock_info(USER_ADMIN_ADDR, &[]);
     execute_update_settings(&mut deps.as_mut(), &cosmwasm_std::testing::mock_env(),
@@ -419,9 +420,9 @@ fn mint_pausing() {
                                                                           .dega_minter_settings.minting_paused);
 
     // Unpause minting
-    let new_settings_unpause = DegaMinterConfigSettings {
-        signer_pub_key: signer_pub_key.to_string(),
-        minting_paused: false,
+    let new_settings_unpause = UpdateDegaMinterConfigSettingsMsg {
+        signer_pub_key: None,
+        minting_paused: Some(false),
     };
     execute_update_settings(&mut deps.as_mut(), &cosmwasm_std::testing::mock_env(),
                             &admin_msg_info, &new_settings_unpause).unwrap();
@@ -468,7 +469,7 @@ fn mint_timing() {
     mock_env.block.time = Timestamp::from_seconds(acceptable_start_time - 30);
     let early_err = execute_mint(deps.as_mut(), mock_env.clone(), normal_user_msg_info.clone(),
                                  mint_msg.clone(), mint_sig.clone()).unwrap_err();
-    assert_eq!(early_err, ContractError::GenericError(
+    assert_eq!(early_err, ContractError::Generic(
         format!("Request is not valid yet. Execution time: {} | Validity start: {}",
                 mock_env.block.time.seconds(),
                 mint_msg.validity_start_timestamp
@@ -483,7 +484,7 @@ fn mint_timing() {
     mock_env.block.time = Timestamp::from_seconds(acceptable_end_time + 30);
     let late_err = execute_mint(deps.as_mut(), mock_env.clone(), normal_user_msg_info.clone(),
                                  mint_msg.clone(), mint_sig.clone()).unwrap_err();
-    assert_eq!(late_err, ContractError::GenericError(
+    assert_eq!(late_err, ContractError::Generic(
         format!("Request is no longer valid. Execution time: {} | Validity end: {}",
                 mock_env.block.time.seconds(),
                 mint_msg.validity_end_timestamp
@@ -520,7 +521,7 @@ fn mint_payment() {
     let nopay_msg_info = mock_info(NORMAL_USER_ADDR, &[]);
     let nopay_err = execute_mint(deps.as_mut(), mock_env.clone(), nopay_msg_info.clone(),
                                  mint_msg.clone(), mint_sig.clone()).unwrap_err();
-    assert_eq!(nopay_err, ContractError::GenericError("No payment provided".to_string()));
+    assert_eq!(nopay_err, ContractError::Generic("No payment provided".to_string()));
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
@@ -534,7 +535,7 @@ fn mint_payment() {
     ]);
     let multipay_err = execute_mint(deps.as_mut(), mock_env.clone(), multipay_msg_info.clone(),
                                   mint_msg.clone(), mint_sig.clone()).unwrap_err();
-    assert_eq!(multipay_err, ContractError::GenericError("Must only provide one payment currency".to_string()));
+    assert_eq!(multipay_err, ContractError::Generic("Must only provide one payment currency".to_string()));
 
     // Reset DB and minter after error (clean up to simulate rollback)
     deps = mock_dependencies();
@@ -550,7 +551,7 @@ fn mint_payment() {
     ]);
     let underpay_err = execute_mint(deps.as_mut(), mock_env.clone(), underpay_msg_info.clone(),
                                     mint_msg.clone(), mint_sig.clone()).unwrap_err();
-    assert_eq!(underpay_err, ContractError::GenericError(
+    assert_eq!(underpay_err, ContractError::Generic(
         format!("Insufficient payment - price: {} - paid: {}", price_wei, underpay_price)));
 
     // Reset DB and minter after error (clean up to simulate rollback)
@@ -567,7 +568,7 @@ fn mint_payment() {
     ]);
     let overpay_err = execute_mint(deps.as_mut(), mock_env.clone(), overpay_msg_info.clone(),
                                     mint_msg.clone(), mint_sig.clone()).unwrap_err();
-    assert_eq!(overpay_err, ContractError::GenericError(
+    assert_eq!(overpay_err, ContractError::Generic(
         format!("Overpayment - price: {} - paid: {}", price_wei, overpay_price)));
 
     // Reset DB and minter after error (clean up to simulate rollback)
@@ -583,7 +584,7 @@ fn mint_payment() {
     ]);
     let wrong_currency_err = execute_mint(deps.as_mut(), mock_env.clone(), wrong_currency_msg_info.clone(),
                                    mint_msg.clone(), mint_sig.clone()).unwrap_err();
-    assert_eq!(wrong_currency_err, ContractError::GenericError(
+    assert_eq!(wrong_currency_err, ContractError::Generic(
         format!("Payment currency does not match requested currency. Payment: {} | Requested: {}", usdc_denom, INJ_DENOM)));
 
     // Reset DB and minter after error (clean up to simulate rollback)
@@ -680,7 +681,7 @@ fn mint_already_used_uuid() {
     let uuid_err = execute_mint(deps.as_mut(), mock_env.clone(), msg_info.clone(),
                  mint_msg.clone(), mint_sig.clone()).unwrap_err();
 
-    assert_eq!(uuid_err, ContractError::GenericError("UUID already registered.".to_string()));
+    assert_eq!(uuid_err, ContractError::Generic("UUID already registered.".to_string()));
 }
 
 #[test]
@@ -708,7 +709,7 @@ fn mint_invalid_uri() {
     let invalid_uri_err = execute_mint(deps.as_mut(), mock_env.clone(), msg_info.clone(),
                                 mint_msg.clone(), mint_sig.clone()).unwrap_err();
 
-    assert_eq!(invalid_uri_err, ContractError::GenericError("Invalid URI".to_string()));
+    assert_eq!(invalid_uri_err, ContractError::Generic("Invalid URI".to_string()));
 }
 
 #[test]
@@ -741,7 +742,7 @@ fn mint_invalid_signature() {
     let invalid_sig_err = execute_mint(deps.as_mut(), mock_env.clone(), msg_info.clone(),
                                        mint_msg.clone(), bad_signature.clone()).unwrap_err();
 
-    assert_eq!(invalid_sig_err, ContractError::GenericError("Signature is invalid".to_string()));
+    assert_eq!(invalid_sig_err, ContractError::Generic("Signature is invalid".to_string()));
 }
 
 fn _get_inj_wei_from_micro_inj(milli_inj: u32) -> Uint128 {
@@ -802,16 +803,16 @@ fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
                 },
                 initial_admin: USER_ADMIN_ADDR.into(),
             },
-        collection_params: sg2::msg::CollectionParams {
+        collection_params: CollectionParams {
             code_id: 0u64,
             name: "TestCollection".into(),
             symbol: "TEST_COLLECTION".into(),
-            info: sg721::CollectionInfo {
+            info: CollectionInfoResponse {
                 creator: CREATOR_ADDR.into(),
                 description: "Test Collection".into(),
                 image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
                 external_link: Some("https://realms.degaplatform.com/".into()),
-                royalty_info: Some(sg721::RoyaltyInfoResponse {
+                royalty_settings: Some(RoyaltySettingsResponse {
                     payment_address: ROYALTY_PAYMENT_ADDR.into(),
                     share: Decimal::percent(2),
                 }),
@@ -835,7 +836,7 @@ fn template_minter(deps: &mut DepsMut, signer_pub_key: String) {
     instantiate_reply.encode(&mut encoded_instantiate_reply).unwrap();
 
     let reply_msg = Reply {
-        id: INSTANTIATE_SG721_REPLY_ID,
+        id: INSTANTIATE_DEGA_CW721_REPLY_ID,
         result: SubMsgResult::Ok(SubMsgResponse {
             events: vec![],
             data: Some(encoded_instantiate_reply.into()),

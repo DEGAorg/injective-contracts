@@ -1,7 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Uint128, Uint256};
+use crate::cw721::CollectionParams;
 
-use sg2::msg::{CollectionParams};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -13,6 +13,8 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub struct MigrateMsg {
+    pub is_dev: bool,
+    pub dev_version: String,
 }
 
 #[cw_serde]
@@ -25,6 +27,12 @@ pub struct DegaMinterParams {
 pub struct DegaMinterConfigSettings {
     pub signer_pub_key: String,
     pub minting_paused: bool,
+}
+
+#[cw_serde]
+pub struct UpdateDegaMinterConfigSettingsMsg {
+    pub signer_pub_key: Option<String>,
+    pub minting_paused: Option<bool>,
 }
 
 #[cw_serde]
@@ -41,7 +49,7 @@ pub enum ExecuteMsg {
         signature: String,
     },
     UpdateSettings {
-        settings: DegaMinterConfigSettings,
+        settings: UpdateDegaMinterConfigSettingsMsg,
     },
     UpdateAdmin {
         address: String,
@@ -72,7 +80,6 @@ pub struct MintRequest {
 pub struct CheckSigResponse {
     pub is_valid: bool,
     pub message_hash_hex: String,
-    pub verifying_key_len: usize,
     pub error: Option<String>,
 }
 
