@@ -88,6 +88,23 @@ const createExecuteMintMessage = (appContext: AppContext, mintRequestMsg: MintRe
     return execMsg;
 }
 
+const createBasicTx = (appContext: AppContext, testContext: TestContext): [MintRequest, Buffer] => {
+    // Create Mint Request And Signature
+    let nft_price_wei = getNFTWeiPrice(0.5)
+    let mintRequestMsg = createMintRequest(testContext, appContext, nft_price_wei);
+    const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext);
+    console.log("PubKey Compressed: " + appContext.signerCompressedPublicKey.toString("base64"));
+
+    // Check Signature
+    let checkSigQuery: DegaMinterQueryMsg = createCheckSigQuery(mintRequestMsg, signature, appContext);
+    const checkSigQueryResponseObject: object = exeCheckSigQuery(appContext, checkSigQuery);
+
+    console.log(checkSigQueryResponseObject);
+    console.log();
+    console.log("Test Query Locally Calculated Message Hash: " + msgMd5Hash.toString("hex"));
+    return [mintRequestMsg, signature];
+}
+
 // Invalid Price is the same as signature since the validation of the message will not pass
 const ERROR_MESSAGES = {
     invalidSignature: `( Error during execution of DEGA Minter: ( Signature is invalid ) ): execute wasm contract failed`,
@@ -99,19 +116,8 @@ describe('Dega Minter', () => {
         const appContext = await getAppContext();
         const testContext = await getTestContext();
 
-        // Create Mint Request And Signature
-        let nft_price_wei = getNFTWeiPrice(0.5)
-        let mintRequestMsg = createMintRequest(testContext, appContext, nft_price_wei);
-        const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext);
-        console.log("PubKey Compressed: " + appContext.signerCompressedPublicKey.toString("base64"));
-
-        // Check Signature
-        let checkSigQuery: DegaMinterQueryMsg = createCheckSigQuery(mintRequestMsg, signature, appContext);
-        const checkSigQueryResponseObject: object = exeCheckSigQuery(appContext, checkSigQuery);
-
-        console.log(checkSigQueryResponseObject);
-        console.log();
-        console.log("Test Query Locally Calculated Message Hash: " + msgMd5Hash.toString("hex"));
+        // Basic tx
+        const [mintRequestMsg, signature] = createBasicTx(appContext, testContext);
 
         // Execute Mint
         const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature);
@@ -133,19 +139,8 @@ describe('Dega Minter', () => {
         const appContext = await getAppContext();
         const testContext = await getTestContext();
 
-        // Create Mint Request And Signature
-        let nft_price_wei = getNFTWeiPrice(0.5)
-        let mintRequestMsg = createMintRequest(testContext, appContext, nft_price_wei);
-        const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext);
-        console.log("PubKey Compressed: " + appContext.signerCompressedPublicKey.toString("base64"));
-
-        // Check Signature
-        let checkSigQuery: DegaMinterQueryMsg = createCheckSigQuery(mintRequestMsg, signature, appContext);
-        const checkSigQueryResponseObject: object = exeCheckSigQuery(appContext, checkSigQuery);
-
-        console.log(checkSigQueryResponseObject);
-        console.log();
-        console.log("Test Query Locally Calculated Message Hash: " + msgMd5Hash.toString("hex"));
+        // Basic tx
+        const [mintRequestMsg, signature] = createBasicTx(appContext, testContext);
 
         // Alter the signature
         signature[0] = 0;
@@ -175,19 +170,8 @@ describe('Dega Minter', () => {
         const appContext = await getAppContext();
         const testContext = await getTestContext();
 
-        // Create Mint Request And Signature
-        let nft_price_wei = getNFTWeiPrice(0.5)
-        let mintRequestMsg = createMintRequest(testContext, appContext, nft_price_wei);
-        const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext);
-        console.log("PubKey Compressed: " + appContext.signerCompressedPublicKey.toString("base64"));
-
-        // Check Signature
-        let checkSigQuery: DegaMinterQueryMsg = createCheckSigQuery(mintRequestMsg, signature, appContext);
-        const checkSigQueryResponseObject: object = exeCheckSigQuery(appContext, checkSigQuery);
-
-        console.log(checkSigQueryResponseObject);
-        console.log();
-        console.log("Test Query Locally Calculated Message Hash: " + msgMd5Hash.toString("hex"));
+        // Basic tx
+        const [mintRequestMsg, signature] = createBasicTx(appContext, testContext);
 
         // Alter the price
         mintRequestMsg.price = "0";
