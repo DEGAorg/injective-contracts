@@ -1,6 +1,7 @@
 use cosmwasm_std::StdError;
 use cw_utils::PaymentError;
 use thiserror::Error;
+use dega_inj::cw721::ExecuteMsg;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
@@ -12,9 +13,6 @@ pub enum ContractError {
 
     #[error("( DEGA Collection CW721 Error: ( {0} ) | Caused by CW721 Error: ( {1} ) )")]
     Cw721(String, cw721_base::ContractError),
-
-    #[error("( DEGA Collection CW721 Error: ( Unable to execute CW721. ) | Caused by CW721 Error: ( {0} ) )")]
-    Cw721Execute(cw721_base::ContractError),
 
     #[error("( DEGA Collection Initialization Error: ( {0} ) )")]
     Initialization(String),
@@ -31,11 +29,20 @@ pub enum ContractError {
     #[error("( DEGA Collection Error: ( {0} ) )")]
     Generic(String),
 
-    #[error("( DEGA Collection Error: ( Minting not allowed while minting is paused. ) )")]
+    #[error("( DEGA Collection Error: ( Minting not allowed while minting is paused ) )")]
     MintingPaused,
 
-    #[error("( DEGA Collection Error: ( Token has already been claimed. ) )")]
+    #[error("( DEGA Collection Error: ( Token has already been claimed ) )")]
     Claimed,
+}
+
+pub(crate) fn check_for_better_base_err_msg(_execute_msg: &ExecuteMsg, base_err: &cw721_base::ContractError) -> Option<String> {
+
+    if matches!(base_err, cw721_base::ContractError::Ownership(cw_ownable::OwnershipError::NotOwner)) {
+        return Some("User does not have permission for this token".to_string());
+    }
+
+    None
 }
 
 #[cfg(test)]
@@ -46,7 +53,7 @@ mod tests {
     fn show_error() {
 
         let err_string = format!("{}", ContractError::Claimed);
-        assert_eq!(err_string,"( DEGA Collection Error: ( Token has already been claimed. ) )".to_string());
+        assert_eq!(err_string,"( DEGA Collection Error: ( Token has already been claimed ) )".to_string());
 
 
         let err_debug_string = format!("{:?}", ContractError::MintingPaused);
