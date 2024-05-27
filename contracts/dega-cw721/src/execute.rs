@@ -5,8 +5,8 @@ use cw_utils::nonpayable;
 use url::Url;
 use dega_inj::cw721::{ExecuteMsg, NftParams, RoyaltySettings, UpdateCollectionInfoMsg};
 use dega_inj::helpers::{load_item_wrapped, save_item_wrapped};
-use crate::helpers::{assert_minter_owner, get_dega_minter_settings, increment_tokens_wrapped, is_minter_admin, share_validate};
-use crate::error::ContractError;
+use crate::helpers::{assert_minter_owner, get_dega_minter_settings, get_substring_before_bracket, increment_tokens_wrapped, is_minter_admin, share_validate};
+use crate::error::{check_for_better_base_err_msg, ContractError};
 use crate::state::DegaCw721Contract;
 
 pub(crate) type Cw721BaseExecuteMsg = cw721_base::msg::ExecuteMsg<Extension, Empty>;
@@ -61,8 +61,16 @@ impl<'a> DegaCw721Contract<'a>
             ExecuteMsg::ApproveAll { .. } |
             ExecuteMsg::RevokeAll { .. } |
             ExecuteMsg::Burn { .. } => {
-                self.parent.execute(deps, env, info, from_execute_msg_to_base(execute_msg))
-                    .map_err(ContractError::Cw721Execute)
+                self.parent.execute(deps, env, info, from_execute_msg_to_base(execute_msg.clone()))
+                    .map_err(|err| {
+                        let enum_debug_string = format!("{:?}", execute_msg.clone());
+                        let enum_string = get_substring_before_bracket(&enum_debug_string);
+                        let mut err_string = format!("Unable to execute CW721 {}", enum_string);
+                        if let Some(translated_error) = check_for_better_base_err_msg(&execute_msg, &err) {
+                            err_string = format!("{}: {}", err_string, translated_error);
+                        }
+                        ContractError::Cw721(err_string, err)
+                    })
             },
             // ExecuteMsg::Extension { msg: _ } // Not supported
         }
@@ -904,6 +912,60 @@ mod tests {
                              operator: operator_addr.clone(),
                          }
         ).unwrap();
+
+    }
+
+    #[test]
+    fn base_cw721_errors() {
+
+        let contract = DegaCw721Contract::default();
+
+        let minter_contract_msg_info = mock_info(MINTER_CONTRACT_ADDR, &[]);
+        let nft_owner_msg_info = mock_info(NFT_OWNER_ADDR, &[]);
+
+        let mut deps ;
+        let token_id = "1".to_string();
+
+        let token_uri = Some("https://example.com/".to_string());
+
+        let nft_data = NftParams::NftData {
+            token_id: token_id.clone(),
+            owner: NFT_OWNER_ADDR.to_string(),
+            token_uri: token_uri.clone(),
+            extension: None,
+        };
+        let second_owner_addr = "second_owner_addr".to_string();
+        let second_owner_msg_info = mock_info(second_owner_addr.as_str(), &[]);
+
+        // Check that the second owner can't transfer the token prior to receiving it
+        // Also checks that our error message injection works properly
+        deps = mock_dependencies();
+        template_collection(&mut deps, mock_env(), &contract).unwrap();
+        contract.execute_mint(deps.as_mut(), mock_env(), minter_contract_msg_info.clone(), nft_data.clone()).unwrap();
+        let err_string = contract.execute(deps.as_mut(), mock_env(), second_owner_msg_info.clone(),
+                         ExecuteMsg::TransferNft {
+                             recipient: second_owner_addr.clone(),
+                             token_id: token_id.clone(),
+                         }
+        ).unwrap_err().to_string();
+        assert!(err_string.contains("Caller is not the contract's current owner"));
+        assert!(err_string.contains("User does not have permission for this token"));
+
+        // Try to send to an invalid address
+        let invalid_address = "Invalid Address".to_string();
+        deps = mock_dependencies();
+        template_collection(&mut deps, mock_env(), &contract).unwrap();
+        contract.execute_mint(deps.as_mut(), mock_env(), minter_contract_msg_info.clone(), nft_data.clone()).unwrap();
+        let err = contract.execute(deps.as_mut(), mock_env(), nft_owner_msg_info.clone(),
+                                          ExecuteMsg::TransferNft {
+                                              recipient: invalid_address.clone(),
+                                              token_id: token_id.clone(),
+                                          }
+        ).unwrap_err();
+        assert_eq!(err, ContractError::Cw721(
+            "Unable to execute CW721 TransferNft".to_string(),
+            cw721_base::ContractError::Std(StdError::generic_err(
+                "Invalid input: address not normalized".to_string()))));
 
     }
 

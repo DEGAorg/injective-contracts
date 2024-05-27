@@ -74,7 +74,7 @@ pub(crate) fn execute_update_admin(
 ) -> Result<Response, ContractError> {
 
     if ! ADMIN_LIST.has(deps.storage, info.sender.to_string()) {
-        return Err(ContractError::Unauthorized("Only admins can update admins.".to_string()))
+        return Err(ContractError::Unauthorized("Only admins can update admins".to_string()))
     }
 
     let address_is_admin = ADMIN_LIST.has(deps.storage, address.clone());
@@ -83,20 +83,20 @@ pub(crate) fn execute_update_admin(
         UpdateAdminCommand::Add => {
 
             if address_is_admin {
-                Err(ContractError::Generic("Address to add as admin is already an admin.".to_string()))?
+                Err(ContractError::Generic("Address to add as admin is already an admin".to_string()))?
             }
 
             save_map_item_wrapped(deps.storage, &ADMIN_LIST, address.clone(), &Empty {})
-                      .map_err(|e| ContractError::Std("Error while saving new admin.".to_string(), e))?
+                      .map_err(|e| ContractError::Std("Error while saving new admin".to_string(), e))?
         },
         UpdateAdminCommand::Remove => {
 
             if ADMIN_LIST.keys(deps.storage, None, None, Order::Ascending).count() < 2 {
-                Err(ContractError::Generic("Cannot remove admin when one or none exists.".to_string()))?
+                Err(ContractError::Generic("Cannot remove admin when one or none exists".to_string()))?
             }
 
             if !address_is_admin {
-                Err(ContractError::Generic("Address to remove as admin is not an admin.".to_string()))?
+                Err(ContractError::Generic("Address to remove as admin is not an admin".to_string()))?
             }
 
             ADMIN_LIST.remove(deps.storage, address.clone())
@@ -144,7 +144,7 @@ pub(crate) fn execute_mint(
 
     if epoch_time_128 < request.validity_start_timestamp {
         return Err(ContractError::Generic(
-            format!("Request is not valid yet. Execution time: {} | Validity start: {}",
+            format!("Request is not valid yet | Execution time: {} | Validity start: {}",
                     epoch_time_128,
                     request.validity_start_timestamp
             ).to_string()
@@ -153,14 +153,14 @@ pub(crate) fn execute_mint(
 
     if epoch_time_128 > request.validity_end_timestamp {
         return Err(ContractError::Generic(
-            format!("Request is no longer valid. Execution time: {} | Validity end: {}",
+            format!("Request is no longer valid | Execution time: {} | Validity end: {}",
                     epoch_time_128,
                     request.validity_end_timestamp
             ).to_string()));
     }
 
     if UUID_REGISTRY.has(deps.storage, request.uuid.clone()) {
-        return Err(ContractError::Generic("UUID already registered.".to_string()));
+        return Err(ContractError::Generic("UUID already registered".to_string()));
     }
 
     save_map_item_wrapped(deps.storage, &UUID_REGISTRY, request.uuid.clone(), &Empty {})
@@ -178,7 +178,7 @@ pub(crate) fn execute_mint(
 
     if funds.denom != request.currency {
         return Err(ContractError::Generic(
-            format!("Payment currency does not match requested currency. Payment: {} | Requested: {}",
+            format!("Payment currency does not match requested currency | Payment: {} | Requested: {}",
                     funds.denom,
                     request.currency
             ).to_string()
@@ -186,11 +186,11 @@ pub(crate) fn execute_mint(
     }
 
     if Uint256::from(funds.amount) < request.price {
-        return Err(ContractError::Generic(format!("Insufficient payment - price: {} - paid: {}", request.price, funds.amount)));
+        return Err(ContractError::Generic(format!("Insufficient payment | Price: {} | Paid: {}", request.price, funds.amount)));
     }
 
     if Uint256::from(funds.amount) > request.price {
-        return Err(ContractError::Generic(format!("Overpayment - price: {} - paid: {}", request.price, funds.amount)));
+        return Err(ContractError::Generic(format!("Overpayment | Price: {} | Paid: {}", request.price, funds.amount)));
     }
 
     Url::parse(&request.uri.to_string()).map_err(|_| ContractError::Generic("Invalid URI".to_string()))?;
@@ -295,7 +295,7 @@ mod tests {
         template_minter(&mut deps.as_mut(), signer_pub_key.clone(), false).unwrap();
         let unauthed_update_admin_err = execute_update_admin(
             &mut deps.as_mut(), &mock_env(), &normal_user_msg_info, NORMAL_USER_ADDR.to_string(), UpdateAdminCommand::Add).unwrap_err();
-        assert_eq!(unauthed_update_admin_err, ContractError::Unauthorized("Only admins can update admins.".to_string()));
+        assert_eq!(unauthed_update_admin_err, ContractError::Unauthorized("Only admins can update admins".to_string()));
         assert_eq!(query_admins(deps.as_ref(), mock_env()).unwrap().admins, vec![USER_ADMIN_ADDR.to_string()]);
     }
 
@@ -318,7 +318,7 @@ mod tests {
             }
         ).unwrap_err();
 
-        assert_eq!(remove_only_admin_err, ContractError::Generic("Cannot remove admin when one or none exists.".to_string()));
+        assert_eq!(remove_only_admin_err, ContractError::Generic("Cannot remove admin when one or none exists".to_string()));
         assert_eq!(query_typed::<AdminsResponse>(deps.as_ref(), QueryMsg::Admins {}).unwrap().admins,
                    vec![USER_ADMIN_ADDR.to_string()]);
         assert!(query_typed::<bool>(deps.as_ref(), QueryMsg::IsAdmin { address: USER_ADMIN_ADDR.to_string() }).unwrap());
@@ -335,7 +335,7 @@ mod tests {
         // Ensure proper error when removing non admin address
         let remove_non_admin_err = execute_update_admin(
             &mut deps.as_mut(), &mock_env(), &admin_msg_info, NORMAL_USER_ADDR.to_string(), UpdateAdminCommand::Remove).unwrap_err();
-        assert_eq!(remove_non_admin_err, ContractError::Generic("Address to remove as admin is not an admin.".to_string()));
+        assert_eq!(remove_non_admin_err, ContractError::Generic("Address to remove as admin is not an admin".to_string()));
         assert_eq!(query_admins(deps.as_ref(), mock_env()).unwrap().admins, vec![NEW_ADMIN_ADDR.to_string(), USER_ADMIN_ADDR.to_string()]);
 
         // Reset DB and minter after error (clean up to simulate rollback)
@@ -362,7 +362,7 @@ mod tests {
         // Updating admins as the old admin should fail now
         let removed_update_admin_err = execute_update_admin(
             &mut deps.as_mut(), &mock_env(), &admin_msg_info, USER_ADMIN_ADDR.to_string(), UpdateAdminCommand::Add).unwrap_err();
-        assert_eq!(removed_update_admin_err, ContractError::Unauthorized("Only admins can update admins.".to_string()));
+        assert_eq!(removed_update_admin_err, ContractError::Unauthorized("Only admins can update admins".to_string()));
         assert_eq!(query_admins(deps.as_ref(), mock_env()).unwrap().admins, vec![NEW_ADMIN_ADDR.to_string(), NORMAL_USER_ADDR.to_string()]);
     }
 
@@ -486,7 +486,7 @@ mod tests {
         let add_existing_admin_err = execute_update_admin(
             &mut deps.as_mut(), &mock_env(), &admin_msg_info, new_admin_addr, UpdateAdminCommand::Add)
             .unwrap_err().to_string();
-        assert!(add_existing_admin_err.contains("Error while saving new admin."));
+        assert!(add_existing_admin_err.contains("Error while saving new admin"));
         clear_save_error_items()
     }
 
@@ -655,7 +655,7 @@ mod tests {
         let early_err = execute_mint(deps.as_mut(), mock_env.clone(), normal_user_msg_info.clone(),
                                      mint_msg.clone(), mint_sig.clone()).unwrap_err();
         assert_eq!(early_err, ContractError::Generic(
-            format!("Request is not valid yet. Execution time: {} | Validity start: {}",
+            format!("Request is not valid yet | Execution time: {} | Validity start: {}",
                     mock_env.block.time.seconds(),
                     mint_msg.validity_start_timestamp
             ).to_string()
@@ -670,7 +670,7 @@ mod tests {
         let late_err = execute_mint(deps.as_mut(), mock_env.clone(), normal_user_msg_info.clone(),
                                     mint_msg.clone(), mint_sig.clone()).unwrap_err();
         assert_eq!(late_err, ContractError::Generic(
-            format!("Request is no longer valid. Execution time: {} | Validity end: {}",
+            format!("Request is no longer valid | Execution time: {} | Validity end: {}",
                     mock_env.block.time.seconds(),
                     mint_msg.validity_end_timestamp
             ).to_string()
@@ -737,7 +737,7 @@ mod tests {
         let underpay_err = execute_mint(deps.as_mut(), mock_env.clone(), underpay_msg_info.clone(),
                                         mint_msg.clone(), mint_sig.clone()).unwrap_err();
         assert_eq!(underpay_err, ContractError::Generic(
-            format!("Insufficient payment - price: {} - paid: {}", price_wei, underpay_price)));
+            format!("Insufficient payment | Price: {} | Paid: {}", price_wei, underpay_price)));
 
         // Reset DB and minter after error (clean up to simulate rollback)
         deps = mock_dependencies();
@@ -754,7 +754,7 @@ mod tests {
         let overpay_err = execute_mint(deps.as_mut(), mock_env.clone(), overpay_msg_info.clone(),
                                        mint_msg.clone(), mint_sig.clone()).unwrap_err();
         assert_eq!(overpay_err, ContractError::Generic(
-            format!("Overpayment - price: {} - paid: {}", price_wei, overpay_price)));
+            format!("Overpayment | Price: {} | Paid: {}", price_wei, overpay_price)));
 
         // Reset DB and minter after error (clean up to simulate rollback)
         deps = mock_dependencies();
@@ -770,7 +770,7 @@ mod tests {
         let wrong_currency_err = execute_mint(deps.as_mut(), mock_env.clone(), wrong_currency_msg_info.clone(),
                                               mint_msg.clone(), mint_sig.clone()).unwrap_err();
         assert_eq!(wrong_currency_err, ContractError::Generic(
-            format!("Payment currency does not match requested currency. Payment: {} | Requested: {}", usdc_denom, INJ_DENOM)));
+            format!("Payment currency does not match requested currency | Payment: {} | Requested: {}", usdc_denom, INJ_DENOM)));
 
         // Reset DB and minter after error (clean up to simulate rollback)
         deps = mock_dependencies();
@@ -891,7 +891,7 @@ mod tests {
         let uuid_err = execute_mint(deps.as_mut(), mock_env.clone(), msg_info.clone(),
                                     mint_msg.clone(), mint_sig.clone()).unwrap_err();
 
-        assert_eq!(uuid_err, ContractError::Generic("UUID already registered.".to_string()));
+        assert_eq!(uuid_err, ContractError::Generic("UUID already registered".to_string()));
     }
 
     #[test]
