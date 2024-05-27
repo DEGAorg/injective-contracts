@@ -6,7 +6,7 @@ import {Config, generatePrivateKey, inDeployment, isJestRunning, reloadConfig} f
 import fs from "fs";
 import path from "node:path";
 
-interface TestContext {
+export interface TestContext {
     testPrivateKeyOne: PrivateKey;
     testAddressOne: string;
     testPrivateKeyTwo: PrivateKey;
@@ -18,6 +18,9 @@ interface TestContext {
     localGenesisPrivateKey: PrivateKey,
     localGenesisAddress: string,
     localGenesisBroadcaster: MsgBroadcasterWithPk,
+    oneBroadcaster: MsgBroadcasterWithPk,
+    twoBroadcaster: MsgBroadcasterWithPk,
+    threeBroadcaster: MsgBroadcasterWithPk,
 }
 
 function validateChecksum(hash: string) {
@@ -52,11 +55,32 @@ async function initTestContext(): Promise<TestContext> {
     const testPrivateKeyOne = PrivateKey.fromHex(config.TEST_TEST_ONE_SEEDHEX);
     const testAddressOne = testPrivateKeyOne.toBech32();
 
+    const oneBroadcaster = new MsgBroadcasterWithPk({
+        privateKey: testPrivateKeyOne, /** private key hash or PrivateKey class from sdk-ts */
+        network: Network.Local,
+    })
+
+    oneBroadcaster.chainId = ChainId.Mainnet
+
     const testPrivateKeyTwo = PrivateKey.fromHex(config.TEST_TEST_TWO_SEEDHEX);
     const testAddressTwo = testPrivateKeyTwo.toBech32();
 
+    const twoBroadcaster = new MsgBroadcasterWithPk({
+        privateKey: testPrivateKeyTwo, /** private key hash or PrivateKey class from sdk-ts */
+        network: Network.Local,
+    })
+
+    twoBroadcaster.chainId = ChainId.Mainnet
+
     const testPrivateKeyThree = PrivateKey.fromHex(config.TEST_TEST_THREE_SEEDHEX);
     const testAddressThree = testPrivateKeyThree.toBech32();
+
+    const threeBroadcaster = new MsgBroadcasterWithPk({
+        privateKey: testPrivateKeyThree, /** private key hash or PrivateKey class from sdk-ts */
+        network: Network.Local,
+    })
+
+    threeBroadcaster.chainId = ChainId.Mainnet
 
     const deploymentVar = process.env.DEPLOYMENT;
 
@@ -126,6 +150,9 @@ async function initTestContext(): Promise<TestContext> {
         localGenesisPrivateKey,
         localGenesisAddress,
         localGenesisBroadcaster,
+        oneBroadcaster,
+        twoBroadcaster,
+        threeBroadcaster,
     }
 }
 

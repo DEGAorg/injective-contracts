@@ -68,7 +68,7 @@ pub(crate) fn is_minter_admin(deps: &Deps, address: &Addr) -> StdResult<bool> {
     Ok(is_admin)
 }
 
-pub fn initialize_owner_wrapped(
+pub(crate) fn initialize_owner_wrapped(
     storage: &mut dyn Storage,
     api: &dyn Api,
     owner: Option<&str>,
@@ -86,7 +86,7 @@ pub fn initialize_owner_wrapped(
 }
 
 
-fn get_ownership_wrapped(storage: &dyn Storage) -> StdResult<Ownership<Addr>> {
+pub(crate) fn get_ownership_wrapped(storage: &dyn Storage) -> StdResult<Ownership<Addr>> {
 
     #[cfg(test)]
     {
@@ -98,7 +98,7 @@ fn get_ownership_wrapped(storage: &dyn Storage) -> StdResult<Ownership<Addr>> {
     get_ownership(storage)
 }
 
-pub fn increment_tokens_wrapped(cw721_contract: &Cw721Contract<Extension,Empty,Empty,Empty>, storage: &mut dyn Storage) -> StdResult<u64> {
+pub(crate) fn increment_tokens_wrapped(cw721_contract: &Cw721Contract<Extension,Empty,Empty,Empty>, storage: &mut dyn Storage) -> StdResult<u64> {
     #[cfg(test)]
     {
         if crate::test_helpers::INCREMENT_TOKENS_ERROR.get() {
@@ -106,11 +106,15 @@ pub fn increment_tokens_wrapped(cw721_contract: &Cw721Contract<Extension,Empty,E
         }
     }
 
-    let val = cw721_contract.token_count(storage)? + 1;
-    cw721_contract.token_count.save(storage, &val)?;
-    Ok(val)
+    cw721_contract.increment_tokens(storage)
 }
 
+pub(crate) fn get_substring_before_bracket(s: &str) -> &str {
+    match s.find(" {") {
+        Some(index) => &s[..index],
+        None => s,
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -232,5 +236,15 @@ mod tests {
         assert!(err_string.contains("Mock minter is admin query error"));
         assert!(err_string.contains("Error during minter admin check query"));
         MINTER_IS_ADMIN_QUERY_ERROR.set(false);
+    }
+
+    #[test]
+    fn substring_with_before_bracket() {
+
+        let s = "Hello { world }";
+        assert_eq!(get_substring_before_bracket(s), "Hello");
+
+        let s = "Hello world";
+        assert_eq!(get_substring_before_bracket(s), s);
     }
 }
