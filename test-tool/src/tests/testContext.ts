@@ -60,6 +60,8 @@ async function initTestContext(): Promise<TestContext> {
         network: Network.Local,
     })
 
+    oneBroadcaster.chainId = ChainId.Mainnet
+
     const testPrivateKeyTwo = PrivateKey.fromHex(config.TEST_TEST_TWO_SEEDHEX);
     const testAddressTwo = testPrivateKeyTwo.toBech32();
 
@@ -68,6 +70,8 @@ async function initTestContext(): Promise<TestContext> {
         network: Network.Local,
     })
 
+    twoBroadcaster.chainId = ChainId.Mainnet
+
     const testPrivateKeyThree = PrivateKey.fromHex(config.TEST_TEST_THREE_SEEDHEX);
     const testAddressThree = testPrivateKeyThree.toBech32();
 
@@ -75,6 +79,8 @@ async function initTestContext(): Promise<TestContext> {
         privateKey: testPrivateKeyThree, /** private key hash or PrivateKey class from sdk-ts */
         network: Network.Local,
     })
+
+    threeBroadcaster.chainId = ChainId.Mainnet
 
     const deploymentVar = process.env.DEPLOYMENT;
 

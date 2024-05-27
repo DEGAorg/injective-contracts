@@ -1,5 +1,5 @@
 import { DegaMinterExecuteMsg, DegaMinterInstantiateMsg, DegaMinterQueryMsg } from "../messages";
-import { Config } from "../config";
+import { Config, generatePrivateKey } from "../config";
 import { fromBase64, MsgExecuteContractCompat, MsgInstantiateContract, sha256, toBase64 } from "@injectivelabs/sdk-ts";
 import { stripQuotes, TxAttribute, TxEvent } from "../tx";
 import { BigNumberInBase, BigNumberInWei } from "@injectivelabs/utils";
@@ -44,10 +44,16 @@ const createMintRequest = (context: TestContext, appContext: AppContext, price: 
   };
 }
 
-const createSignature = (mintRequestMsg: MintRequest, appContext: AppContext): [Buffer, Buffer] => {
+const createSignature = (mintRequestMsg: MintRequest, appContext: AppContext, unAuthorized: boolean = false): [Buffer, Buffer] => {
   let rawMessage = Buffer.from(toBase64(mintRequestMsg), "base64")
   let msgMd5Hash = Buffer.from(sha256(rawMessage))
-  let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, appContext.signerSigningKey).signature)
+  let signature: Buffer;
+  if (unAuthorized) {
+    const signerPrivateKey = generatePrivateKey();
+    const signerSigningKey = Buffer.from(signerPrivateKey.toPrivateKeyHex().slice(2), "hex");
+    signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signerSigningKey).signature);
+  }
+  signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, appContext.signerSigningKey).signature)
   return [msgMd5Hash, signature];
 };
 
@@ -68,7 +74,7 @@ const exeCheckSigQuery = async (appContext: AppContext, checkSigQuery: DegaMinte
   return fromBase64(Buffer.from(checkSigQueryResponse.data).toString("base64"));
 }
 
-const createExecuteMintMessage = (appContext: AppContext, mintRequestMsg: MintRequest, signature: Buffer): MsgExecuteContractCompat => {
+const createExecuteMintMessage = (appContext: AppContext, mintRequestMsg: MintRequest, signature: Buffer, sender: string): MsgExecuteContractCompat => {
   const mintMsg: DegaMinterExecuteMsg = {
     mint: {
       request: mintRequestMsg,
@@ -76,7 +82,7 @@ const createExecuteMintMessage = (appContext: AppContext, mintRequestMsg: MintRe
     }
   };
   const execMsg = MsgExecuteContractCompat.fromJSON({
-    sender: appContext.primaryAddress,
+    sender: sender,
     contractAddress: appContext.minterAddress,
     msg: mintMsg,
     funds: [
@@ -89,16 +95,17 @@ const createExecuteMintMessage = (appContext: AppContext, mintRequestMsg: MintRe
   return execMsg;
 }
 
-const createBasicTx = (appContext: AppContext, testContext: TestContext, price: number = 0.5): [MintRequest, Buffer] => {
+const createBasicTx = async (appContext: AppContext, testContext: TestContext, price: number = 0.5, unAuthorized:boolean = false): Promise<[MintRequest, Buffer]> => {
   // Create Mint Request And Signature
   let nft_price_wei = getNFTWeiPrice(price)
+  console.warn(`=====NFT Price: ${nft_price_wei}`);
   let mintRequestMsg = createMintRequest(testContext, appContext, nft_price_wei);
-  const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext);
+  const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext, unAuthorized);
   console.log("PubKey Compressed: " + appContext.signerCompressedPublicKey.toString("base64"));
 
   // Check Signature
   let checkSigQuery: DegaMinterQueryMsg = createCheckSigQuery(mintRequestMsg, signature, appContext);
-  const checkSigQueryResponseObject: object = exeCheckSigQuery(appContext, checkSigQuery);
+  const checkSigQueryResponseObject: object = await exeCheckSigQuery(appContext, checkSigQuery);
 
   console.log(checkSigQueryResponseObject);
   console.log();
@@ -114,18 +121,16 @@ const sleep = (ms: number) => {
 const ERROR_MESSAGES = {
   invalidSignature: `( Error during execution of DEGA Minter: ( Signature is invalid ) ): execute wasm contract failed`,
   invalidPrice: `( Error during execution of DEGA Minter: ( Signature is invalid ) ): execute wasm contract failed`,
+  paused: `( The requested operation is paused. ): execute wasm contract failed`,
 }
 
+const sanitizedMaxNumber = (num: number, max: number): number => {
+  return num > max ? max : num;
+};
+
 jest.setTimeout(30000);
-// configure jest to run a single test at a time, not parallel
 
-
-// Fuzz.test(`Example of a Fuzz Test`, Fuzz.float({min: 0.001, max: 100}), async (nftPrice: number) => {
-//     console.log(`NFT Price: ${nftPrice}`);
-//     expect(nftPrice).toBeGreaterThanOrEqual(0.001);
-//     expect(nftPrice).toBeLessThanOrEqual(100);
-// });
-describe('Dega Minter: ', () => {
+describe.skip('Dega Minter with Fuzz: ', () => {
   let appContext: AppContext;
   let testContext: TestContext;
   beforeAll(async () => {
@@ -133,21 +138,21 @@ describe('Dega Minter: ', () => {
     testContext = await getTestContext();
   });
 
-  it('should mint an NFT successfully with price from 0.001 to 100', async () => {
-    const numOfTests = 10;
-    const fuzzFunc = Fuzz.float({ min: 0.001, max: 10 });
-    for (let i = 0; i < numOfTests; i++) {
+  const mintRuns = 10;
+  const twoMintRuns = 2;
+
+  it(`should mint an NFT successfully with price from 0.001 to 20 for ${mintRuns} runs`, async () => {
+    const maxPrice = 0.005;
+    const fuzzFunc = Fuzz.float({ min: 0.001, max: maxPrice });
+    for (let i = 0; i < mintRuns; i++) {
       const fuzzedPrice = fuzzFunc();
+      const sanitizedPrice = sanitizedMaxNumber(fuzzedPrice, maxPrice);
       console.warn(`=====Fuzzed Price: ${fuzzedPrice}`);
       // Basic tx
-      const [mintRequestMsg, signature] = createBasicTx(appContext, testContext, fuzzedPrice);
+      const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, sanitizedPrice);
 
       // Execute Mint
-      const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature);
-
-      await info([]);
-
-      console.log(`Minter Address: `, appContext.minterAddress);
+      const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
 
       const response = await appContext.primaryBroadcaster.broadcast({
         msgs: execMsg,
@@ -161,27 +166,23 @@ describe('Dega Minter: ', () => {
       expect(response.code).toEqual(0);
     }
   }, 100000);
-});
-describe.skip('Dega Minter', () => {
-  it(`should mint an NFT successfully`, async () => {
-    const numOfTests = 2; // or 250
-    const fuzzFunc = Fuzz.float({ min: 0.001, max: 0.5 });
-    for (let i = 0; i < numOfTests; i++) {
-      const appContext = await getAppContext();
-      const testContext = await getTestContext();
 
+  // create a test to mint multiple NFTs with twoBroadcaster
+  it(`should mint multiple NFTs with two broadcasters for ${twoMintRuns} runs`, async () => {
+    const maxPrice = 0.005;
+    const fuzzFunc = Fuzz.float({ min: 0.001, max: maxPrice });
+    for (let i = 0; i < twoMintRuns; i++) {
       const fuzzedPrice = fuzzFunc();
+      const sanitizedPrice = sanitizedMaxNumber(fuzzedPrice, maxPrice);
+
+      console.warn(`=====Fuzzed Price: ${fuzzedPrice}`);
       // Basic tx
-      const [mintRequestMsg, signature] = createBasicTx(appContext, testContext, fuzzedPrice);
+      const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, sanitizedPrice);
 
       // Execute Mint
-      const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature);
+      const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, testContext.testAddressTwo);
 
-      await info([]);
-
-      console.log(`Minter Address: `, appContext.minterAddress);
-
-      const response = await appContext.primaryBroadcaster.broadcast({
+      const response = await testContext.twoBroadcaster.broadcast({
         msgs: execMsg,
         gas: appContext.gasSettings,
       });
@@ -192,46 +193,24 @@ describe.skip('Dega Minter', () => {
 
       expect(response.code).toEqual(0);
     }
-    //     Fuzz.it('should mint an NFT successfully', Fuzz.float({min: 0.001, max: 100}), async () => {
-    //         const appContext = await getAppContext();
-    //         const testContext = await getTestContext();
+  }, 100000);
+});
 
-    //         // Basic tx
-    //         const [mintRequestMsg, signature] = createBasicTx(appContext, testContext);
-
-    //         // Execute Mint
-    //         const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature);
-
-    //         await info([]);
-
-    //         console.log(`Minter Address: `, appContext.minterAddress);
-
-    //         const response = await appContext.primaryBroadcaster.broadcast({
-    //             msgs: execMsg,
-    //             gas: appContext.gasSettings,
-    //         });
-
-    //         // await for blockchain
-    //         // add a sleep function? play with the amount of time
-    //         sleep(10000);
-
-    //         expect(response.code).toEqual(0);
-    //     });
-  }, 300000);
+describe.skip('Dega Minter Negative confirmations', () => {
 
   // create a test with a bad signature
-  it.skip('should fail to mint an NFT with a bad signature', async () => {
+  it('should fail to mint an NFT with a bad signature', async () => {
     const appContext = await getAppContext();
     const testContext = await getTestContext();
 
     // Basic tx
-    const [mintRequestMsg, signature] = createBasicTx(appContext, testContext);
+    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext);
 
     // Alter the signature
     signature[0] = 0;
 
     // Execute Mint
-    const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature);
+    const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
 
     await info([]);
 
@@ -251,18 +230,18 @@ describe.skip('Dega Minter', () => {
   });
 
   // create a test with a executed mint request with a bad price
-  it.skip('should fail to mint an NFT with a bad price', async () => {
+  it('should fail to mint an NFT with a bad price', async () => {
     const appContext = await getAppContext();
     const testContext = await getTestContext();
 
     // Basic tx
-    const [mintRequestMsg, signature] = createBasicTx(appContext, testContext);
+    const [mintRequestMsg, signature] = await await createBasicTx(appContext, testContext);
 
     // Alter the price
     mintRequestMsg.price = "0";
 
     // Execute Mint
-    const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature);
+    const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
 
     await info([]);
 
@@ -276,8 +255,75 @@ describe.skip('Dega Minter', () => {
         gas: appContext.gasSettings,
       })
     } catch (error: any) {
-      logObjectFullDepth(error)
       wasmErrorComparison = compareWasmError(ERROR_MESSAGES.invalidPrice, error);
+    }
+    expect(wasmErrorComparison).toEqual(true);
+  });
+
+  it(`should fail to mint an NFT with a signature from an unauthorized signer`, async () => {
+    const appContext = await getAppContext();
+    const testContext = await getTestContext();
+    // Basic tx
+    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, 0.5, true);
+
+    // Execute Mint
+    const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
+
+    let wasmErrorComparison = false;
+    // catch the error
+    try {
+      const response = await appContext.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: appContext.gasSettings,
+      })
+    } catch (error: any) {
+      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.invalidSignature, error);
+    }
+    expect(wasmErrorComparison).toEqual(true);
+  });
+
+  it(`should fail to mint an NFT with a paused contract`, async () => {
+    const appContext = await getAppContext();
+    const testContext = await getTestContext();
+
+    // Pause the contract
+    const pauseMsg: DegaMinterExecuteMsg = {
+      update_settings: {
+        settings: {
+          minting_paused: true,
+          signer_pub_key: appContext.signerCompressedPublicKey.toString("base64")
+        }
+      }
+    };
+    const pauseExecMsg = MsgExecuteContractCompat.fromJSON({
+      sender: appContext.primaryAddress,
+      contractAddress: appContext.minterAddress,
+      msg: pauseMsg,
+      funds: []
+    });
+
+    const pauseResponse = await appContext.primaryBroadcaster.broadcast({
+      msgs: pauseExecMsg,
+      gas: appContext.gasSettings,
+    });
+
+    expect(pauseResponse.code).toEqual(0);
+
+    // Basic tx
+    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext);
+
+    // Execute Mint
+    const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
+
+    let wasmErrorComparison = false;
+    // catch the error
+    try {
+      const response = await appContext.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: appContext.gasSettings,
+      })
+    } catch (error: any) {
+      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.paused, error);
     }
     expect(wasmErrorComparison).toEqual(true);
   });
