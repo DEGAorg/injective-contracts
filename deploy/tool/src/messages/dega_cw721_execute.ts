@@ -26,25 +26,17 @@
  * Mint a new NFT, can only be called by the contract minter
  *
  * Burn an NFT the sender has access to
- *
- * Extension msg
- *
- * Update the contract's ownership. The `action` to be provided can be either to propose
- * transferring ownership to an account, accept a pending ownership transfer, or renounce
- * the ownership permanently.
  */
 export interface DegaCw721ExecuteMsg {
-    transfer_nft?:          TransferNft;
-    send_nft?:              SendNft;
-    approve?:               Approve;
-    revoke?:                Revoke;
-    approve_all?:           ApproveAll;
-    revoke_all?:            RevokeAll;
-    mint?:                  Mint;
-    burn?:                  Burn;
-    extension?:             Extension;
-    update_token_metadata?: UpdateTokenMetadata;
-    update_ownership?:      ActionClass | ActionEnum;
+    transfer_nft?:           TransferNft;
+    send_nft?:               SendNft;
+    approve?:                Approve;
+    revoke?:                 Revoke;
+    approve_all?:            ApproveAll;
+    revoke_all?:             RevokeAll;
+    mint?:                   Mint;
+    burn?:                   Burn;
+    update_collection_info?: UpdateCollectionInfo;
 }
 
 export interface Approve {
@@ -76,10 +68,6 @@ export interface ApproveAll {
 
 export interface Burn {
     token_id: string;
-}
-
-export interface Extension {
-    msg: { [key: string]: any };
 }
 
 export interface Mint {
@@ -122,42 +110,20 @@ export interface TransferNft {
     token_id:  string;
 }
 
-/**
- * Propose to transfer the contract's ownership to another account, optionally with an
- * expiry time.
- *
- * Can only be called by the contract's current owner.
- *
- * Any existing pending ownership transfer is overwritten.
- */
-export interface ActionClass {
-    transfer_ownership: TransferOwnership;
+export interface UpdateCollectionInfo {
+    collection_info: UpdateCollectionInfoMsg;
 }
 
-export interface TransferOwnership {
-    expiry?:   Expiration | null;
-    new_owner: string;
+export interface UpdateCollectionInfoMsg {
+    description?:      null | string;
+    external_link?:    null | string;
+    image?:            null | string;
+    royalty_settings?: RoyaltySettingsResponse | null;
 }
 
-/**
- * Accept the pending ownership transfer.
- *
- * Can only be called by the pending owner.
- *
- * Give up the contract's ownership and the possibility of appointing a new owner.
- *
- * Can only be invoked by the contract's current owner.
- *
- * Any existing pending ownership transfer is canceled.
- */
-export enum ActionEnum {
-    AcceptOwnership = "accept_ownership",
-    RenounceOwnership = "renounce_ownership",
-}
-
-export interface UpdateTokenMetadata {
-    token_id:   string;
-    token_uri?: null | string;
+export interface RoyaltySettingsResponse {
+    payment_address: string;
+    share:           string;
 }
 
 // Converts JSON strings to/from your types
@@ -334,9 +300,7 @@ const typeMap: any = {
         { json: "revoke_all", js: "revoke_all", typ: u(undefined, r("RevokeAll")) },
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
         { json: "burn", js: "burn", typ: u(undefined, r("Burn")) },
-        { json: "extension", js: "extension", typ: u(undefined, r("Extension")) },
-        { json: "update_token_metadata", js: "update_token_metadata", typ: u(undefined, r("UpdateTokenMetadata")) },
-        { json: "update_ownership", js: "update_ownership", typ: u(undefined, u(r("ActionClass"), r("ActionEnum"))) },
+        { json: "update_collection_info", js: "update_collection_info", typ: u(undefined, r("UpdateCollectionInfo")) },
     ], false),
     "Approve": o([
         { json: "expires", js: "expires", typ: u(undefined, u(r("Expiration"), null)) },
@@ -356,9 +320,6 @@ const typeMap: any = {
     ], false),
     "Burn": o([
         { json: "token_id", js: "token_id", typ: "" },
-    ], false),
-    "Extension": o([
-        { json: "msg", js: "msg", typ: m("any") },
     ], false),
     "Mint": o([
         { json: "extension", js: "extension", typ: u(undefined, u(m("any"), null)) },
@@ -382,19 +343,17 @@ const typeMap: any = {
         { json: "recipient", js: "recipient", typ: "" },
         { json: "token_id", js: "token_id", typ: "" },
     ], false),
-    "ActionClass": o([
-        { json: "transfer_ownership", js: "transfer_ownership", typ: r("TransferOwnership") },
+    "UpdateCollectionInfo": o([
+        { json: "collection_info", js: "collection_info", typ: r("UpdateCollectionInfoMsg") },
     ], false),
-    "TransferOwnership": o([
-        { json: "expiry", js: "expiry", typ: u(undefined, u(r("Expiration"), null)) },
-        { json: "new_owner", js: "new_owner", typ: "" },
+    "UpdateCollectionInfoMsg": o([
+        { json: "description", js: "description", typ: u(undefined, u(null, "")) },
+        { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
+        { json: "image", js: "image", typ: u(undefined, u(null, "")) },
+        { json: "royalty_settings", js: "royalty_settings", typ: u(undefined, u(r("RoyaltySettingsResponse"), null)) },
     ], false),
-    "UpdateTokenMetadata": o([
-        { json: "token_id", js: "token_id", typ: "" },
-        { json: "token_uri", js: "token_uri", typ: u(undefined, u(null, "")) },
+    "RoyaltySettingsResponse": o([
+        { json: "payment_address", js: "payment_address", typ: "" },
+        { json: "share", js: "share", typ: "" },
     ], false),
-    "ActionEnum": [
-        "accept_ownership",
-        "renounce_ownership",
-    ],
 };

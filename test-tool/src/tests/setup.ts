@@ -58,6 +58,8 @@ async function addMsgForFillingTestAddress(addressToFill: string, balanceRequire
         }
     }));
 
+
+
     return msgArray;
 }
 
@@ -137,7 +139,7 @@ async function fillTestWallets() {
     await testContext.localGenesisBroadcaster.broadcast({
         msgs: sendMessages,
         gas: appContext.gasSettings
-    })
+    });
 }
 
 
@@ -150,7 +152,6 @@ async function createInstantiateMsg() {
         collection_params: {
             code_id: appContext.cw721CodeId,
             info: {
-                creator: appContext.primaryAddress,
                 description: "A simple test collection description",
                 image: "https://storage.googleapis.com/dega-banner/banner.png"
             },
@@ -158,24 +159,11 @@ async function createInstantiateMsg() {
             symbol: "TEST"
         },
         minter_params: {
-            creation_fee: {
-                amount: "0",
-                denom: "inj"
+            dega_minter_settings: {
+                signer_pub_key: appContext.signerCompressedPublicKey.toString("base64"),
+                minting_paused: false
             },
-            extension: {
-                dega_minter_settings: {
-                    signer_pub_key: appContext.signerCompressedPublicKey.toString("base64"),
-                    minting_paused: false
-                },
-                initial_admin: appContext.primaryAddress,
-            },
-            frozen: false,
-            max_trading_offset_secs: 0,
-            min_mint_price: {
-                amount: "0",
-                denom: "inj"
-            },
-            mint_fee_bps: 0
+            initial_admin: appContext.primaryAddress,
         },
         cw721_contract_label: "DEGA Collection - Test Collection",
         cw721_contract_admin: appContext.primaryAddress

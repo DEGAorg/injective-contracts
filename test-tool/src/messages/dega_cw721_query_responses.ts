@@ -114,16 +114,13 @@ export interface CheckRoyaltiesResponse {
 }
 
 export interface CollectionInfoResponse {
-    creator:             string;
-    description:         string;
-    explicit_content?:   boolean | null;
-    external_link?:      null | string;
-    image:               string;
-    royalty_info?:       RoyaltyInfoResponse | null;
-    start_trading_time?: null | string;
+    description:       string;
+    external_link?:    null | string;
+    image:             string;
+    royalty_settings?: RoyaltySettingsResponse | null;
 }
 
-export interface RoyaltyInfoResponse {
+export interface RoyaltySettingsResponse {
     payment_address: string;
     share:           string;
 }
@@ -379,15 +376,12 @@ const typeMap: any = {
         { json: "royalty_payments", js: "royalty_payments", typ: true },
     ], false),
     "CollectionInfoResponse": o([
-        { json: "creator", js: "creator", typ: "" },
         { json: "description", js: "description", typ: "" },
-        { json: "explicit_content", js: "explicit_content", typ: u(undefined, u(true, null)) },
         { json: "external_link", js: "external_link", typ: u(undefined, u(null, "")) },
         { json: "image", js: "image", typ: "" },
-        { json: "royalty_info", js: "royalty_info", typ: u(undefined, u(r("RoyaltyInfoResponse"), null)) },
-        { json: "start_trading_time", js: "start_trading_time", typ: u(undefined, u(null, "")) },
+        { json: "royalty_settings", js: "royalty_settings", typ: u(undefined, u(r("RoyaltySettingsResponse"), null)) },
     ], false),
-    "RoyaltyInfoResponse": o([
+    "RoyaltySettingsResponse": o([
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
     ], false),

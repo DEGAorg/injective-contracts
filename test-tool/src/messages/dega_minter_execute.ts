@@ -8,10 +8,9 @@
 // match the expected interface, even if the JSON is valid.
 
 export interface DegaMinterExecuteMsg {
-    mint?:                      Mint;
-    update_settings?:           UpdateSettings;
-    update_admin?:              UpdateAdmin;
-    update_start_trading_time?: null | string;
+    mint?:            Mint;
+    update_settings?: UpdateSettings;
+    update_admin?:    UpdateAdmin;
 }
 
 export interface Mint {
@@ -42,12 +41,12 @@ export enum UpdateAdminCommand {
 }
 
 export interface UpdateSettings {
-    settings: DegaMinterConfigSettings;
+    settings: UpdateDegaMinterConfigSettingsMsg;
 }
 
-export interface DegaMinterConfigSettings {
-    minting_paused: boolean;
-    signer_pub_key: string;
+export interface UpdateDegaMinterConfigSettingsMsg {
+    minting_paused?: boolean | null;
+    signer_pub_key?: null | string;
 }
 
 // Converts JSON strings to/from your types
@@ -219,7 +218,6 @@ const typeMap: any = {
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
         { json: "update_settings", js: "update_settings", typ: u(undefined, r("UpdateSettings")) },
         { json: "update_admin", js: "update_admin", typ: u(undefined, r("UpdateAdmin")) },
-        { json: "update_start_trading_time", js: "update_start_trading_time", typ: u(undefined, u(null, "")) },
     ], false),
     "Mint": o([
         { json: "request", js: "request", typ: r("MintRequest") },
@@ -241,11 +239,11 @@ const typeMap: any = {
         { json: "command", js: "command", typ: r("UpdateAdminCommand") },
     ], false),
     "UpdateSettings": o([
-        { json: "settings", js: "settings", typ: r("DegaMinterConfigSettings") },
+        { json: "settings", js: "settings", typ: r("UpdateDegaMinterConfigSettingsMsg") },
     ], false),
-    "DegaMinterConfigSettings": o([
-        { json: "minting_paused", js: "minting_paused", typ: true },
-        { json: "signer_pub_key", js: "signer_pub_key", typ: "" },
+    "UpdateDegaMinterConfigSettingsMsg": o([
+        { json: "minting_paused", js: "minting_paused", typ: u(undefined, u(true, null)) },
+        { json: "signer_pub_key", js: "signer_pub_key", typ: u(undefined, u(null, "")) },
     ], false),
     "UpdateAdminCommand": [
         "add",

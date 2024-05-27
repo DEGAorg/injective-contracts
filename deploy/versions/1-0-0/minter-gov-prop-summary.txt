@@ -23,9 +23,9 @@ We’re currently coordinating with the Talis and Dagora NFT marketplaces to mak
 <strong>Contract Information</strong>
 Contract version: 1.0.0
 Checksum: <insert>
-Rust version: 1.69.0
+Rust version: 1.75.0
 CosmWasm version: 1.2.1
-Workspace Optimizer version: 0.15.0
+Workspace Optimizer version: 0.15.1
 
 <strong>Actions</strong>
 &emsp;- By voting YES on this proposal, you agree to uploading the DEGA Minter Wasm Contract as described in this proposal.

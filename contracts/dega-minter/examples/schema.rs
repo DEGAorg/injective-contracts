@@ -6,13 +6,11 @@ use dega_inj::minter::{AdminsResponse, CheckSigResponse, DegaMinterConfigRespons
 use dega_inj::minter::MigrateMsg;
 use dega_inj::minter::ExecuteMsg;
 use dega_inj::minter::QueryMsg;
-use sg4::{StatusResponse};
 
 #[cw_serde]
 struct QueryResponses {
     dega_minter_config_response: DegaMinterConfigResponse,
     check_sig_response: CheckSigResponse,
-    status_response: StatusResponse,
     admins_response: AdminsResponse,
 }
 
@@ -21,6 +19,14 @@ fn main() {
     out_dir.push("schema");
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
+
+    //write_api!(
+    // instantiate: InstantiateMsg,
+    // execute: ExecuteMsg,
+    // query: QueryMsg,
+    // migrate: MigrateMsg
+    // // reply: ReplyMsg
+    // )
 
     export_schema_with_title(&schema_for!(InstantiateMsg), &out_dir, "instantiate_msg");
     export_schema(&schema_for!(MigrateMsg), &out_dir);

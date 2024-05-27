@@ -8,6 +8,13 @@ skip_core_tasks = true
 command = "cargo"
 args    = ["fmt", "--all", "--check"]
 
+[tasks.test]
+dependencies = [
+  "lint",
+  "unit-test",
+  "int-test"
+]
+
 [tasks.unit-test]
 command = "cargo"
 args    = ["test", "--locked", "-p", "dega-cw721", "-p", "dega-minter"]
@@ -42,13 +49,13 @@ fi
 docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-  ${image}:0.15.0
+  ${image}:0.15.1
 
 if [[ -d "artifacts-optimized" ]]; then
   rm -rf artifacts-optimized/*
-else
-  mkdir artifacts-optimized
 fi
+
+mkdir -p artifacts-optimized
 
 mv artifacts/* artifacts-optimized/
 rmdir artifacts
@@ -56,13 +63,13 @@ rmdir artifacts
 
 [tasks.schema]
 script = """
-for d in packages/*; do
-  if [ -d "$d" ]; then
-    cd $d
-    cargo schema
-    cd ../..
-  fi
-done
+#for d in packages/*; do
+#  if [ -d "$d" ]; then
+#    cd $d
+#    cargo schema
+#    cd ../..
+#  fi
+#done
 
 for d in contracts/*; do
   if [ -d "$d" ]; then
@@ -74,3 +81,18 @@ done
 
 rm -rf contracts/**/schema/raw
 """
+
+[tasks.unit-cov-text]
+command = "cargo"
+args    = ["llvm-cov", "-p", "dega-inj", "-p", "dega-minter", "-p", "dega-cw721",
+  "--ignore-filename-regex", ".*test.*"]
+
+[tasks.unit-cov-html-update]
+command = "cargo"
+args    = ["llvm-cov", "-p", "dega-inj", "-p", "dega-minter", "-p", "dega-cw721",
+  "--ignore-filename-regex", ".*test.*", "--html"]
+
+[tasks.unit-cov-html-open]
+command = "cargo"
+args    = ["llvm-cov", "-p", "dega-inj", "-p", "dega-minter", "-p", "dega-cw721",
+  "--ignore-filename-regex", ".*test.*", "--open"]

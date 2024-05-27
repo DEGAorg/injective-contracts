@@ -1,6 +1,7 @@
-use cosmwasm_std::{Binary, Coin, Decimal};
+use cosmwasm_std::{Binary, Decimal};
 // Use this file to define the various default message you want deploy to use
 use lazy_static::lazy_static;
+use dega_inj::cw721::{CollectionInfoResponse, CollectionParams, RoyaltySettingsResponse};
 use dega_inj::minter::DegaMinterParams;
 use wasm_deploy::config::{ContractInfo};
 use crate::contract::Contracts;
@@ -11,23 +12,10 @@ pub const ADMIN: &str = "inj1wgkzl830488jjzfut7lqhxdsynxc6njmr2j9kv";
 // Using lazy_static helps us create the messages that we need for the various deployment stages.
 lazy_static! {
 
-    // Not actually used for the stargaze CW721 contract since the minter instantiates the cw721 contract
     pub static ref CW721_INSTANTIATE: cw721_base::msg::InstantiateMsg = cw721_base::msg::InstantiateMsg {
         name: "TestCollection".into(),
         symbol: "TEST_COLLECTION".into(),
         minter: ADMIN.into(),
-        // collection_info: sg721::CollectionInfo {
-        //     creator: ADMIN.into(),
-        //     description: "Test Collection".into(),
-        //     image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
-        //     external_link: Some("https://realms.degaplatform.com/".into()),
-        //     explicit_content: Some(false),
-        //     start_trading_time: None,
-        //     royalty_info: Some(sg721::RoyaltyInfoResponse {
-        //         payment_address: ADMIN.into(),
-        //         share: Decimal::percent(2),
-        //     }),
-        // }
     };
 
     /// Perhaps we want to mint some tokens after the contract is deployed.
@@ -38,7 +26,7 @@ lazy_static! {
     ];
 }
 
-pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) -> dega_inj::minter::InstantiateMsg {
+pub fn get_default_minter_instantiate_msg(contracts_info: &[ContractInfo]) -> dega_inj::minter::InstantiateMsg {
 
     // Just panic / crash if we can't find a code ID (this context doesn't support error handling unfortunately)
     let contract_name = Contracts::DegaCw721.to_string();
@@ -58,39 +46,22 @@ pub fn get_default_minter_instantiate_msg(contracts_info: &Vec<ContractInfo>) ->
     };
 
     dega_inj::minter::InstantiateMsg {
-        minter_params: sg2::MinterParams {
-            //allowed_sg721_code_ids: vec![],
-            frozen: false,
-            creation_fee: Coin {
-                denom: "uinj".into(),
-                amount: 0u128.into(),
+        minter_params: DegaMinterParams {
+            dega_minter_settings: dega_inj::minter::DegaMinterConfigSettings {
+                signer_pub_key,
+                minting_paused: false,
             },
-            min_mint_price: Coin {
-                denom: "uinj".into(),
-                amount: 0u128.into(),
-            },
-            mint_fee_bps: 0u64,
-            max_trading_offset_secs: 0u64,
-            extension: DegaMinterParams {
-                dega_minter_settings: dega_inj::minter::DegaMinterConfigSettings {
-                    signer_pub_key,
-                    minting_paused: false,
-                },
-                initial_admin: ADMIN.into(),
-            },
+            initial_admin: ADMIN.into(),
         },
-        collection_params: sg2::msg::CollectionParams {
+        collection_params: CollectionParams {
             code_id,
             name: "TestCollection".into(),
             symbol: "TEST_COLLECTION".into(),
-            info: sg721::CollectionInfo {
-                creator: "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6".into(),
+            info: CollectionInfoResponse {
                 description: "Test Collection".into(),
                 image: "https://storage.googleapis.com/dega-banner/banner.png".into(),
                 external_link: Some("https://realms.degaplatform.com/".into()),
-                explicit_content: Some(false),
-                start_trading_time: None,
-                royalty_info: Some(sg721::RoyaltyInfoResponse {
+                royalty_settings: Some(RoyaltySettingsResponse {
                     payment_address: ADMIN.into(),
                     share: Decimal::percent(2),
                 }),

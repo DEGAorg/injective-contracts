@@ -181,7 +181,7 @@ async fn sign_msg_bytes(msg_bytes: &[u8]) -> anyhow::Result<String> {
 
     let secret_signing_key = SigningKey::from_slice(seed_bytes.as_slice())?;
     let signature: Signature = secret_signing_key.sign_digest(msg_digest.clone());
-    let sig_base64 = base64::encode(&signature.to_bytes()).clone();
+    let sig_base64 = base64::encode(signature.to_bytes()).clone();
 
     Ok(sig_base64)
 }
@@ -300,8 +300,8 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
 
 
         println!("Using Mnemonic");
-        println!("Inner Seed Bytes: {:?}", seed_bytes.clone());
-        let hex = hex::encode(seed_bytes.clone());
+        println!("Inner Seed Bytes: {:?}", seed_bytes);
+        let hex = hex::encode(seed_bytes);
         println!("Inner Seed Hex: {:?}", hex);
         //secret_key = SigningKey::from_slice(seed_bytes.as_slice())?;
         //println!("Computed seed from mnemonic");
@@ -327,8 +327,8 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
         seed_bytes.copy_from_slice(seed_bytes_from_config.as_slice());
 
         println!("Using raw seed");
-        println!("Inner Seed Bytes: {:?}", seed_bytes.clone());
-        let hex = hex::encode(seed_bytes.clone());
+        println!("Inner Seed Bytes: {:?}", seed_bytes);
+        let hex = hex::encode(seed_bytes);
         println!("Inner Seed Hex: {:?}", hex);
 
     }
@@ -360,8 +360,8 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     // recoverable signature types).
     let text_signature: Signature = secret_signing_key.sign_digest(message_digest.clone());
 
-    println!("Signature hex: {}", hex::encode(&text_signature.to_bytes()));
-    println!("Signature base64: {}", base64::encode(&text_signature.to_bytes()));
+    println!("Signature hex: {}", hex::encode(text_signature.to_bytes()));
+    println!("Signature base64: {}", base64::encode(text_signature.to_bytes()));
     println!("Signature size: {}", text_signature.to_bytes().len());
 
     let ethers_wallet = EthersLocalWallet::from(secret_signing_key.clone());
@@ -451,7 +451,7 @@ async fn sign_from_cosmwasm_crypto() -> anyhow::Result<()> {
     let mint_request_signature: Signature = secret_signing_key.sign_digest(mint_request_digest.clone());
 
     //let base_64_signature_sent = base64::encode(&text_signature.to_bytes()).clone();
-    let base_64_signature_sent = base64::encode(&mint_request_signature.to_bytes());
+    let base_64_signature_sent = base64::encode(mint_request_signature.to_bytes());
 
     let query_msg: QueryMsg = QueryMsg::CheckSig {
         message: VerifiableMsg::MintRequest(mint_request_msg),

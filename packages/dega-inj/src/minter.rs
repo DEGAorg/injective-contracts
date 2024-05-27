@@ -1,86 +1,21 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Empty, Timestamp, Uint128, Uint256};
-use sg2::{MinterParams};
+use cosmwasm_std::{Uint128, Uint256};
+use crate::cw721::CollectionParams;
 
-use sg2::msg::{CollectionParams};
-use sg4::{
-    //MinterConfig as BaseMinterConfig,
-    MinterConfigResponse as BaseMinterConfigResponse,
-};
-
-// SGBaseMinter Imports
-use base_minter::{
-    //contract::{
-        //instantiate as sg_base_minter_instantiate,
-        //execute as sg_base_minter_execute,
-        //query as sg_base_minter_query,
-        //reply as sg_base_minter_reply
-    //},
-    msg::{
-        //InstantiateMsg as SgBaseMinterInstantiateMsg, // Specified in messages but not actually what the base minter uses...
-        ExecuteMsg as SgBaseMinterExecuteMsg,
-    },
-    state::{
-        Config as MinterConfigBase,
-    }
-    // error::{
-    //     ContractError as SgBaseMinterContractError,
-    // }
-};
-
-#[cfg(not(target_arch = "wasm32"))]
-use sg4::StatusResponse;
-
-use sg4::{
-    QueryMsg as SgBaseMinterQueryMsg,
-};
-
-use sg_mod::base_factory::{
-    msg::{
-        BaseMinterCreateMsg as SgBaseMinterInstantiateMsg,
-    }
-};
-
-
-
-//pub type InstantiateMsg = SgBaseMinterInstantiateMsg;
-//pub type ExecuteMsg = SgBaseMinterExecuteMsg;
-//pub type QueryMsg = SgBaseMinterQueryMsg;
-// use base_minter::state::{
-//     Config as MinterBaseConfig
-// };
 
 #[cw_serde]
 pub struct InstantiateMsg {
-    pub minter_params: MinterParams<DegaMinterParams>,
+    pub minter_params: DegaMinterParams,
     pub collection_params: CollectionParams,
     pub cw721_contract_label: String,
     pub cw721_contract_admin: Option<String>,
 }
 
-impl From<InstantiateMsg> for SgBaseMinterInstantiateMsg {
-    fn from(msg: InstantiateMsg) -> SgBaseMinterInstantiateMsg {
-        SgBaseMinterInstantiateMsg {
-            init_msg: MinterParams {
-                //allowed_sg721_code_ids: msg.minter_params.allowed_sg721_code_ids,
-                frozen: msg.minter_params.frozen,
-                creation_fee: msg.minter_params.creation_fee,
-                min_mint_price: msg.minter_params.min_mint_price,
-                mint_fee_bps: msg.minter_params.mint_fee_bps,
-                max_trading_offset_secs: msg.minter_params.max_trading_offset_secs,
-                extension: Empty {},
-            },
-            collection_params: msg.collection_params,
-            cw721_contract_label: msg.cw721_contract_label,
-            cw721_contract_admin: msg.cw721_contract_admin,
-        }
-    }
-}
-
 #[cw_serde]
 pub struct MigrateMsg {
+    pub is_dev: bool,
+    pub dev_version: String,
 }
-
 
 #[cw_serde]
 pub struct DegaMinterParams {
@@ -94,11 +29,14 @@ pub struct DegaMinterConfigSettings {
     pub minting_paused: bool,
 }
 
-pub type Test = BaseMinterConfigResponse<DegaMinterConfigSettings>;
+#[cw_serde]
+pub struct UpdateDegaMinterConfigSettingsMsg {
+    pub signer_pub_key: Option<String>,
+    pub minting_paused: Option<bool>,
+}
 
 #[cw_serde]
 pub struct DegaMinterConfigResponse {
-    pub base_minter_config: MinterConfigBase,
     pub dega_minter_settings: DegaMinterConfigSettings,
     pub collection_address: String,
 }
@@ -111,29 +49,18 @@ pub enum ExecuteMsg {
         signature: String,
     },
     UpdateSettings {
-        settings: DegaMinterConfigSettings,
+        settings: UpdateDegaMinterConfigSettingsMsg,
     },
     UpdateAdmin {
         address: String,
         command: UpdateAdminCommand,
     },
-    UpdateStartTradingTime(Option<Timestamp>)
 }
 
 #[cw_serde]
 pub enum UpdateAdminCommand {
     Add,
     Remove,
-}
-
-impl From<ExecuteMsg> for SgBaseMinterExecuteMsg {
-    fn from(msg: ExecuteMsg) -> SgBaseMinterExecuteMsg {
-        match msg {
-            ExecuteMsg::UpdateStartTradingTime( maybe_stamp ) =>
-                SgBaseMinterExecuteMsg::UpdateStartTradingTime ( maybe_stamp ),
-            _ => unreachable!("cannot convert {:?} to SgBaseMinterQueryMsg", msg),
-        }
-    }
 }
 
 #[cw_serde]
@@ -153,7 +80,6 @@ pub struct MintRequest {
 pub struct CheckSigResponse {
     pub is_valid: bool,
     pub message_hash_hex: String,
-    pub verifying_key_len: usize,
     pub error: Option<String>,
 }
 
@@ -164,12 +90,10 @@ pub struct AdminsResponse {
 
 #[cw_serde]
 #[derive(QueryResponses)]
+#[allow(clippy::large_enum_variant)]
 pub enum QueryMsg {
     #[returns(DegaMinterConfigResponse)]
     Config {},
-
-    #[returns(StatusResponse)]
-    Status {},
 
     #[returns(CheckSigResponse)]
     CheckSig {
@@ -180,6 +104,11 @@ pub enum QueryMsg {
 
     #[returns(AdminsResponse)]
     Admins {},
+
+    #[returns(bool)]
+    IsAdmin {
+        address: String,
+    },
 }
 
 #[cw_serde]
@@ -198,12 +127,91 @@ pub enum SignerSourceType {
     //Address(String),
 }
 
-impl From<QueryMsg> for SgBaseMinterQueryMsg {
-    fn from(msg: QueryMsg) -> SgBaseMinterQueryMsg {
-        match msg {
-            QueryMsg::Config {} => SgBaseMinterQueryMsg::Config {},
-            QueryMsg::Status {} => SgBaseMinterQueryMsg::Status {},
-            _ => unreachable!("cannot convert {:?} to SgBaseMinterQueryMsg", msg),
-        }
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::Decimal;
+    use crate::cw721::{CollectionInfoResponse, RoyaltySettingsResponse};
+    use crate::test_helpers::test_serde;
+    use super::*;
+
+    #[test]
+    fn serde() {
+
+        // Test serialization and deserialization of serde types
+
+        QueryMsg::response_schemas().unwrap();
+
+        test_serde(&InstantiateMsg {
+            minter_params: DegaMinterParams {
+                dega_minter_settings: DegaMinterConfigSettings {
+                    signer_pub_key: "pubkey".to_string(),
+                    minting_paused: false,
+                },
+                initial_admin: "admin_addr".to_string(),
+            },
+            collection_params: CollectionParams {
+                code_id: 1234,
+                name: "name".to_string(),
+                symbol: "symbol".to_string(),
+                info: CollectionInfoResponse {
+                    description: "description".to_string(),
+                    image: "https://example.com/image.png".to_string(),
+                    external_link: Some("https://example.com/link".to_string(),),
+                    royalty_settings: Some(RoyaltySettingsResponse {
+                        payment_address: "payment_addr".to_string(),
+                        share: Decimal::percent(10),
+                    }),
+                },
+            },
+            cw721_contract_label: "contract-label".to_string(),
+            cw721_contract_admin: Some("admin_addr".to_string()),
+        });
+
+        test_serde(&MigrateMsg {
+            is_dev: true,
+            dev_version: "dev-version".to_string(),
+        });
+
+        test_serde(&ExecuteMsg::UpdateSettings {
+            settings: UpdateDegaMinterConfigSettingsMsg {
+                signer_pub_key: Some("new_key".to_string()),
+                minting_paused: Some(true),
+            },
+        });
+
+        test_serde(&UpdateAdminCommand::Add);
+
+        test_serde(&ExecuteMsg::Mint {
+            request: MintRequest {
+                to: "receiver_addr".to_string(),
+                primary_sale_recipient: "sale_recipient_addr".to_string(),
+                uri: "https://example.com/".to_string(),
+                price: Uint256::from(100u128),
+                currency: "inj".to_string(),
+                validity_start_timestamp: Uint128::new(1000),
+                validity_end_timestamp: Uint128::new(1500),
+                uuid: "UUIDv4".to_string(),
+                collection: "collection_addr".to_string(),
+            },
+            signature: "signature".to_string(),
+        });
+        
+        test_serde(&CheckSigResponse {
+            is_valid: false,
+            message_hash_hex: "hashhex".to_string(),
+            error: Some("error".to_string()),
+        });
+
+        test_serde(&QueryMsg::CheckSig {
+            message: VerifiableMsg::String("message".to_string()),
+            signature: "signature".to_string(),
+            signer_source: SignerSourceType::PubKeyBinary("pubkey".to_string()),
+        });
+
+        test_serde(&AdminsResponse {
+            admins: vec!["admin1".to_string(), "admin2".to_string()],
+        });
+
+
     }
 }

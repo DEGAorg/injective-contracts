@@ -209,12 +209,9 @@ const deploySpec = t.type({
     optionsMigrateCw721: t.boolean,
     collectionName: t.string,
     collectionSymbol: t.string,
-    collectionCreator: t.string,
     collectionDescription: t.string,
     collectionImageURL: t.string,
     collectionExternalLinkURL: t.string,
-    collectionExplicitContent: t.union([t.boolean, t.undefined, t.null]),
-    collectionStartTradingTime: t.union([t.string, t.undefined, t.null]),
     collectionSecondaryRoyaltyPaymentAddress: t.string,
     collectionSecondaryRoyaltyShare: t.string,
     cw721ContractLabel: t.string,
@@ -419,7 +416,10 @@ async function migrate(context: DeployContext) {
     if (context.spec.optionsMigrateMinter) {
 
         const minterCodeId = getMinterCodeIdForInstantiateOrMigrate(context);
-        const migrateMinterMsg: DegaMinterMigrateMsg = {};
+        const migrateMinterMsg: DegaMinterMigrateMsg = {
+            is_dev: true,
+            dev_version: "dev-1" // Todo, replace with deployment logic
+        };
         const minterAddress = getMinterAddressForMigrate(context);
 
         await migrateContract(
@@ -436,7 +436,10 @@ async function migrate(context: DeployContext) {
 
     if (context.spec.optionsMigrateCw721) {
 
-        const migrateCw721Msg: DegaCw721MigrateMsg = {};
+        const migrateCw721Msg: DegaCw721MigrateMsg = {
+            is_dev: true,
+            dev_version: "dev-1" // Todo, replace with deployment logic
+        };
         let cw721CodeId = getCw721CodeIdForInstantiateOrMigrate(context);
         const cw721Address = getCw721AddressForMigrate(context);
 
@@ -759,7 +762,6 @@ async function governanceProposal(
     console.log("Base CLI Tx:");
     console.log(baseTxArgs.join(" "));
 
-
     const injectivedPassword = process.env.INJECTIVED_PASSWORD;
     if (injectivedPassword == null) {
         throw new ScriptError("Must specify INJECTIVED_PASSWORD in environment to generate governance proposal transactions");
@@ -851,11 +853,11 @@ async function instantiate(context: DeployContext) {
     //     collectionSecondaryRoyaltyPaymentAddress: t.string,
     //     collectionSecondaryRoyaltyShare: t.number,
 
-    let royalty_info = null;
+    let royalty_settings = null;
 
     if (context.spec.collectionSecondaryRoyaltyPaymentAddress != undefined &&
         context.spec.collectionSecondaryRoyaltyShare != undefined) {
-        royalty_info = {
+        royalty_settings = {
             payment_address: context.spec.collectionSecondaryRoyaltyPaymentAddress,
             share: context.spec.collectionSecondaryRoyaltyShare,
         };
@@ -867,35 +869,19 @@ async function instantiate(context: DeployContext) {
             name: context.spec.collectionName,
             symbol: context.spec.collectionSymbol,
             info: {
-                creator: context.spec.collectionCreator,
                 description: context.spec.collectionDescription,
                 image: context.spec.collectionImageURL,
                 external_link: context.spec.collectionExternalLinkURL,
-                explicit_content: context.spec.collectionExplicitContent,
-                start_trading_time: context.spec.collectionStartTradingTime,
-                royalty_info: royalty_info,
+                royalty_settings: royalty_settings,
             },
 
         },
         minter_params: {
-            creation_fee: {
-                amount: "0",
-                denom: "inj"
+            dega_minter_settings: {
+                signer_pub_key: context.spec.minterSignerPubKeyBase64,
+                minting_paused: context.spec.minterMintingPaused,
             },
-            extension: {
-                dega_minter_settings: {
-                    signer_pub_key: context.spec.minterSignerPubKeyBase64,
-                    minting_paused: context.spec.minterMintingPaused,
-                },
-                initial_admin: context.spec.minterInitialAdmin,
-            },
-            frozen: false,
-            max_trading_offset_secs: 0,
-            min_mint_price: {
-                amount: "0",
-                denom: "inj"
-            },
-            mint_fee_bps: 0
+            initial_admin: context.spec.minterInitialAdmin,
         },
         cw721_contract_label: context.spec.cw721ContractLabel,
         cw721_contract_admin: cw721MigrateAdmin,

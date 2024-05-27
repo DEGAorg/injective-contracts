@@ -4,7 +4,7 @@ import {
     DegaMinterInstantiateMsg, DegaMinterQueryMsg
 } from "./messages";
 import {
-    DegaMinterConfigSettings,
+    UpdateDegaMinterConfigSettingsMsg,
     MintRequest, UpdateAdminCommand
 } from "./messages/dega_minter_execute";
 import {Config} from "./config";
@@ -625,9 +625,7 @@ async function refillLocal(args: string[]) {
 
     const response = await context.localGenesisBroadcaster.broadcast({
         msgs: sendMsg,
-        gas: {
-            gasPrice: new BigNumberInBase(0.01).toWei().toFixed()
-        }
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -682,7 +680,6 @@ async function instantiate(args: string[]) {
         collection_params: {
             code_id: context.cw721CodeId,
             info: {
-                creator: context.primaryAddress,
                 description: "A simple test collection description",
                 image: "https://storage.googleapis.com/dega-banner/banner.png"
             },
@@ -690,24 +687,11 @@ async function instantiate(args: string[]) {
             symbol: "TEST"
         },
         minter_params: {
-            creation_fee: {
-                amount: "0",
-                denom: "inj"
+            dega_minter_settings: {
+                signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
+                minting_paused: false
             },
-            extension: {
-                dega_minter_settings: {
-                    signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
-                    minting_paused: false
-                },
-                initial_admin: context.primaryAddress,
-            },
-            frozen: false,
-            max_trading_offset_secs: 0,
-            min_mint_price: {
-                amount: "0",
-                denom: "inj"
-            },
-            mint_fee_bps: 0
+            initial_admin: context.primaryAddress,
         },
         cw721_contract_label: "DEGA Collection - Test Collection",
         cw721_contract_admin: context.primaryAddress
@@ -749,10 +733,7 @@ export async function instantiateMinter(instantiateMessage: MsgInstantiateContra
 
     const response = await context.primaryBroadcaster.broadcast({
         msgs: instantiateMessage,
-        gas: {
-            gasPrice: context.gasPricesAmountWei.toFixed(),
-            gas: context.gasAmountWei.toNumber()
-        }
+        gas: context.gasSettings,
     })
 
     let minterAddress: string | undefined = "";
@@ -777,7 +758,7 @@ export async function instantiateMinter(instantiateMessage: MsgInstantiateContra
                         is_cw721 = true;
                     }
                     if (key == "contract_address") {
-                        address = value;
+                        address = stripQuotes(value);
                     }
                 });
 
@@ -848,10 +829,7 @@ export async function store_wasm(wasm_name: string): Promise<number> {
 
     const response = await context.primaryBroadcaster.broadcast({
         msgs: storeCodeMsg,
-        gas: {
-            gasPrice: context.gasPricesAmountWei.toFixed(),
-            gas: context.gasAmountWei.toNumber()
-        }
+        gas: context.gasSettings,
     })
 
     logResponse(response);
@@ -1147,8 +1125,7 @@ async function pause(args: string[]) {
     //
     // newSettings.minting_paused = newSetting;
 
-    const newSettings: DegaMinterConfigSettings = {
-        signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
+    const newSettings: UpdateDegaMinterConfigSettingsMsg = {
         minting_paused: newSetting
     };
 
@@ -1176,12 +1153,21 @@ async function pause(args: string[]) {
 
 async function migrate(args: string[]) {
 
+    if (args.length < 1) {
+        throw new Error("Missing argument. Usage: tx migrate <dev-version>");
+    }
+
     const context = await getAppContext();
+
+    const devVersion = args[0];
 
     {
         const minterCodeId = context.minterCodeId;
         const minterAddress = context.minterAddress
-        const migrateMinterMsg: DegaMinterMigrateMsg = {};
+        const migrateMinterMsg: DegaMinterMigrateMsg = {
+            is_dev: true,
+            dev_version: devVersion,
+        };
 
         await migrateContract(
             minterCodeId,
@@ -1194,7 +1180,10 @@ async function migrate(args: string[]) {
     {
         let cw721CodeId = context.cw721CodeId;
         const cw721Address = context.cw721Address;
-        const migrateCw721Msg: DegaCw721MigrateMsg = {};
+        const migrateCw721Msg: DegaCw721MigrateMsg = {
+            is_dev: true,
+            dev_version: devVersion,
+        };
 
         await migrateContract(
             cw721CodeId,

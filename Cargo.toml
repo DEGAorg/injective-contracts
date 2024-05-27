@@ -1,13 +1,8 @@
 [workspace]
 members = [
     "packages/dega-inj",
-    "stargaze/packages/sg721",
-    "stargaze/sg-mod",
-    "stargaze/contracts/collections/sg721-base",
-    "stargaze/contracts/minters/base-minter",
     "contracts/dega-cw721",
     "contracts/dega-minter",
-    "stargaze/sg-mod",
     "packages/wasm-deploy",
     "cli",
 ]
@@ -15,75 +10,50 @@ resolver = "2"
 
 [workspace.package]
 version         = "1.0.0"
-rust-version    = "1.69.0"
+rust-version    = "1.75.0"
 edition         = "2021"
 homepage        = "https://www.dega.org"
 # TODO Replace with final URL
 repository      = "https://github.com/CerratoA/inj-contracts"
 license         = "None (all rights reserved)"
-authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
+authors         = ["DEGA Labs", "Unamint Studios", "Will Stahl <will@stahl.cc>"]
 publish         = false
 
 [workspace.dependencies]
 cosmwasm-std            = { version = "1.2.1" }
 cosmwasm-schema         = { version = "1.2.1" }
-cw-storage-plus         = { version = "0.15.0" }
-cw2                     = { version = "1.1.2" }
+cw-storage-plus         = { version = "1.1.0" }
+cw2                     = { version = "1.1.0" }
 cw721                   = { version = "0.18.0" }
 cw721-base              = { version = "0.18.0", library = true }
+cw2981-royalties        = { version = "0.18.0" }
 cw-utils                = { version = "1.0.1" }
 cw-multi-test           = { version = "0.16.2" }
 cw-ownable              = { version = "0.5.1" }
 #injective-std           = { version = "0.1.3" } # Removed due to incompatibility building without more recent version of rust
-injective-cosmwasm      = { version = "0.1.39" }
-injective-math          = { version = "0.1.23" }
+#injective-cosmwasm      = { version = "0.1.39" }
+#injective-math          = { version = "0.1.23" }
 ethereum-types          = { version = "0.5.2" }
-schemars                = { version = "0.8.8" }
-serde                   = { version = "1.0.136", default-features = false, features = ["derive"] }
+schemars                = { version = "0.8.11" }
+serde                   = { version = "1.0.152", default-features = false, features = ["derive"] }
 serde_repr              = { version = "0.1" }
 subtle-encoding         = { version = "0.5.1", features = ["bech32-preview"] }
-thiserror               = { version = "1.0.31" }
+thiserror               = { version = "1.0.38" }
 # Need to prevent sha256 from pulling in tokio
 #sha256                  = { version = "1.5.0", default-features = false } # Removed in liue of sha2 which cosmwasm's crypto-verify sample uses
 sha2                    = { version = "0.10" }
 hex                     = { version = "0.4.3" }
-
-# Stargate packages
-#base-factory               = { version = "3.5.0", path = "stargate/contracts/factories/base-factory" }
-base-minter                = { version = "3.5.0", path = "stargaze/contracts/minters/base-minter" }
-#sg1                        = { version = "3.5.0", path = "stargate/packages/sg1" }
-sg2                        = { version = "3.5.0", path = "stargaze/packages/sg2" }
-sg4                        = { version = "3.5.0", path = "stargaze/packages/sg4" }
-sg721                      = { version = "3.5.0", path = "stargaze/packages/sg721" }
-sg721-base                 = { version = "3.5.0", path = "stargaze/contracts/collections/sg721-base" }
-#sg721-nt                   = { version = "3.5.0", path = "stargate/contracts/collections/sg721-nt" }
-#sg721-updatable            = { version = "3.5.0", path = "stargate/contracts/collections/sg721-updatable" }
-#sg-controllers             = { version = "3.5.0", path = "stargate/packages/controllers" }
-#sg-metadata                = { version = "3.5.0", path = "stargate/packages/sg-metadata" }
-#sg-mint-hooks              = { version = "3.5.0", path = "stargate/packages/mint-hooks" }
-#sg-splits                  = { version = "3.5.0", path = "stargate/contracts/splits" }
-#sg-whitelist               = { version = "3.5.0", path = "stargate/contracts/whitelists/whitelist" }
-#whitelist-mtree            = { version = "3.5.0", path = "stargate/contracts/whitelists/whitelist-merkletree" }
-#vending-minter-merkle-wl   = { version = "3.5.0", path = "stargate/contracts/minters/vending-minter-merkle-wl" }
-#vending-factory            = { version = "3.5.0", path = "stargate/contracts/factories/vending-factory" }
-#vending-minter             = { version = "3.5.0", path = "stargate/contracts/minters/vending-minter" }
-#open-edition-factory       = { version = "3.5.0", path = "stargate/contracts/factories/open-edition-factory" }
-#open-edition-minter        = { version = "3.5.0", path = "stargate/contracts/minters/open-edition-minter" }
-#whitelist-immutable        = { version = "3.5.0", path = "stargate/contracts/whitelists/whitelist-immutable" }
-#sg-whitelist-flex          = { version = "3.5.0", path = "stargate/contracts/whitelists/whitelist-flex" }
-#ethereum-verify            = { version = "3.5.0", path = "stargate/packages/ethereum-verify" }
-#sg-eth-airdrop             = { version = "3.5.0", path = "stargate/contracts/sg-eth-airdrop" }
-url                        = { version = "2.2.2" }
-
-sg-mod                     = { version = "3.5.0", path = "stargaze/sg-mod" }
-
-cw2981-royalties           = { version = "0.18.0" }
+url                     = { version = "2.2.2" }
 
 # DEGA packages
 dega-inj                = { version = "1.0.0", path = "packages/dega-inj" }
 dega-cw721              = { version = "1.0.0", path = "contracts/dega-cw721" }
 dega-minter             = { version = "1.0.0", path = "contracts/dega-minter" }
 dega-inj-cli            = { version = "1.0.0", path = "cli" }
+
+# Dev packages
+coverage-helper         = { version = "0.2.2" }
+
 
 [profile.release.package.dega-inj]
 codegen-units       = 1

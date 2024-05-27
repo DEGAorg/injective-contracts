@@ -27,6 +27,7 @@ impl Serialize for dyn Msg {
 /// This trait represents a contract that can be deployed.
 pub trait Deploy: ContractInteractive {
     /// This method gets the preprogrammed instantiate msg for the contract.
+    #[allow(clippy::ptr_arg)]
     fn instantiate_msg(&self, _contracts_info: &Vec<ContractInfo>) -> Option<Box<dyn Msg>> {
         println!("No instantiate msg for {}", self.name());
         println!("Defaulting to interactive instantiate");
@@ -34,6 +35,7 @@ pub trait Deploy: ContractInteractive {
     }
 
     /// This method gets the preprogrammed migrate msg for the contract.
+    #[allow(clippy::ptr_arg)]
     fn migrate_msg(&self, _contracts_info: &Vec<ContractInfo>) -> Option<Box<dyn Msg>> {
         None
     }
