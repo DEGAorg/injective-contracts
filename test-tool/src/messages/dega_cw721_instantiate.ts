@@ -9,7 +9,6 @@
 
 export interface DegaCw721InstantiateMsg {
     collection_info: CollectionInfoResponse;
-    minter:          string;
     name:            string;
     symbol:          string;
 }
@@ -193,7 +192,6 @@ function r(name: string) {
 const typeMap: any = {
     "DegaCw721InstantiateMsg": o([
         { json: "collection_info", js: "collection_info", typ: r("CollectionInfoResponse") },
-        { json: "minter", js: "minter", typ: "" },
         { json: "name", js: "name", typ: "" },
         { json: "symbol", js: "symbol", typ: "" },
     ], false),

@@ -26,10 +26,6 @@
  * Mint a new NFT, can only be called by the contract minter
  *
  * Burn an NFT the sender has access to
- *
- * Update the contract's ownership. The `action` to be provided can be either to propose
- * transferring ownership to an account, accept a pending ownership transfer, or renounce
- * the ownership permanently.
  */
 export interface DegaCw721ExecuteMsg {
     transfer_nft?:           TransferNft;
@@ -41,7 +37,6 @@ export interface DegaCw721ExecuteMsg {
     mint?:                   Mint;
     burn?:                   Burn;
     update_collection_info?: UpdateCollectionInfo;
-    update_ownership?:       ActionClass | ActionEnum;
 }
 
 export interface Approve {
@@ -129,39 +124,6 @@ export interface UpdateCollectionInfoMsg {
 export interface RoyaltySettingsResponse {
     payment_address: string;
     share:           string;
-}
-
-/**
- * Propose to transfer the contract's ownership to another account, optionally with an
- * expiry time.
- *
- * Can only be called by the contract's current owner.
- *
- * Any existing pending ownership transfer is overwritten.
- */
-export interface ActionClass {
-    transfer_ownership: TransferOwnership;
-}
-
-export interface TransferOwnership {
-    expiry?:   Expiration | null;
-    new_owner: string;
-}
-
-/**
- * Accept the pending ownership transfer.
- *
- * Can only be called by the pending owner.
- *
- * Give up the contract's ownership and the possibility of appointing a new owner.
- *
- * Can only be invoked by the contract's current owner.
- *
- * Any existing pending ownership transfer is canceled.
- */
-export enum ActionEnum {
-    AcceptOwnership = "accept_ownership",
-    RenounceOwnership = "renounce_ownership",
 }
 
 // Converts JSON strings to/from your types
@@ -339,7 +301,6 @@ const typeMap: any = {
         { json: "mint", js: "mint", typ: u(undefined, r("Mint")) },
         { json: "burn", js: "burn", typ: u(undefined, r("Burn")) },
         { json: "update_collection_info", js: "update_collection_info", typ: u(undefined, r("UpdateCollectionInfo")) },
-        { json: "update_ownership", js: "update_ownership", typ: u(undefined, u(r("ActionClass"), r("ActionEnum"))) },
     ], false),
     "Approve": o([
         { json: "expires", js: "expires", typ: u(undefined, u(r("Expiration"), null)) },
@@ -395,15 +356,4 @@ const typeMap: any = {
         { json: "payment_address", js: "payment_address", typ: "" },
         { json: "share", js: "share", typ: "" },
     ], false),
-    "ActionClass": o([
-        { json: "transfer_ownership", js: "transfer_ownership", typ: r("TransferOwnership") },
-    ], false),
-    "TransferOwnership": o([
-        { json: "expiry", js: "expiry", typ: u(undefined, u(r("Expiration"), null)) },
-        { json: "new_owner", js: "new_owner", typ: "" },
-    ], false),
-    "ActionEnum": [
-        "accept_ownership",
-        "renounce_ownership",
-    ],
 };

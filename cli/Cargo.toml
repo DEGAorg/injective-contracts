@@ -1,6 +1,6 @@
 [package]
 name            = "dega-inj-cli"
-authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
+authors         = ["DEGA Labs", "Unamint Studios", "Will Stahl <will@stahl.cc>"]
 version         = "1.0.0"
 edition         = "2021"
 

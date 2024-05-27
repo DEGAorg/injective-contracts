@@ -28,3 +28,16 @@ pub enum ContractError {
     #[error("( DEGA Minter Error: ( Minting not allowed while minting is paused. ) )")]
     MintingPaused,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn show_error() {
+        let err_string = format!("{}", ContractError::MintingPaused);
+        assert_eq!(err_string, "( DEGA Minter Error: ( Minting not allowed while minting is paused. ) )".to_string());
+
+        let err_debug_string = format!("{:?}", ContractError::Generic("Generic Error".to_string()));
+        assert_eq!(err_debug_string,"Generic(\"Generic Error\")".to_string());
+    }
+}

@@ -3,8 +3,7 @@ use std::fs::create_dir_all;
 
 use cosmwasm_schema::{cw_serde, export_schema, export_schema_with_title, remove_schemas, schema_for};
 use cw2981_royalties::msg::{CheckRoyaltiesResponse, RoyaltiesInfoResponse};
-use cw721_base::Extension;
-use dega_inj::cw721::{CollectionInfoResponse, InstantiateMsg};
+use dega_inj::cw721::{CollectionInfoResponse, DegaAllNftInfoResponse, DegaNftInfoResponse, InstantiateMsg};
 use dega_inj::cw721::MigrateMsg;
 use dega_inj::cw721::ExecuteMsg;
 use dega_inj::cw721::QueryMsg;
@@ -21,8 +20,8 @@ struct QueryResponses {
     operators_response: cw721::OperatorsResponse,
     num_tokens_response: cw721::NumTokensResponse,
     contract_info_response: cw721::ContractInfoResponse,
-    nft_info_response: cw721::NftInfoResponse<Extension>,
-    all_nft_info_response: cw721::AllNftInfoResponse<Extension>,
+    nft_info_response: DegaNftInfoResponse,
+    all_nft_info_response: DegaAllNftInfoResponse,
     tokens_response: cw721::TokensResponse,
     minter_response: cw721_base::MinterResponse,
 }
@@ -32,6 +31,14 @@ fn main() {
     out_dir.push("schema");
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
+
+    //write_api!(
+    // instantiate: InstantiateMsg,
+    // execute: ExecuteMsg,
+    // query: QueryMsg,
+    // migrate: MigrateMsg
+    // // reply: ReplyMsg
+    // )
 
     export_schema(&schema_for!(InstantiateMsg), &out_dir);
     export_schema(&schema_for!(MigrateMsg), &out_dir);

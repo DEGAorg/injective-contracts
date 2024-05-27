@@ -4,16 +4,12 @@
   "type": "object",
   "required": [
     "collection_info",
-    "minter",
     "name",
     "symbol"
   ],
   "properties": {
     "collection_info": {
       "$ref": "#/definitions/CollectionInfoResponse"
-    },
-    "minter": {
-      "type": "string"
     },
     "name": {
       "type": "string"

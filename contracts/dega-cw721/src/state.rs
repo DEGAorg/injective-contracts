@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use cosmwasm_std::{Empty};
 use cw_storage_plus::Item;
 use dega_inj::cw721::{CollectionInfo, Extension};
@@ -21,11 +20,23 @@ impl<'a> Default for DegaCw721Contract<'a>
     }
 }
 
-impl<'a> Deref for DegaCw721Contract<'a>
-{
-    type Target = Parent<'a>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.parent
-    }
-}
+// Disable deref due to potential unintended calls to the cw721 base when trying to call the dega contract
+// impl<'a> Deref for DegaCw721Contract<'a>
+// {
+//     type Target = Parent<'a>;
+//
+//     fn deref(&self) -> &Self::Target {
+//         &self.parent
+//     }
+// }
+//
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//
+//     #[test]
+//     fn deref() {
+//         let contract = DegaCw721Contract::default();
+//         assert_eq!(contract.contract_info.as_slice(), contract.parent.contract_info.as_slice());
+//     }
+// }

@@ -20,6 +20,14 @@ fn main() {
     create_dir_all(&out_dir).unwrap();
     remove_schemas(&out_dir).unwrap();
 
+    //write_api!(
+    // instantiate: InstantiateMsg,
+    // execute: ExecuteMsg,
+    // query: QueryMsg,
+    // migrate: MigrateMsg
+    // // reply: ReplyMsg
+    // )
+
     export_schema_with_title(&schema_for!(InstantiateMsg), &out_dir, "instantiate_msg");
     export_schema(&schema_for!(MigrateMsg), &out_dir);
     export_schema(&schema_for!(ExecuteMsg), &out_dir);

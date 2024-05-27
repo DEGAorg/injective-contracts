@@ -1,3 +1,7 @@
+// Excludes all tests from coverage checks
+// See: https://github.com/taiki-e/coverage-helper
+#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
+
 // public entry point
 pub mod entry;
 
@@ -11,6 +15,6 @@ mod state;
 mod upgrades;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod test_helpers;
 
 

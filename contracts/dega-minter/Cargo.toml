@@ -1,6 +1,6 @@
 [package]
 name            = "dega-minter"
-authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
+authors         = ["DEGA Labs", "Unamint Studios", "Will Stahl <will@stahl.cc>"]
 description     = "The DEGA Injective NFT Minter smart contract"
 version         = { workspace = true }
 rust-version    = { workspace = true }
@@ -65,3 +65,5 @@ k256                    = { version = "0.13.3", features = ["ecdsa"] }
 digest                  = { version = "0.10.7" }
 sha2                    = { version = "0.10" }
 base64                  = { version = "0.13.1" }
+coverage-helper         = { workspace = true }
+dega-inj                = { workspace = true, features = ["test-mode"] }

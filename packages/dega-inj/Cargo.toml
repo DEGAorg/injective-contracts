@@ -1,6 +1,6 @@
 [package]
 name            = "dega-inj"
-authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
+authors         = ["DEGA Labs", "Unamint Studios", "Will Stahl <will@stahl.cc>"]
 description     = "The common library for DEGA Injective Smart Contracts"
 version         = { workspace = true }
 rust-version    = { workspace = true }
@@ -26,6 +26,7 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 # use library feature to disable all instantiate/execute/query exports
 library = []
+test-mode = []
 
 [dependencies]
 cosmwasm-std            = { workspace = true }
@@ -47,3 +48,4 @@ subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 
 [dev-dependencies]
+coverage-helper         = { workspace = true }

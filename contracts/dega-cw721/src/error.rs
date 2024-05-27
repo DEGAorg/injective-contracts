@@ -2,7 +2,7 @@ use cosmwasm_std::StdError;
 use cw_utils::PaymentError;
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
     #[error("( DEGA Collection Standard Error: ({0}) | Caused by Standard Error: ({1}) )")]
     Std(String, StdError),
@@ -36,4 +36,20 @@ pub enum ContractError {
 
     #[error("( DEGA Collection Error: ( Token has already been claimed. ) )")]
     Claimed,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn show_error() {
+
+        let err_string = format!("{}", ContractError::Claimed);
+        assert_eq!(err_string,"( DEGA Collection Error: ( Token has already been claimed. ) )".to_string());
+
+
+        let err_debug_string = format!("{:?}", ContractError::MintingPaused);
+        assert_eq!(err_debug_string,"MintingPaused".to_string());
+    }
 }

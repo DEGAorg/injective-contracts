@@ -1,30 +1,30 @@
-use cw_ownable::{cw_ownable_execute, cw_ownable_query};
+use cw_ownable::{cw_ownable_query};
 use cw2981_royalties::msg::{
     Cw2981QueryMsg,
 };
 
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, Decimal};
-
+use cw721::{NftInfoResponse,AllNftInfoResponse};
 
 #[cfg(not(target_arch = "wasm32"))]
 use cw721::{
-    AllNftInfoResponse, ApprovalResponse, ApprovalsResponse, ContractInfoResponse, NftInfoResponse,
+    ApprovalResponse, ApprovalsResponse, ContractInfoResponse,
     NumTokensResponse, OperatorsResponse, OwnerOfResponse, TokensResponse,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use cw721_base::msg::MinterResponse;
 use cosmwasm_std::Empty;
-use cw721_base::msg::QueryMsg as Cw721QueryMsg;
 use cw_utils::Expiration;
 
 pub type Extension = Option<Empty>;
+pub type DegaNftInfoResponse = NftInfoResponse<Extension>;
+pub type DegaAllNftInfoResponse = AllNftInfoResponse<Extension>;
 
 #[cw_serde]
 pub struct InstantiateMsg {
     pub name: String,
     pub symbol: String,
-    pub minter: String,
     pub collection_info: CollectionInfoResponse,
 }
 
@@ -34,7 +34,7 @@ pub struct MigrateMsg {
     pub dev_version: String,
 }
 
-#[cw_ownable_execute]
+//#[cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     /// Transfer is a base message to move a token to another account without triggering actions
@@ -126,9 +126,9 @@ pub enum QueryMsg {
     NumTokens {},
     #[returns(ContractInfoResponse)]
     ContractInfo {},
-    #[returns(NftInfoResponse<Empty>)]
+    #[returns(DegaNftInfoResponse)]
     NftInfo { token_id: String },
-    #[returns(AllNftInfoResponse<Empty>)]
+    #[returns(DegaAllNftInfoResponse)]
     AllNftInfo {
         token_id: String,
         include_expired: Option<bool>,
@@ -153,72 +153,6 @@ pub enum QueryMsg {
     Extension { msg: Cw2981QueryMsg },
 }
 
-impl From<QueryMsg> for Cw721QueryMsg<Empty> {
-    fn from(msg: QueryMsg) -> Cw721QueryMsg<Empty> {
-        match msg {
-            QueryMsg::OwnerOf {
-                token_id,
-                include_expired,
-            } => Cw721QueryMsg::OwnerOf {
-                token_id,
-                include_expired,
-            },
-            QueryMsg::Approval {
-                token_id,
-                spender,
-                include_expired,
-            } => Cw721QueryMsg::Approval {
-                token_id,
-                spender,
-                include_expired,
-            },
-            QueryMsg::Approvals {
-                token_id,
-                include_expired,
-            } => Cw721QueryMsg::Approvals {
-                token_id,
-                include_expired,
-            },
-            QueryMsg::AllOperators {
-                owner,
-                include_expired,
-                start_after,
-                limit,
-            } => Cw721QueryMsg::AllOperators {
-                owner,
-                include_expired,
-                start_after,
-                limit,
-            },
-            QueryMsg::NumTokens {} => Cw721QueryMsg::NumTokens {},
-            QueryMsg::ContractInfo {} => Cw721QueryMsg::ContractInfo {},
-            QueryMsg::NftInfo { token_id } => Cw721QueryMsg::NftInfo { token_id },
-            QueryMsg::AllNftInfo {
-                token_id,
-                include_expired,
-            } => Cw721QueryMsg::AllNftInfo {
-                token_id,
-                include_expired,
-            },
-            QueryMsg::Tokens {
-                owner,
-                start_after,
-                limit,
-            } => Cw721QueryMsg::Tokens {
-                owner,
-                start_after,
-                limit,
-            },
-            QueryMsg::AllTokens { start_after, limit } => {
-                Cw721QueryMsg::AllTokens { start_after, limit }
-            }
-            QueryMsg::Minter {} => Cw721QueryMsg::Minter {},
-            QueryMsg::Ownership {} => Cw721QueryMsg::Ownership {},
-            _ => unreachable!("cannot convert {:?} to Cw721QueryMsg", msg),
-        }
-    }
-}
-
 #[cw_serde]
 pub struct CollectionParams {
     /// The collection code id
@@ -233,7 +167,7 @@ pub struct CollectionInfo {
     pub description: String,
     pub image: String,
     pub external_link: Option<String>,
-    pub royalty_info: Option<RoyaltySettings>,
+    pub royalty_settings: Option<RoyaltySettings>,
 }
 
 #[cw_serde]
@@ -272,4 +206,81 @@ pub enum NftParams {
         token_uri: Option<String>,
         extension: Extension,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_helpers::test_serde;
+    use super::*;
+
+    #[test]
+    fn serde() {
+
+        // Test serialization and deserialization of serde types
+
+        QueryMsg::response_schemas().unwrap();
+
+        test_serde(&InstantiateMsg {
+            name: "Test Collection".to_string(),
+            symbol: "TEST".to_string(),
+            collection_info: CollectionInfoResponse {
+                description: "Test Description".to_string(),
+                image: "https://example.com/image.png".to_string(),
+                external_link: None,
+                royalty_settings: Some(RoyaltySettingsResponse {
+                    payment_address: "royalty_payment_addr".to_string(),
+                    share: Decimal::percent(10),
+                }),
+            },
+        });
+
+        test_serde(&MigrateMsg {
+            is_dev: true,
+            dev_version: "v1".to_string(),
+        });
+
+        test_serde(&ExecuteMsg::TransferNft {
+            recipient: "recipient".to_string(),
+            token_id: "token_id".to_string(),
+        });
+
+        test_serde(&QueryMsg::OwnerOf {
+            token_id: "token_id".to_string(),
+            include_expired: Some(true),
+        });
+
+        test_serde(&NftParams::NftData {
+            token_id: "token_id".to_string(),
+            owner: "owner".to_string(),
+            token_uri: Some("token_uri".to_string()),
+            extension: None,
+        });
+
+        test_serde(&UpdateCollectionInfoMsg {
+            description: Some("description".to_string()),
+            image: Some("image".to_string()),
+            external_link: Some(Some("external_link".to_string())),
+            royalty_settings: Some(Some(RoyaltySettingsResponse {
+                payment_address: "royalty_payment_addr".to_string(),
+                share: Decimal::percent(10),
+            })),
+        });
+
+        test_serde(&CollectionParams {
+            code_id: 1234,
+            name: "name".to_string(),
+            symbol: "symbol".to_string(),
+            info: CollectionInfoResponse {
+                description: "description".to_string(),
+                image: "image".to_string(),
+                external_link: Some("external_link".to_string()),
+                royalty_settings: Some(RoyaltySettingsResponse {
+                    payment_address: "royalty_payment_addr".to_string(),
+                    share: Decimal::percent(10),
+                }),
+            },
+        });
+
+    }
+
 }

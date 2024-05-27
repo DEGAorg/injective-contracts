@@ -1,4 +1,5 @@
 use cosmwasm_std::{Binary, StdError, StdResult, Storage};
+use dega_inj::helpers::save_item_wrapped;
 use crate::state::TOKEN_INDEX;
 
 
@@ -15,6 +16,11 @@ pub(crate) fn verify_compressed_pub_key(pub_key_string: String) -> StdResult<Vec
 
 pub(crate) fn increment_token_index(store: &mut dyn Storage) -> StdResult<u64> {
     let val = TOKEN_INDEX.may_load(store)?.unwrap_or_default() + 1;
-    TOKEN_INDEX.save(store, &val)?;
+    save_item_wrapped(store, &TOKEN_INDEX, &val)?;
     Ok(val)
+}
+
+#[cfg(test)]
+mod tests {
+
 }
