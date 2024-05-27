@@ -10,6 +10,9 @@ import { SignerSourceTypeEnum } from "../messages/dega_minter_query";
 import { MintRequest } from "../messages/dega_minter_execute";
 import { generatePrivateKey } from "../config";
 
+
+// Assistive functions for mint method of Minter
+
 export const compareWasmError = (message: string, error: WasmError) =>{
   return error.originalMessage.includes(message);
 }
@@ -29,11 +32,12 @@ export const getValidTimes = (): [number, number] => {
   return [startTimeInSeconds, endTimeInSeconds];
 }
 
-export const createMintRequest = (appContext: AppContext, price: string, recipient: string): MintRequest => {
+export const createMintRequest = (appContext: AppContext, price: string, recipient: string, primarySaleRecipient?: string): MintRequest => {
+  primarySaleRecipient = primarySaleRecipient || appContext.primaryAddress;
   const [startTimeInSeconds, endTimeInSeconds] = getValidTimes();
   return {
     to: recipient,
-    primary_sale_recipient: appContext.primaryAddress,
+    primary_sale_recipient: primarySaleRecipient,
     uri: "https://example.com",
     price: price,
     currency: "inj",
@@ -49,11 +53,12 @@ export const createSignature = (mintRequestMsg: MintRequest, appContext: AppCont
   let msgMd5Hash = Buffer.from(sha256(rawMessage))
   let signature: Buffer;
   if (unAuthorized) {
-    const signerPrivateKey = generatePrivateKey();
-    const signerSigningKey = Buffer.from(signerPrivateKey.toPrivateKeyHex().slice(2), "hex");
-    signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signerSigningKey).signature);
+    const randomPK = generatePrivateKey();
+    const randomSigningKey = Buffer.from(randomPK.toPrivateKeyHex().slice(2), "hex");
+    signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, randomSigningKey).signature);
+  } else {
+    signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, appContext.signerSigningKey).signature)
   }
-  signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, appContext.signerSigningKey).signature)
   return [msgMd5Hash, signature];
 };
 
@@ -98,7 +103,7 @@ export const createExecuteMintMessage = (appContext: AppContext, mintRequestMsg:
 export const createBasicTx = async (appContext: AppContext, recipient: string, price: number = 0.5, unAuthorized:boolean = false): Promise<[MintRequest, Buffer]> => {
   // Create Mint Request And Signature
   let nft_price_wei = getNFTWeiPrice(price)
-  console.warn(`=====NFT Price: ${nft_price_wei}`);
+  // console.warn(`=====NFT Price: ${nft_price_wei}`);
   let mintRequestMsg = createMintRequest(appContext, nft_price_wei, recipient);
   const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext, unAuthorized);
   console.log("PubKey Compressed: " + appContext.signerCompressedPublicKey.toString("base64"));
@@ -116,3 +121,7 @@ export const createBasicTx = async (appContext: AppContext, recipient: string, p
 export const sleep = (ms: number) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+export const sanitizedMaxNumber = (num: number, max: number): number => {
+  return num > max ? max : num;
+};

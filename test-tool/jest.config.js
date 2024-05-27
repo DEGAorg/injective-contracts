@@ -6,4 +6,9 @@ module.exports = {
   globalSetup: './dist/tests/setup.js',
   setupFiles: ['./jest.setup.js'],
   maxWorkers: 1,
+  collectCoverage: true,
+  coverageDirectory: './coverage',
+  collectCoverageFrom: [
+    '**/helpers/**/*.js'
+  ],
 };

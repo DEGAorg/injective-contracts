@@ -3,12 +3,13 @@ import { AppContext, getAppContext } from "../context";
 import { DegaMinterExecuteMsg, DegaMinterQueryMsg } from "../messages";
 import { UpdateAdminCommand } from "../messages/dega_minter_execute";
 import { TestContext, getTestContext } from "./testContext";
-import { compareWasmError } from "../helpers/wasm";
+import { compareWasmError } from "../helpers/minter";
 import { logObjectFullDepth } from "./setup";
+import { createAddAdminMsg, createRemoveAdminMsg, createUpdateSettingsMsg } from "../helpers/minterAdmin";
 
 const ERROR_MESSAGES = {
-  unAuthorized: `( Operation unauthorized: ( Only admins can update admins. ) ): execute wasm contract failed`,
-  settings: `( Operation unauthorized: ( Only admins can update settings ) ): execute wasm contract failed`,
+  unAuthorized: `( DEGA Minter Unauthorized Error: ( Only admins can update admins. ) ): execute wasm contract failed`,
+  settings: `( DEGA Minter Unauthorized Error: ( Only admins can update settings ) ): execute wasm contract failed`,
 }
 describe.skip(`DEGA Minter Admin Tests`, () => {
   let appContext: AppContext;
@@ -20,18 +21,7 @@ describe.skip(`DEGA Minter Admin Tests`, () => {
 
   it(`should fail to add an admin if the sender is not an admin`, async () => {
     const newAdminAddress = testContext.testAddressThree;
-    const contractMsg: DegaMinterExecuteMsg = {
-      update_admin: {
-        address: newAdminAddress,
-        command: UpdateAdminCommand.Add,
-      }
-    };
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-      sender: testContext.testAddressTwo,
-      contractAddress: appContext.minterAddress,
-      msg: contractMsg,
-      funds: []
-    })
+    const execMsg = createAddAdminMsg(newAdminAddress, appContext, testContext.testAddressTwo);
 
     let wasmErrorComparison = false;
     // catch the error
@@ -48,18 +38,7 @@ describe.skip(`DEGA Minter Admin Tests`, () => {
 
   it(`should fail to remove an admin if the sender is not an admin`, async () => {
     const adminToRemove = appContext.primaryAddress;
-    const contractMsg: DegaMinterExecuteMsg = {
-      update_admin: {
-        address: adminToRemove,
-        command: UpdateAdminCommand.Remove,
-      }
-    };
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-      sender: testContext.testAddressTwo,
-      contractAddress: appContext.minterAddress,
-      msg: contractMsg,
-      funds: []
-    })
+    const execMsg = createRemoveAdminMsg(adminToRemove, appContext, testContext.testAddressTwo);
 
     let wasmErrorComparison = false;
     // catch the error
@@ -83,12 +62,7 @@ describe.skip(`DEGA Minter Admin Tests`, () => {
         }
       }
     };
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-      sender: testContext.testAddressTwo,
-      contractAddress: appContext.minterAddress,
-      msg: contractMsg,
-      funds: []
-    })
+    const execMsg = createUpdateSettingsMsg(appContext, true, appContext.signerCompressedPublicKey.toString("base64"), testContext.testAddressTwo);
 
     let wasmErrorComparison = false;
     // catch the error
@@ -105,18 +79,7 @@ describe.skip(`DEGA Minter Admin Tests`, () => {
 
   it(`should allow the admin to add new admins`, async () => {
     const newAdminAddress = testContext.testAddressThree;
-    const contractMsg: DegaMinterExecuteMsg = {
-      update_admin: {
-        address: newAdminAddress,
-        command: UpdateAdminCommand.Add,
-      }
-    };
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-      sender: appContext.primaryAddress,
-      contractAddress: appContext.minterAddress,
-      msg: contractMsg,
-      funds: []
-    })
+    const execMsg = createAddAdminMsg(newAdminAddress, appContext, appContext.primaryAddress);
 
     const response = await appContext.primaryBroadcaster.broadcast({
       msgs: execMsg,
@@ -127,18 +90,7 @@ describe.skip(`DEGA Minter Admin Tests`, () => {
 
   it(`should allow the admin to remove admins`, async () => {
     const adminToRemove = testContext.testAddressThree;
-    const contractMsg: DegaMinterExecuteMsg = {
-      update_admin: {
-        address: adminToRemove,
-        command: UpdateAdminCommand.Remove,
-      }
-    };
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-      sender: appContext.primaryAddress,
-      contractAddress: appContext.minterAddress,
-      msg: contractMsg,
-      funds: []
-    })
+    const execMsg = createRemoveAdminMsg(adminToRemove, appContext, appContext.primaryAddress);
 
     const response = await appContext.primaryBroadcaster.broadcast({
       msgs: execMsg,
@@ -148,20 +100,7 @@ describe.skip(`DEGA Minter Admin Tests`, () => {
   })
 
   it(`should allow the admin to toggle pause the minting`, async () => {
-    const contractMsg: DegaMinterExecuteMsg = {
-      update_settings: {
-        settings: {
-          minting_paused: true,
-          signer_pub_key: appContext.signerCompressedPublicKey.toString("base64"),
-        }
-      }
-    };
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-      sender: appContext.primaryAddress,
-      contractAddress: appContext.minterAddress,
-      msg: contractMsg,
-      funds: []
-    })
+    const execMsg = createUpdateSettingsMsg(appContext, true, appContext.signerCompressedPublicKey.toString("base64"), appContext.primaryAddress);
 
     const response = await appContext.primaryBroadcaster.broadcast({
       msgs: execMsg,
@@ -177,27 +116,14 @@ describe.skip(`DEGA Minter Admin Tests`, () => {
     const configQueryResponseObject: any = fromBase64(
       Buffer.from(configQueryResponse.data).toString("base64")
     );
-    console.warn(configQueryResponseObject);
+    // console.warn(configQueryResponseObject);
     expect(configQueryResponseObject.dega_minter_settings.minting_paused).toBe(true);
     // unpause the minting for other tests
-    const unpauseContractMsg: DegaMinterExecuteMsg = {
-      update_settings: {
-        settings: {
-          minting_paused: false,
-          signer_pub_key: appContext.signerCompressedPublicKey.toString("base64"),
-        }
-      }
-    };
-    const unpauseExecMsg = MsgExecuteContractCompat.fromJSON({
-      sender: appContext.primaryAddress,
-      contractAddress: appContext.minterAddress,
-      msg: unpauseContractMsg,
-      funds: []
-    })
+    const unpauseExecMsg = createUpdateSettingsMsg(appContext, false, appContext.signerCompressedPublicKey.toString("base64"), appContext.primaryAddress);
     const unpauseResponse = await appContext.primaryBroadcaster.broadcast({
       msgs: unpauseExecMsg,
       gas: appContext.gasSettings,
     })
     expect(unpauseResponse.code).toBe(0);
-  });
+  }, 30000);
 });
