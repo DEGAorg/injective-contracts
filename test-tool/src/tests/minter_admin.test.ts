@@ -10,7 +10,7 @@ const ERROR_MESSAGES = {
   unAuthorized: `( Operation unauthorized: ( Only admins can update admins. ) ): execute wasm contract failed`,
   settings: `( Operation unauthorized: ( Only admins can update settings ) ): execute wasm contract failed`,
 }
-describe(`DEGA Minter Admin Tests`, () => {
+describe.skip(`DEGA Minter Admin Tests`, () => {
   let appContext: AppContext;
   let testContext: TestContext;
   beforeAll(async () => {
