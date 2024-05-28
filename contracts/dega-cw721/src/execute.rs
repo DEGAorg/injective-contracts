@@ -294,9 +294,10 @@ fn from_execute_msg_to_base(msg: ExecuteMsg) -> Cw721BaseExecuteMsg {
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Api, Binary, Coin, Decimal, from_json, Uint128};
+    use cosmwasm_schema::cw_serde;
+    use cosmwasm_std::{Api, Binary, Coin, CosmosMsg, Decimal, from_json, to_json_binary, Uint128, WasmMsg};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cw721::{ApprovalResponse, ApprovalsResponse, NftInfoResponse, OperatorsResponse};
+    use cw721::{ApprovalResponse, ApprovalsResponse, Cw721ReceiveMsg, NftInfoResponse, OperatorsResponse};
     use cw_ownable::{Action, get_ownership, update_ownership};
     use cw_utils::Expiration::Never;
     use dega_inj::cw721::{CollectionInfoResponse, DegaAllNftInfoResponse, QueryMsg, RoyaltySettingsResponse};
@@ -803,7 +804,6 @@ mod tests {
         contract.execute_mint(deps.as_mut(), mock_env(), minter_contract_msg_info.clone(), nft_data.clone()).unwrap();
 
         // send the token with send_nft
-        // todo confirm the proper receive_nft message is dispatched
         let receive_msg_binary = Binary::from(vec![0u8]);
         let second_owner_contract = "recipient_addr".to_string();
         let _send_nft_repsponse = contract.execute(deps.as_mut(), mock_env(), nft_owner_msg_info.clone(),
@@ -914,6 +914,110 @@ mod tests {
         ).unwrap();
 
     }
+
+    #[cw_serde]
+    struct TestSendNftReceiveMsg {
+        pub msg: String,
+        pub is_something: bool,
+    }
+
+    #[cw_serde]
+    enum TestReceiverExecuteMsg {
+        ReceiveNft(Cw721ReceiveMsg),
+    }
+
+
+    fn extract_test_receiver_execute_msg(recipient_contract_addr: &String, cosmos_msg: &CosmosMsg) -> Option<TestReceiverExecuteMsg> {
+        if let CosmosMsg::Wasm(
+            WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            }) = cosmos_msg {
+            assert_eq!(contract_addr, recipient_contract_addr);
+            assert!(funds.is_empty());
+
+            Some(from_json::<TestReceiverExecuteMsg>(msg).unwrap())
+        } else {
+            None
+        }
+    }
+
+    #[test]
+    fn send_nft_and_receive_msg() {
+        let contract = DegaCw721Contract::default();
+
+        let minter_contract_msg_info = mock_info(MINTER_CONTRACT_ADDR, &[]);
+        let nft_owner_msg_info = mock_info(NFT_OWNER_ADDR, &[]);
+
+        let mut deps ;
+        let token_id = "1".to_string();
+
+        let token_uri = Some("https://example.com/".to_string());
+
+        let nft_data = NftParams::NftData {
+            token_id: token_id.clone(),
+            owner: NFT_OWNER_ADDR.to_string(),
+            token_uri: token_uri.clone(),
+            extension: None,
+        };
+
+        // Create new collection
+        deps = mock_dependencies();
+        template_collection(&mut deps, mock_env(), &contract).unwrap();
+
+        // mint a token
+        contract.execute_mint(deps.as_mut(), mock_env(), minter_contract_msg_info.clone(), nft_data.clone()).unwrap();
+
+        // Create an inner message to send with the token to the contract
+        let inner_msg_sent = TestSendNftReceiveMsg {
+            msg: "Hello, World!".to_string(),
+            is_something: true,
+        };
+
+        // send the token with send_nft
+        let receive_msg_binary = to_json_binary(&inner_msg_sent).unwrap();
+        let recipient_contract_addr = "recipient_addr".to_string();
+        let response = contract.execute(deps.as_mut(), mock_env(), nft_owner_msg_info.clone(),
+                                                   ExecuteMsg::SendNft {
+                                                       contract: recipient_contract_addr.clone(),
+                                                       token_id: token_id.clone(),
+                                                       msg: receive_msg_binary,
+                                                   }
+        ).unwrap();
+
+        // Outer: CosmosMsg::Wasm(WasmMsg)
+        // Middle: WasmMsg::Execute -> msg (Binary version of ReceiverExecuteMsg)
+        // Innter: Serialized ReceiverExecuteMsg::ReceiveNft(Cw721ReceiveMsg)
+        // Next: Cw721ReceiveMsg -> msg (Binary version of TestSendNftReceiveMsg)
+
+        // There should be only one message sent (from the collection to the nft recipient smart contract)
+        assert_eq!(response.clone().messages.len(), 1);
+        let cosmos_msg = &response.messages[0].msg;
+
+
+        // Confirm the message is a Wasm execute message,
+        // and that the inner message is a serialized Cw721ReceiveMsg
+        let receiver_execute_msg =
+            extract_test_receiver_execute_msg(&recipient_contract_addr, cosmos_msg).unwrap();
+
+        // Need to run the Empty case to get full coverage (easier than pulling in nightly to mark as not covered manually)
+        extract_test_receiver_execute_msg(&String::default(), &CosmosMsg::Custom(Empty {}));
+
+        let TestReceiverExecuteMsg::ReceiveNft(receive_msg) = receiver_execute_msg;
+
+        assert_eq!(receive_msg.token_id, token_id);
+        assert_eq!(receive_msg.sender, NFT_OWNER_ADDR);
+
+        let inner_msg_received: TestSendNftReceiveMsg = from_json(receive_msg.msg.as_slice()).unwrap();
+        assert_eq!(inner_msg_received, inner_msg_sent);
+
+        let maybe_token_owner_info = contract.get_owner_of(deps.as_ref(), &token_id);
+        assert_eq!(maybe_token_owner_info.unwrap().owner, recipient_contract_addr.clone());
+        assert!(contract.owns_token(deps.as_ref(), &recipient_contract_addr, &token_id));
+        assert!(!contract.owns_token(deps.as_ref(), NFT_OWNER_ADDR, &token_id));
+    }
+
 
     #[test]
     fn base_cw721_errors() {
