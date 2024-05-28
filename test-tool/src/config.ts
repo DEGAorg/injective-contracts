@@ -73,12 +73,16 @@ function initConfig() {
         NETWORK: networkType,
         MINTER_CODE_ID_LOCAL: process.env.MINTER_CODE_ID_LOCAL ?? "",
         CW721_CODE_ID_LOCAL: process.env.CW721_CODE_ID_LOCAL ?? "",
+        RECEIVER_CODE_ID_LOCAL: process.env.RECEIVER_CODE_ID_LOCAL ?? "",
         MINTER_ADDRESS_LOCAL: process.env.MINTER_ADDRESS_LOCAL ?? "",
         CW721_ADDRESS_LOCAL: process.env.CW721_ADDRESS_LOCAL ?? "",
+        RECEIVER_ADDRESS_LOCAL: process.env.RECEIVER_ADDRESS_LOCAL ?? "",
         MINTER_CODE_ID_TESTNET: process.env.MINTER_CODE_ID_TESTNET ?? "",
         CW721_CODE_ID_TESTNET: process.env.CW721_CODE_ID_TESTNET ?? "",
+        RECEIVER_CODE_ID_TESTNET: process.env.RECEIVER_CODE_ID_TESTNET ?? "",
         MINTER_ADDRESS_TESTNET: process.env.MINTER_ADDRESS_TESTNET ?? "",
         CW721_ADDRESS_TESTNET: process.env.CW721_ADDRESS_TESTNET ?? "",
+        RECEIVER_ADDRESS_TESTNET: process.env.RECEIVER_ADDRESS_TESTNET ?? "",
         MINTER_CODE_ID_MAINNET: process.env.MINTER_CODE_ID_MAINNET ?? "",
         CW721_CODE_ID_MAINNET: process.env.CW721_CODE_ID_MAINNET ?? "",
         MINTER_ADDRESS_MAINNET: process.env.MINTER_ADDRESS_MAINNET ?? "",
@@ -90,8 +94,10 @@ function initConfig() {
         TEST_TEST_THREE_SEEDHEX: process.env.TEST_TEST_THREE_SEEDHEX ?? "",
         TEST_MINTER_CODE_ID: process.env.TEST_MINTER_CODE_ID ?? "",
         TEST_CW721_CODE_ID: process.env.TEST_CW721_CODE_ID ?? "",
+        TEST_RECEIVER_CODE_ID: process.env.TEST_RECEIVER_CODE_ID ?? "",
         TEST_MINTER_ADDRESS: process.env.TEST_MINTER_ADDRESS ?? "",
         TEST_CW721_ADDRESS: process.env.TEST_CW721_ADDRESS ?? "",
+        TEST_RECEIVER_ADDRESS: process.env.TEST_RECEIVER_ADDRESS ?? "",
     }
 }
 

@@ -15,6 +15,7 @@ export interface TestContext {
     testAddressThree: string;
     testMinterWasmChecksum: string,
     testCw721WasmChecksum: string,
+    testReceiverTesterWasmChecksum?: string,
     localGenesisPrivateKey: PrivateKey,
     localGenesisAddress: string,
     localGenesisBroadcaster: MsgBroadcasterWithPk,
@@ -46,9 +47,9 @@ async function initTestContext(): Promise<TestContext> {
     const localGenesisAddress = localGenesisPrivateKey.toBech32();
 
     const localGenesisBroadcaster = new MsgBroadcasterWithPk({
-                privateKey: localGenesisPrivateKey, /** private key hash or PrivateKey class from sdk-ts */
-                network: Network.Local,
-            });
+        privateKey: localGenesisPrivateKey, /** private key hash or PrivateKey class from sdk-ts */
+        network: Network.Local,
+    });
 
     localGenesisBroadcaster.chainId = ChainId.Mainnet; // Fix for local testnet chain ID being wrong for Local in the injective typescript library
 
@@ -86,6 +87,7 @@ async function initTestContext(): Promise<TestContext> {
 
     let testMinterWasmChecksum;
     let testCw721WasmChecksum;
+    let testReceiverTesterWasmChecksum;
 
     const checksumsTxtPath = path.resolve(__dirname, "..", "..", "..", "artifacts-optimized", "checksums.txt")
 
@@ -135,6 +137,31 @@ async function initTestContext(): Promise<TestContext> {
         throw new Error("Minter or CW721 wasm checksum not found");
     }
 
+
+    const receiverTesterChecksumTxtPath = path.resolve(__dirname, "..", "..", "data", "cw721-receiver-tester-checksum.txt")
+    if (fs.existsSync(receiverTesterChecksumTxtPath)) {
+        const checksumsTxtContents = fs.readFileSync(checksumsTxtPath, "utf-8");
+        const checksumsTxtLines = checksumsTxtContents.split("\n");
+
+        if (checksumsTxtLines.length == 0) {
+            throw new Error("Empty cw721-receiver-tester-checksum.txt file");
+        }
+        const line = checksumsTxtLines[0];
+        let parts = line.split(/\s+/);
+
+        if (parts.length != 2) {
+            throw new Error("Invalid first line in cw721-receiver-tester-checksum.txt with tokens: " + parts.length + " line: " + line);
+        }
+
+        const hashString = parts[0];
+        let wasmName = parts[1];
+        if (wasmName != "cw721_receiver_tester.wasm") {
+            throw new Error("Unknown wasm name in cw721-receiver-tester-checksum.txt: " + wasmName);
+        }
+        testReceiverTesterWasmChecksum = hashString;
+        validateChecksum(testReceiverTesterWasmChecksum);
+    }
+
     validateChecksum(testMinterWasmChecksum);
     validateChecksum(testCw721WasmChecksum);
 
@@ -147,6 +174,7 @@ async function initTestContext(): Promise<TestContext> {
         testAddressThree,
         testMinterWasmChecksum,
         testCw721WasmChecksum,
+        testReceiverTesterWasmChecksum,
         localGenesisPrivateKey,
         localGenesisAddress,
         localGenesisBroadcaster,

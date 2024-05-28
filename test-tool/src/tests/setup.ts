@@ -18,7 +18,7 @@ import {Config, generatePrivateKeySeedHex} from "../config";
 import {getNetworkEndpoints, Network} from "@injectivelabs/networks";
 import { randomBytes } from "crypto"
 import {ChainId} from "@injectivelabs/ts-types";
-import {instantiateMinter, store_wasm, stripQuotes, TxAttribute, TxEvent} from "../tx";
+import {instantiateMinter, instantiateReceiver, store_wasm, stripQuotes, TxAttribute, TxEvent} from "../tx";
 import {ChainGrpcTendermintApi} from "@injectivelabs/sdk-ts/dist/cjs/client/chain/grpc/ChainGrpcTendermintApi";
 import {getTestContext} from "./testContext";
 import fs from "fs";
@@ -64,7 +64,7 @@ async function addMsgForFillingTestAddress(addressToFill: string, balanceRequire
 }
 
 
-export async function findCodeIdsFromChecksums(): Promise<[number, number]> {
+export async function findCodeIdsFromChecksums(): Promise<[number, number, number | undefined]> {
 
     const testContext = await getTestContext();
     const appContext = await getAppContext();
@@ -76,6 +76,7 @@ export async function findCodeIdsFromChecksums(): Promise<[number, number]> {
 
     let minterCodeId: number | undefined = undefined;
     let cw721CodeId: number | undefined = undefined;
+    let receiverTesterCodeId: number | undefined = undefined;
     const contractCodes = await appContext.queryWasmApi.fetchContractCodes(paginationOptions);
 
     console.log("Fetched contract codes to find minter and cw721 code ids.");
@@ -84,6 +85,7 @@ export async function findCodeIdsFromChecksums(): Promise<[number, number]> {
     console.log("Searching for code checksums");
     console.log("Minter checksum: " + testContext.testMinterWasmChecksum);
     console.log("CW721 checksum: " + testContext.testCw721WasmChecksum);
+    console.log("Receiver tester checksum: " + (testContext.testReceiverTesterWasmChecksum ? testContext.testReceiverTesterWasmChecksum : "Not provided"));
 
     for (let contractCode of contractCodes.codeInfosList) {
         let wasmChecksum = contractCode.dataHash;
@@ -105,8 +107,16 @@ export async function findCodeIdsFromChecksums(): Promise<[number, number]> {
             console.log("Found cw721 code id: " + cw721CodeId);
         }
 
-        if (minterCodeId != undefined && cw721CodeId != undefined) {
-            // Found both, can stop searching
+        if (receiverTesterCodeId == undefined && wasmChecksum == testContext.testReceiverTesterWasmChecksum) {
+            // Capture the first receiver tester code-id found
+            receiverTesterCodeId = contractCode.codeId;
+            console.log("Found receiver tester code id: " + receiverTesterCodeId);
+        }
+
+        let foundRecieverOrNotSearchingForIt = receiverTesterCodeId != undefined || testContext.testReceiverTesterWasmChecksum == undefined;
+
+        if (minterCodeId != undefined && cw721CodeId != undefined && foundRecieverOrNotSearchingForIt) {
+            // Found both dega code id's and the receiver code id if we were searching for it, can stop searching
             break;
         }
     }
@@ -119,7 +129,28 @@ export async function findCodeIdsFromChecksums(): Promise<[number, number]> {
         cw721CodeId = await store_wasm("dega_cw721.wasm")
     }
 
-    return [minterCodeId, cw721CodeId];
+    if (receiverTesterCodeId == undefined && testContext.testReceiverTesterWasmChecksum != undefined) {
+
+        let isCorrectWasmCopiedToArtifacts = false;
+        let targetWasmPath = path.join(__dirname, "..", "..", "..", "artifacts-optimized", "cw721_receiver_tester.wasm");
+        if (fs.existsSync(targetWasmPath)) {
+            let artifactsWasmChecksum = Buffer.from(sha256(fs.readFileSync(targetWasmPath))).toString("hex");
+            if (artifactsWasmChecksum == testContext.testReceiverTesterWasmChecksum) {
+                isCorrectWasmCopiedToArtifacts = true;
+            }
+        }
+
+        let sourceWasmPath = path.resolve(__dirname, "..", "..", "data", "cw721_receiver_tester.wasm");
+        if (!isCorrectWasmCopiedToArtifacts && fs.existsSync(sourceWasmPath)) {
+            let artifactsWasmChecksum = Buffer.from(sha256(fs.readFileSync(sourceWasmPath))).toString("hex");
+            if (artifactsWasmChecksum == testContext.testReceiverTesterWasmChecksum) {
+                fs.copyFileSync(sourceWasmPath, targetWasmPath);
+            }
+        }
+
+    }
+
+    return [minterCodeId, cw721CodeId, receiverTesterCodeId];
 }
 
 async function fillTestWallets() {
@@ -248,18 +279,22 @@ export default async function setup() {
 
     await fillTestWallets();
 
-    const [minterCodeId, cw721CodeId] = await findCodeIdsFromChecksums();
+    const [minterCodeId, cw721CodeId, receiverCodeId] = await findCodeIdsFromChecksums();
 
     contextSetCodeIds(minterCodeId, cw721CodeId);
     appendTestEnvFile("TEST_MINTER_CODE_ID=" + minterCodeId);
     appendTestEnvFile("TEST_CW721_CODE_ID=" + cw721CodeId);
+    appendTestEnvFile("TEST_RECEIVER_CODE_ID=" + receiverCodeId);
 
     const [instantiateResponse, minterAddress, cw721Address] =
         await instantiateMinter(await createInstantiateMsg());
 
+    const [receiverInstantiateResponse, receiverAddress] = await instantiateReceiver();
+
     contextSetContractAddresses(minterAddress, cw721Address);
     appendTestEnvFile("TEST_MINTER_ADDRESS=" + minterAddress);
     appendTestEnvFile("TEST_CW721_ADDRESS=" + cw721Address);
+    appendTestEnvFile("TEST_RECEIVER_ADDRESS=" + receiverAddress);
 
     await sleep(2000); // Wait for file to be written
 

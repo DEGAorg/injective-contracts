@@ -24,6 +24,7 @@ import {DegaCw721MigrateMsg} from "./messages/dega_cw721_migrate";
 // Paths
 const pathsWorkspace = path.resolve(__dirname, "../../..")
 const pathsWorkspaceArtifacts = path.join(pathsWorkspace, "artifacts")
+const pathsWorkspaceArtifactsOptimized = path.join(pathsWorkspace, "artifacts-optimized")
 const pathsDeploy = path.join(pathsWorkspace, "deploy")
 const pathsDeployArtifacts = path.join(pathsDeploy, "artifacts")
 const pathsDeploySpecs = path.join(pathsDeploy, "specs")
@@ -522,7 +523,7 @@ async function deploy(context: DeployContext) {
         if (context.spec.preExistingCw721Binary != null) {
             wasmPath = path.join(pathsDeploy, context.spec.preExistingCw721Binary);
         } else {
-            wasmPath = path.join(pathsDeployArtifacts, "dega_minter.wasm");
+            wasmPath = path.join(pathsDeployArtifacts, "dega_cw721.wasm");
         }
 
         await storeWasm(context, "dega-cw721", wasmPath)
@@ -567,16 +568,17 @@ async function deploy(context: DeployContext) {
 async function buildAndOptimize(context: DeployContext) {
 
     // Delete any binaries that may have been left over by the CLI
-    if (fs.existsSync(pathsWorkspaceArtifacts)) {
+    if (fs.existsSync(pathsWorkspaceArtifacts) && fs.readdirSync(pathsWorkspaceArtifacts).length !== 0) {
         await run(context, "rm", [`${pathsWorkspaceArtifacts}/*`])
     }
 
     // Run the production optimize tool from cosm-wasm
-    await run(context, "cargo", ["make", "optimize"])
+    await run(context, "cargo", ["make", "build"])
 
     // Delete any binaries that may be left over from the last deployment attempt
     if (fs.existsSync(pathsDeployArtifacts)) {
-        await run(context, "rm", [`${pathsDeployArtifacts}/*.wasm`])
+        await run(context, "rm", [`-f`, `${pathsDeployArtifacts}/*.wasm`])
+
         const checksumsPath = path.join(pathsDeployArtifacts, "checksums.txt")
         if (fs.existsSync(checksumsPath)) {
             fs.rmSync(`${pathsDeployArtifacts}/checksums.txt`)
@@ -584,7 +586,7 @@ async function buildAndOptimize(context: DeployContext) {
     }
 
     // Move the optimized binaries to a distinct artifacts directory for deployments
-    await run(context, "mv", [`${pathsWorkspaceArtifacts}/*`, `${pathsDeployArtifacts}`])
+    await run(context, "cp", [`${pathsWorkspaceArtifactsOptimized}/*`, `${pathsDeployArtifacts}`])
 }
 
 

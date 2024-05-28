@@ -36,8 +36,10 @@ export interface AppContext {
     gasSettings: any;
     minterCodeId: number;
     cw721CodeId: number;
+    receiverCodeId: number | undefined;
     minterAddress: string;
     cw721Address: string;
+    receiverAddress: string | undefined;
 }
 
 // Run before each integration test
@@ -152,20 +154,24 @@ async function initAppContext(): Promise<AppContext> {
 
     let minterCodeId: number;
     let cw721CodeId: number;
+    let receiverCodeId: number | undefined;
     let minterAddress: string;
     let cw721Address: string;
+    let receiverAddress: string | undefined;
 
     if (isJestRunning()) {
 
-        if (config.TEST_MINTER_CODE_ID == undefined || config.TEST_CW721_CODE_ID == undefined ||
-            config.TEST_MINTER_ADDRESS == undefined || config.TEST_CW721_ADDRESS == undefined) {
-            throw new Error("TEST_MINTER_CODE_ID, TEST_CW721_CODE_ID, TEST_MINTER_ADDRESS, and " +
-                "TEST_CW721_ADDRESS must be defined for Jest environment");
+        if (config.TEST_MINTER_CODE_ID == undefined || config.TEST_CW721_CODE_ID == undefined || config.TEST_RECEIVER_CODE_ID == undefined ||
+            config.TEST_MINTER_ADDRESS == undefined || config.TEST_CW721_ADDRESS == undefined || config.TEST_RECEIVER_ADDRESS == undefined) {
+            throw new Error("TEST_MINTER_CODE_ID, TEST_CW721_CODE_ID, TEST_RECEIVER_CODE_ID, TEST_MINTER_ADDRESS, TEST_CW721_ADDRESS, " +
+                "and TEST_RECEIVER_ADDRESS must be defined for Jest environment");
         }
         minterCodeId = parseInt(config.TEST_MINTER_CODE_ID);
         cw721CodeId = parseInt(config.TEST_CW721_CODE_ID);
+        receiverCodeId = parseInt(config.TEST_RECEIVER_CODE_ID);
         minterAddress = config.TEST_MINTER_ADDRESS;
         cw721Address = config.TEST_CW721_ADDRESS;
+        receiverAddress = config.TEST_RECEIVER_ADDRESS;
 
     } else {
         switch (config.NETWORK) {
@@ -177,8 +183,10 @@ async function initAppContext(): Promise<AppContext> {
                 }
                 minterCodeId = parseInt(process.env.MINTER_CODE_ID_LOCAL);
                 cw721CodeId = parseInt(process.env.CW721_CODE_ID_LOCAL);
+                receiverCodeId = process.env.RECEIVER_CODE_ID_LOCAL ? parseInt(process.env.RECEIVER_CODE_ID_LOCAL) : undefined;
                 minterAddress = process.env.MINTER_ADDRESS_LOCAL;
                 cw721Address = process.env.CW721_ADDRESS_LOCAL;
+                receiverAddress = process.env.RECEIVER_ADDRESS_LOCAL;
                 break;
             case "Testnet":
                 if (process.env.MINTER_CODE_ID_TESTNET == undefined || process.env.CW721_CODE_ID_TESTNET == undefined ||
@@ -188,8 +196,10 @@ async function initAppContext(): Promise<AppContext> {
                 }
                 minterCodeId = parseInt(process.env.MINTER_CODE_ID_TESTNET);
                 cw721CodeId = parseInt(process.env.CW721_CODE_ID_TESTNET);
+                receiverCodeId = process.env.RECEIVER_CODE_ID_TESTNET ? parseInt(process.env.RECEIVER_CODE_ID_TESTNET) : undefined;
                 minterAddress = process.env.MINTER_ADDRESS_TESTNET;
                 cw721Address = process.env.CW721_ADDRESS_TESTNET;
+                receiverAddress = process.env.RECEIVER_ADDRESS_TESTNET;
                 break;
             case "Mainnet":
                 if (process.env.MINTER_CODE_ID_MAINNET == undefined || process.env.CW721_CODE_ID_MAINNET == undefined ||
@@ -199,8 +209,10 @@ async function initAppContext(): Promise<AppContext> {
                 }
                 minterCodeId = parseInt(process.env.MINTER_CODE_ID_MAINNET);
                 cw721CodeId = parseInt(process.env.CW721_CODE_ID_MAINNET);
+                receiverCodeId = 0;
                 minterAddress = process.env.MINTER_ADDRESS_MAINNET;
                 cw721Address = process.env.CW721_ADDRESS_MAINNET;
+                receiverAddress = "";
                 break;
         }
     }
@@ -227,8 +239,10 @@ async function initAppContext(): Promise<AppContext> {
         gasSettings: gasSettings,
         minterCodeId: minterCodeId,
         cw721CodeId: cw721CodeId,
+        receiverCodeId: receiverCodeId,
         minterAddress: minterAddress,
         cw721Address: cw721Address,
+        receiverAddress: receiverAddress,
     }
 }
 
