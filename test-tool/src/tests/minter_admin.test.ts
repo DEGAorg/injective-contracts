@@ -8,10 +8,10 @@ import { logObjectFullDepth } from "./setup";
 import { createAddAdminMsg, createRemoveAdminMsg, createUpdateSettingsMsg } from "../helpers/minterAdmin";
 
 const ERROR_MESSAGES = {
-  unAuthorized: `( DEGA Minter Unauthorized Error: ( Only admins can update admins. ) ): execute wasm contract failed`,
+  unAuthorized: `( DEGA Minter Unauthorized Error: ( Only admins can update admins ) ): execute wasm contract failed`,
   settings: `( DEGA Minter Unauthorized Error: ( Only admins can update settings ) ): execute wasm contract failed`,
 }
-describe.skip(`DEGA Minter Admin Tests`, () => {
+describe(`DEGA Minter Admin Tests`, () => {
   let appContext: AppContext;
   let testContext: TestContext;
   beforeAll(async () => {
