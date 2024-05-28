@@ -539,7 +539,7 @@ async function sendToReceiver(args: string[]) {
 
     const context = await getAppContext();
 
-    if (context.receiverAddress == undefined) {
+    if (context.receiverContractAddress == undefined) {
         throw new Error("Receiver address not set in context")
     }
 
@@ -554,7 +554,7 @@ async function sendToReceiver(args: string[]) {
 
     const contractMsg: DegaCw721ExecuteMsg = {
         send_nft: {
-            contract: context.receiverAddress,
+            contract: context.receiverContractAddress,
             token_id: tokenId,
             msg: base64InnerMsg
         }
@@ -584,7 +584,7 @@ async function callReceiveNftOnReceiver(args: string[]) {
 
     const context = await getAppContext();
 
-    if (context.receiverAddress == undefined) {
+    if (context.receiverContractAddress == undefined) {
         throw new Error("Receiver address not set in context")
     }
 
@@ -619,7 +619,7 @@ async function callReceiveNftOnReceiver(args: string[]) {
 
     const execMsg = MsgExecuteContractCompat.fromJSON({
         sender: context.primaryAddress,
-        contractAddress: context.receiverAddress,
+        contractAddress: context.receiverContractAddress,
         msg: executeMsg,
         funds: []
     })

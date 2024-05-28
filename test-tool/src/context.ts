@@ -39,7 +39,7 @@ export interface AppContext {
     receiverCodeId: number | undefined;
     minterAddress: string;
     cw721Address: string;
-    receiverAddress: string | undefined;
+    receiverContractAddress: string | undefined;
 }
 
 // Run before each integration test
@@ -157,7 +157,7 @@ async function initAppContext(): Promise<AppContext> {
     let receiverCodeId: number | undefined;
     let minterAddress: string;
     let cw721Address: string;
-    let receiverAddress: string | undefined;
+    let receiverContractAddress: string | undefined;
 
     if (isJestRunning()) {
 
@@ -171,7 +171,7 @@ async function initAppContext(): Promise<AppContext> {
         receiverCodeId = parseInt(config.TEST_RECEIVER_CODE_ID);
         minterAddress = config.TEST_MINTER_ADDRESS;
         cw721Address = config.TEST_CW721_ADDRESS;
-        receiverAddress = config.TEST_RECEIVER_ADDRESS;
+        receiverContractAddress = config.TEST_RECEIVER_ADDRESS;
 
     } else {
         switch (config.NETWORK) {
@@ -186,7 +186,7 @@ async function initAppContext(): Promise<AppContext> {
                 receiverCodeId = process.env.RECEIVER_CODE_ID_LOCAL ? parseInt(process.env.RECEIVER_CODE_ID_LOCAL) : undefined;
                 minterAddress = process.env.MINTER_ADDRESS_LOCAL;
                 cw721Address = process.env.CW721_ADDRESS_LOCAL;
-                receiverAddress = process.env.RECEIVER_ADDRESS_LOCAL;
+                receiverContractAddress = process.env.RECEIVER_ADDRESS_LOCAL;
                 break;
             case "Testnet":
                 if (process.env.MINTER_CODE_ID_TESTNET == undefined || process.env.CW721_CODE_ID_TESTNET == undefined ||
@@ -199,7 +199,7 @@ async function initAppContext(): Promise<AppContext> {
                 receiverCodeId = process.env.RECEIVER_CODE_ID_TESTNET ? parseInt(process.env.RECEIVER_CODE_ID_TESTNET) : undefined;
                 minterAddress = process.env.MINTER_ADDRESS_TESTNET;
                 cw721Address = process.env.CW721_ADDRESS_TESTNET;
-                receiverAddress = process.env.RECEIVER_ADDRESS_TESTNET;
+                receiverContractAddress = process.env.RECEIVER_ADDRESS_TESTNET;
                 break;
             case "Mainnet":
                 if (process.env.MINTER_CODE_ID_MAINNET == undefined || process.env.CW721_CODE_ID_MAINNET == undefined ||
@@ -212,7 +212,7 @@ async function initAppContext(): Promise<AppContext> {
                 receiverCodeId = 0;
                 minterAddress = process.env.MINTER_ADDRESS_MAINNET;
                 cw721Address = process.env.CW721_ADDRESS_MAINNET;
-                receiverAddress = "";
+                receiverContractAddress = "";
                 break;
         }
     }
@@ -242,7 +242,7 @@ async function initAppContext(): Promise<AppContext> {
         receiverCodeId: receiverCodeId,
         minterAddress: minterAddress,
         cw721Address: cw721Address,
-        receiverAddress: receiverAddress,
+        receiverContractAddress: receiverContractAddress,
     }
 }
 
