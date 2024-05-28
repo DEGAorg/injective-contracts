@@ -3,7 +3,7 @@ import { AppContext, getAppContext } from "../context";
 import { DegaMinterExecuteMsg, DegaMinterQueryMsg } from "../messages";
 import { UpdateAdminCommand } from "../messages/dega_minter_execute";
 import { TestContext, getTestContext } from "./testContext";
-import { compareWasmError } from "../helpers/minter";
+import { compareWasmError, createAdminsQuery, createConfigQuery, createIsAdminQuery, generalQueryGetter } from "../helpers/minter";
 import { logObjectFullDepth } from "./setup";
 import { createAddAdminMsg, createRemoveAdminMsg, createUpdateSettingsMsg } from "../helpers/minterAdmin";
 
@@ -17,6 +17,13 @@ describe(`DEGA Minter Admin Tests`, () => {
   beforeAll(async () => {
     appContext = await getAppContext();
     testContext = await getTestContext();
+  });
+
+  it(`Should successfully read the admin list`, async () => {
+    const query = createAdminsQuery();
+    const response:any = await generalQueryGetter(appContext, query);
+    expect(response).toBeDefined();
+    expect(response.admins.length).toBe(1);
   });
 
   it(`should fail to add an admin if the sender is not an admin`, async () => {
@@ -86,6 +93,12 @@ describe(`DEGA Minter Admin Tests`, () => {
       gas: appContext.gasSettings,
     })
     expect(response.code).toBe(0);
+    const query = createAdminsQuery();
+    const responseObject: any = await generalQueryGetter(appContext, query);
+    expect(responseObject.admins.length).toBe(2);
+    const newAdmin = createIsAdminQuery(newAdminAddress);
+    const newAdminResponse = await generalQueryGetter(appContext, newAdmin);
+    expect(newAdminResponse).toBe(true);
   });
 
   it(`should allow the admin to remove admins`, async () => {
@@ -97,6 +110,12 @@ describe(`DEGA Minter Admin Tests`, () => {
       gas: appContext.gasSettings,
     })
     expect(response.code).toBe(0);
+    const query = createAdminsQuery();
+    const responseObject: any = await generalQueryGetter(appContext, query);
+    expect(responseObject.admins.length).toBe(1);
+    const removedAdmin = createIsAdminQuery(adminToRemove);
+    const removedAdminResponse = await generalQueryGetter(appContext, removedAdmin);
+    expect(removedAdminResponse).toBe(false);
   })
 
   it(`should allow the admin to toggle pause the minting`, async () => {
@@ -108,14 +127,8 @@ describe(`DEGA Minter Admin Tests`, () => {
     })
     expect(response.code).toBe(0);
     // query the settings to know if it was updated
-    const configQuery: DegaMinterQueryMsg = { config: {} };
-    const configQueryResponse = await appContext.queryWasmApi.fetchSmartContractState(
-      appContext.minterAddress,
-      toBase64(configQuery),
-    );
-    const configQueryResponseObject: any = fromBase64(
-      Buffer.from(configQueryResponse.data).toString("base64")
-    );
+    const configQuery = createConfigQuery();
+    const configQueryResponseObject: any = await generalQueryGetter(appContext, configQuery);
     // console.warn(configQueryResponseObject);
     expect(configQueryResponseObject.dega_minter_settings.minting_paused).toBe(true);
     // unpause the minting for other tests

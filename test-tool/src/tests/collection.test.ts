@@ -5,7 +5,9 @@ import { DegaCw721ExecuteMsg, DegaMinterExecuteMsg } from "../messages";
 import { TestContext, getTestContext } from "./testContext";
 import { logObjectFullDepth } from "./setup";
 import { MintRequest } from "../messages/dega_minter_execute";
-import { createApproveAllToken, createApproveToken, createBurnNft, createMintMsg, createRevokeAlltoken, createRevokeToken, createSendNft, createTransferNft, createUpdateCollectionInfo } from "../helpers/collection";
+import { createAllNftInfoQuery, createAllTokensQuery, createApprovalQuery, createApprovalsQuery, createApproveAllToken, createApproveToken, createBurnNft, createCollectionInfoQuery, createContractInfoQuery, createExtensionQuery, createMintMsg, createMinterQuery, createNftInfoQuery, createNumTokensQuery, createOwnerOfQuery, createOwnershipQuery, createRevokeAlltoken, createRevokeToken, createSendNft, createTokensQuery, createTransferNft, createUpdateCollectionInfo, generalCollectionGetter } from "../helpers/collection";
+import { info } from "../query";
+import { Cw2981QueryMsg } from "../messages/dega_cw721_query";
 
 const mintToken = async (appContext: AppContext, recipient: string) => {
   const [mintRequestMsg, signature] = await createBasicTx(appContext, recipient, 0.000001);
@@ -31,6 +33,10 @@ const ERROR_MESSAGES = {
   updateCollectionInfo : `( DEGA Collection Unauthorized Error: ( Only minter admins can update collection info ) ): execute wasm contract failed`
 };
 
+const ERROR_QUERRIES = {
+  notExisting: `type: cw721_base::state::TokenInfo`
+}
+
 jest.setTimeout(30000);
 
 describe('Dega Collection', () => {
@@ -41,6 +47,86 @@ describe('Dega Collection', () => {
     appContext = await getAppContext();
     testContext = await getTestContext();
     negativeTestTokenId = await mintToken(appContext, testContext.testAddressOne);
+  });
+
+  // standard non parameterized tests
+  it(`Should success to read createNumTokensQuery`, async () => {
+    const query = createNumTokensQuery();
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response.count).toBe(1);
+  });
+
+  it(`Should success to read createContractInfoQuery`, async () => {
+    const query = createContractInfoQuery();
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response.symbol).toBe('TEST');
+    expect(response.name).toBe('Test Collection');
+  });
+
+  it(`Should be able to read createNftInfoQuery of a token`, async () => {
+    const query = createNftInfoQuery(negativeTestTokenId);
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response.token_uri).toBe("https://example.com");
+  });
+
+  it(`Should success to read createAllNftInfoQuery`, async () => {
+    const query = createAllNftInfoQuery(false, negativeTestTokenId);
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response).toBeDefined();
+    expect(response.access.owner).toBe(testContext.testAddressOne);
+    expect(response.access.approvals.length).toBe(0);
+    expect(response.info.token_uri).toBe("https://example.com");
+  });
+
+  it(`Should success to read createTokensQuery of the one test address`, async () => {
+    const query = createTokensQuery(testContext.testAddressOne, "", 10)
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response.tokens.length).toBe(1);
+    expect(response.tokens[0]).toBe('1');
+  });
+
+  it(`Should success to read createAllTokensQuery of collection`, async () => {
+    const query = createAllTokensQuery("", 10);
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response.tokens.length).toBe(1);
+  });
+
+  it(`Should success to read createMinterQuery of collection`, async () => {
+    const query = createMinterQuery();
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response.minter).toBe(appContext.minterAddress);
+  });
+
+  it(`Should success to read createCollectionInfoQuery of collection`, async () => {
+    const query =  createCollectionInfoQuery();
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response).toBeDefined();
+    expect(response.description).toBe("A simple test collection description");
+  });
+
+  it.skip(`Should success to read createExtensionQuery of collection`, async () => {
+    const msg: Cw2981QueryMsg = {
+    }
+    const query = createExtensionQuery(msg);
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response).toBeDefined();
+  });
+
+  it(`Should success to read createOwnershipQuery of collection`, async () => {
+    const query = createOwnershipQuery();
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response.owner).toBe(appContext.minterAddress);
+  });
+
+  it(`Should fail to read non existing token`, async () => {
+    const query = createOwnerOfQuery('1000', true);
+    let wasmErrorComparison = false;
+    try{
+      const response = await generalCollectionGetter(appContext, query);
+    } catch (error: any) {
+      wasmErrorComparison = compareWasmError(ERROR_QUERRIES.notExisting, error);
+    }
+    expect(wasmErrorComparison).toBe(true);
   });
 
   it(`Should fail to send non existing tokenId`, async () => {
@@ -93,6 +179,13 @@ describe('Dega Collection', () => {
     expect(wasmErrorComparison).toBe(true);
   });
 
+  it(`Should successfully read the owner of a token`, async () => {
+    const query = createOwnerOfQuery(negativeTestTokenId, true);
+    const response:any = await generalCollectionGetter(appContext, query);
+    expect(response).toBeDefined();
+    expect(response.owner).toBe(testContext.testAddressOne);
+  });
+
   it(`Should successfully transfer token`, async () => {
     // transfer token
     const execMsg = createTransferNft(appContext, testContext.testAddressThree, negativeTestTokenId, testContext.testAddressOne);
@@ -126,6 +219,14 @@ describe('Dega Collection', () => {
       gas: appContext.gasSettings,
     })
     expect(response.code).toBe(0);
+    // check approval
+    const query = createApprovalQuery(tokenId, testContext.testAddressTwo, false);
+    const queryResponse: any = await generalCollectionGetter(appContext, query);
+    expect(queryResponse.approval.spender).toBe(testContext.testAddressTwo);
+    // check multiple approvals
+    const queryMultiple =  createApprovalsQuery(tokenId, false);
+    const queryMultipleResponse: any = await generalCollectionGetter(appContext, queryMultiple);
+    expect(queryMultipleResponse.approvals.length).toBe(1);
   });
 
   it(`Should success to revoke token to another address`, async () => {
@@ -147,6 +248,10 @@ describe('Dega Collection', () => {
       gas: appContext.gasSettings,
     })
     expect(response.code).toBe(0);
+    // check approval is gone
+    const query = createAllNftInfoQuery(false, tokenId);
+    const queryResponse: any = await generalCollectionGetter(appContext, query);
+    expect(queryResponse.access.approvals.length).toBe(0);
   })
 
   it(`Should success to aprove all token to another address`, async () => {
@@ -158,6 +263,7 @@ describe('Dega Collection', () => {
       gas: appContext.gasSettings,
     })
     expect(response.code).toBe(0);
+    // 
   })
 
   it(`Should success to revoke all token to another address`, async () => {

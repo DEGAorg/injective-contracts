@@ -125,3 +125,32 @@ export const sleep = (ms: number) => {
 export const sanitizedMaxNumber = (num: number, max: number): number => {
   return num > max ? max : num;
 };
+
+// Assistive functions for User's query
+export const generalQueryGetter = async (appContext: AppContext, query: DegaMinterQueryMsg): Promise<object | boolean> => {
+  const queryResponse = await appContext.queryWasmApi.fetchSmartContractState(appContext.minterAddress, toBase64(query));
+  return fromBase64(Buffer.from(queryResponse.data).toString("base64"));
+}
+
+// config
+export const createConfigQuery = (): DegaMinterQueryMsg => {
+  return {
+    config: {}
+  };
+}
+
+// admins
+export const createAdminsQuery = (): DegaMinterQueryMsg => {
+  return {
+    admins: {}
+  };
+}
+
+// is_admin
+export const createIsAdminQuery = (address: string): DegaMinterQueryMsg => {
+  return {
+    is_admin: {
+      address: address
+    }
+  };
+}
