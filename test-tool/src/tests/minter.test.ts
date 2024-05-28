@@ -26,6 +26,18 @@ describe('Dega Minter with Fuzz: ', () => {
   const mintRuns = 10;
   const twoMintRuns = 2;
 
+  it(`Auxiliary sanity check works as intended`, async () => {
+    // Keep Max Price
+    const maxPrice = 100;
+    const price = 200;
+    const sanitizedPrice = sanitizedMaxNumber(price, maxPrice);
+    expect(sanitizedPrice).toEqual(maxPrice);
+    // Lower Price
+    const price2 = 0.001;
+    const sanitizedPrice2 = sanitizedMaxNumber(price2, maxPrice);
+    expect(sanitizedPrice2).toEqual(price2);
+  });
+
   it(`should mint an NFT successfully with price from 0.001 to 20 for ${mintRuns} runs`, async () => {
     const maxPrice = 0.005;
     const fuzzFunc = Fuzz.float({ min: 0.001, max: maxPrice });

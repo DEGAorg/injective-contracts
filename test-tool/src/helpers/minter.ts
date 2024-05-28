@@ -48,7 +48,7 @@ export const createMintRequest = (appContext: AppContext, price: string, recipie
   };
 }
 
-const createSignature = (mintRequestMsg: MintRequest, appContext: AppContext, unAuthorized: boolean = false): [Buffer, Buffer] => {
+const createSignature = (mintRequestMsg: MintRequest, appContext: AppContext, unAuthorized: boolean): [Buffer, Buffer] => {
   let rawMessage = Buffer.from(toBase64(mintRequestMsg), "base64")
   let msgMd5Hash = Buffer.from(sha256(rawMessage))
   let signature: Buffer;
