@@ -5,6 +5,13 @@ import { TestContext, getTestContext } from "./testContext";
 import { info } from "../query";
 import { compareWasmError, createBasicTx, createExecuteMintMessage, sanitizedMaxNumber, sleep } from "../helpers/minter";
 import Fuzz from "jest-fuzz";
+import * as dotenv from "dotenv";
+dotenv.config();
+
+// Imports envs
+const MINT_RUNS = process.env.MINT_RUNS || 10;
+const MINT_MAX_PRICE = process.env.MINT_MAX_PRICE || 0.005;
+const TWO_MINT_RUNS = process.env.TWO_MINT_RUNS || 2;
 
 // Invalid Price is the same as signature since the validation of the message will not pass
 const ERROR_MESSAGES = {
@@ -23,8 +30,9 @@ describe('Dega Minter with Fuzz: ', () => {
     testContext = await getTestContext();
   });
 
-  const mintRuns = 10;
-  const twoMintRuns = 2;
+  const mintRuns = Number(MINT_RUNS);
+  const mintMaxPrice = Number(MINT_MAX_PRICE);
+  const twoMintRuns = Number(TWO_MINT_RUNS);
 
   it(`Auxiliary sanity check works as intended`, async () => {
     // Keep Max Price
@@ -38,12 +46,11 @@ describe('Dega Minter with Fuzz: ', () => {
     expect(sanitizedPrice2).toEqual(price2);
   });
 
-  it(`should mint an NFT successfully with price from 0.001 to 20 for ${mintRuns} runs`, async () => {
-    const maxPrice = 0.005;
-    const fuzzFunc = Fuzz.float({ min: 0.001, max: maxPrice });
+  it(`should mint an NFT successfully with price from 0.001 to ${mintMaxPrice} for ${mintRuns} runs`, async () => {
+    const fuzzFunc = Fuzz.float({ min: 0.001, max: mintMaxPrice });
     for (let i = 0; i < mintRuns; i++) {
       const fuzzedPrice = fuzzFunc();
-      const sanitizedPrice = sanitizedMaxNumber(fuzzedPrice, maxPrice);
+      const sanitizedPrice = sanitizedMaxNumber(fuzzedPrice, mintMaxPrice);
       // console.warn(`=====Fuzzed Price: ${fuzzedPrice}`);
       // Basic tx
       const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext.testAddressOne, sanitizedPrice);
@@ -51,22 +58,29 @@ describe('Dega Minter with Fuzz: ', () => {
       // Execute Mint
       const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
 
-      const response = await appContext.primaryBroadcaster.broadcast({
-        msgs: execMsg,
-        gas: appContext.gasSettings,
-      });
+      try{
 
-      // await for blockchain
-      // add a sleep function? play with the amount of time
-      await sleep(500);
-
-      expect(response.code).toEqual(0);
+        const response = await appContext.primaryBroadcaster.broadcast({
+          msgs: execMsg,
+          gas: appContext.gasSettings,
+        });
+        // await for blockchain
+        // add a sleep function? play with the amount of time
+        await sleep(500);
+  
+        expect(response.code).toEqual(0);
+      } catch (error: any) {
+        console.log(`Mint req price: ${mintRequestMsg.price}`);
+        console.log(`Sanitized Price: ${sanitizedPrice}`);
+        console.log(`ExecMsg price: ${(execMsg as any).funds}`);
+        throw error;
+      }
     }
-  }, 100000);
+  }, 600000);
 
   // create a test to mint multiple NFTs with twoBroadcaster
   it(`should mint multiple NFTs with two broadcasters for ${twoMintRuns} runs`, async () => {
-    const maxPrice = 0.005;
+    const maxPrice = 0.5;
     const fuzzFunc = Fuzz.float({ min: 0.001, max: maxPrice });
     for (let i = 0; i < twoMintRuns; i++) {
       const fuzzedPrice = fuzzFunc();
