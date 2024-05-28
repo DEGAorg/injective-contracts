@@ -257,19 +257,21 @@ export async function getAppContext(): Promise<AppContext> {
     return context;
 }
 
-export function contextSetCodeIds(minterCodeId: number, cw721CodeId: number) {
+export function contextSetCodeIds(minterCodeId: number, cw721CodeId: number, receiverCodeId: number) {
     if (context) {
         context.minterCodeId = minterCodeId;
         context.cw721CodeId = cw721CodeId;
+        context.receiverCodeId = receiverCodeId;
     } else {
         throw new Error("Cannot set code ids without initializing context first");
     }
 }
 
-export function contextSetContractAddresses(minterAddress: string, cw721Address: string) {
+export function contextSetContractAddresses(minterAddress: string, cw721Address: string, receiverContractAddress: string) {
     if (context) {
         context.minterAddress = minterAddress;
         context.cw721Address = cw721Address;
+        context.receiverContractAddress = receiverContractAddress;
     } else {
         throw new Error("Cannot set contract addresses without initializing context first");
     }

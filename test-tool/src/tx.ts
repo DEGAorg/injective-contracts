@@ -789,7 +789,7 @@ async function instantiate(args: string[]) {
     if (args.length == 0 || (args.length == 1 && args[0] == "minter")) {
         await instantiateMinterCmd()
     } else if (args.length == 1 && args[0] == "receiver") {
-        await instantiateReceiver()
+        await instantiateReceiver(true)
     } else {
         console.log("Unknown instantiate args. Usage: instantiate [receiver]");
 
@@ -914,11 +914,11 @@ export async function instantiateMinter(instantiateMessage: MsgInstantiateContra
 }
 
 
-export async function instantiateReceiver(): Promise<[any,string]> {
+export async function instantiateReceiver(shouldLogResponse: boolean): Promise<[any,string]> {
 
     const context = await getAppContext();
 
-    if (context.receiverCodeId == undefined) {
+    if (!context.receiverCodeId) {
         throw new Error("Cannot instantiate receiver, code id not available in context (try setting in the config for this environment)")
     }
 
@@ -931,7 +931,10 @@ export async function instantiateReceiver(): Promise<[any,string]> {
     });
 
     console.log("Instantiating code for CW721 Receiver Tester");
-    console.log();
+    console.log("");
+
+    console.log("Receiver Code ID: " + context.receiverCodeId);
+    console.log("");
 
     const response = await context.primaryBroadcaster.broadcast({
         msgs: instantiateContractMsg,
@@ -944,7 +947,9 @@ export async function instantiateReceiver(): Promise<[any,string]> {
         throw new Error("Receiver code id not found in response")
     }
 
-    logResponse(response);
+    if (shouldLogResponse) {
+        logResponse(response);
+    }
 
     console.log("Contract address: " + address);
 

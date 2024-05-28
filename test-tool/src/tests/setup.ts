@@ -281,7 +281,15 @@ export default async function setup() {
 
     const [minterCodeId, cw721CodeId, receiverCodeId] = await findCodeIdsFromChecksums();
 
-    contextSetCodeIds(minterCodeId, cw721CodeId);
+    if (receiverCodeId == undefined) {
+        throw new Error("Receiver code id not found")
+    }
+
+    console.log("Minter code-id detected: " + minterCodeId);
+    console.log("Collection code-id detected: " + cw721CodeId);
+    console.log("Receiver code-id detected: " + receiverCodeId);
+
+    contextSetCodeIds(minterCodeId, cw721CodeId, receiverCodeId);
     appendTestEnvFile("TEST_MINTER_CODE_ID=" + minterCodeId);
     appendTestEnvFile("TEST_CW721_CODE_ID=" + cw721CodeId);
     appendTestEnvFile("TEST_RECEIVER_CODE_ID=" + receiverCodeId);
@@ -289,9 +297,9 @@ export default async function setup() {
     const [instantiateResponse, minterAddress, cw721Address] =
         await instantiateMinter(await createInstantiateMsg());
 
-    const [receiverInstantiateResponse, receiverAddress] = await instantiateReceiver();
+    const [receiverInstantiateResponse, receiverAddress] = await instantiateReceiver(false);
 
-    contextSetContractAddresses(minterAddress, cw721Address);
+    contextSetContractAddresses(minterAddress, cw721Address, receiverAddress);
     appendTestEnvFile("TEST_MINTER_ADDRESS=" + minterAddress);
     appendTestEnvFile("TEST_CW721_ADDRESS=" + cw721Address);
     appendTestEnvFile("TEST_RECEIVER_ADDRESS=" + receiverAddress);
@@ -300,6 +308,7 @@ export default async function setup() {
 
     console.log("Minter contract instantiated at: " + minterAddress);
     console.log("Collection contract instantiated at: " + cw721Address);
+    console.log("Receiver contract instantiated at: " + receiverAddress);
 
     console.log("Setup complete");
 };

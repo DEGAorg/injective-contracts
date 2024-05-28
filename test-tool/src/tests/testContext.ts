@@ -140,7 +140,7 @@ async function initTestContext(): Promise<TestContext> {
 
     const receiverTesterChecksumTxtPath = path.resolve(__dirname, "..", "..", "data", "cw721-receiver-tester-checksum.txt")
     if (fs.existsSync(receiverTesterChecksumTxtPath)) {
-        const checksumsTxtContents = fs.readFileSync(checksumsTxtPath, "utf-8");
+        const checksumsTxtContents = fs.readFileSync(receiverTesterChecksumTxtPath, "utf-8");
         const checksumsTxtLines = checksumsTxtContents.split("\n");
 
         if (checksumsTxtLines.length == 0) {
