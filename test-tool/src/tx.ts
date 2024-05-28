@@ -933,8 +933,10 @@ export async function instantiateReceiver(shouldLogResponse: boolean): Promise<[
     console.log("Instantiating code for CW721 Receiver Tester");
     console.log("");
 
-    console.log("Receiver Code ID: " + context.receiverCodeId);
-    console.log("");
+    if (shouldLogResponse) {
+        console.log("Using Receiver Code ID: " + context.receiverCodeId);
+        console.log("");
+    }
 
     const response = await context.primaryBroadcaster.broadcast({
         msgs: instantiateContractMsg,
@@ -949,9 +951,8 @@ export async function instantiateReceiver(shouldLogResponse: boolean): Promise<[
 
     if (shouldLogResponse) {
         logResponse(response);
+        console.log("Contract address: " + address);
     }
-
-    console.log("Contract address: " + address);
 
     return [response, address];
 }
