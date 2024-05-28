@@ -3,6 +3,7 @@ import { AppContext } from "../context";
 import { DegaCw721ExecuteMsg, DegaCw721QueryMsg } from "../messages";
 import { getNFTWeiPrice } from "./minter";
 import { Cw2981QueryMsg } from "../messages/dega_cw721_query";
+import { RoyaltySettingsResponse } from "../messages/dega_cw721_execute";
 
 // Assistive functions for all write methods of Collection
 export const createTransferNft = (appContext: AppContext, recipient: string, tokenId: string, sender: string): MsgExecuteContractCompat => {
@@ -131,13 +132,14 @@ export const createSendNft = (appContext: AppContext, recipient: string, tokenId
   return execMsg
 }
 
-export const createUpdateCollectionInfo = (appContext: AppContext, sender: string): MsgExecuteContractCompat => {
+export const createUpdateCollectionInfo = (appContext: AppContext, sender: string, royaltiesConfig?: RoyaltySettingsResponse): MsgExecuteContractCompat => {
   const contractMsg: DegaCw721ExecuteMsg = {
     update_collection_info: {
       collection_info: {
         description: "New description",
         external_link: "https://www.dega.org/v1",
         image: "https://www.dega.org/v1/image.png",
+        royalty_settings: royaltiesConfig
       }
     }
   }
@@ -274,7 +276,16 @@ export const createCollectionInfoQuery = (): DegaCw721QueryMsg => {
   }
 }
 // extension
-export const createExtensionQuery = (message: Cw2981QueryMsg): DegaCw721QueryMsg => {
+export const createExtensionQuery = (tokenId?: string): DegaCw721QueryMsg => {
+  const message = tokenId ? {
+    royalty_info: {
+      token_id: tokenId,
+      sale_price: '1000000000000000000'
+    }
+  } : {
+    check_royalties: {
+    }
+  }
   return {
     extension: {
       msg: message

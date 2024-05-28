@@ -11,6 +11,7 @@ import { bech32 } from 'bech32'
 import {MintRequest, SignerSourceTypeEnum} from "./messages/dega_minter_query";
 import {getNetworkEndpoints, Network} from "@injectivelabs/networks";
 import { execSync } from 'child_process';
+import { Cw2981QueryMsg } from "./messages/dega_cw721_query";
 
 
 
@@ -39,6 +40,9 @@ export async function query(args: string[]) {
             break;
         case "signing-details":
             await signingDetails(args);
+            break;
+        case "check-royalties":
+            await queryRoyaltiesInfo(args);
             break;
         default:
             console.log("Unknown test query sub-command: " + sub_command);
@@ -320,4 +324,47 @@ async function signingDetails(args: string[]) {
     const accountQuery = execSync(execArgs.join(" "), {encoding: 'utf-8'});
 
     console.log(accountQuery);
+}
+
+// query royalty info
+const queryRoyaltiesInfo = async (args: string[]) => {
+    const context = await getAppContext();
+
+    const cw2981Message: Cw2981QueryMsg = {
+        check_royalties: {
+        }
+    }
+
+    const query:DegaCw721QueryMsg = {
+        extension: {
+            msg: cw2981Message
+        }
+    }
+
+    const queryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.cw721Address,
+        toBase64(query)
+    );
+
+    const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
+    console.log(response);
+
+    const cw2981Royalty: Cw2981QueryMsg = {
+        royalty_info:{
+            token_id: "1",
+            sale_price: "1000000000000000000",
+        }
+    }
+
+    if(query.extension === undefined) {
+        return;
+    }
+    query.extension.msg = cw2981Royalty
+    const responseRoyalty = await context.queryWasmApi.fetchSmartContractState(
+        context.cw721Address,
+        toBase64(query)
+    );
+    const responseRoyaltyObject = fromBase64(Buffer.from(responseRoyalty.data).toString("base64"));
+    console.log(responseRoyaltyObject);
+    return
 }

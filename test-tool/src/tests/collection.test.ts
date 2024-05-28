@@ -104,12 +104,15 @@ describe('Dega Collection', () => {
     expect(response.description).toBe("A simple test collection description");
   });
 
-  it.skip(`Should success to read createExtensionQuery of collection`, async () => {
-    const msg: Cw2981QueryMsg = {
-    }
-    const query = createExtensionQuery(msg);
+  it(`Should success to read createExtensionQuery of collection`, async () => {
+    // check if royalties apply
+    const query = createExtensionQuery();
     const response:any = await generalCollectionGetter(appContext, query);
-    expect(response).toBeDefined();
+    expect(response.royalty_payments).toBe(false); // royalty_payments
+    // check royalty of negativeTestTokenId
+    const queryRoyalty = createExtensionQuery(negativeTestTokenId);
+    const responseRoyalty:any = await generalCollectionGetter(appContext, queryRoyalty);
+    expect(responseRoyalty).toBeDefined(); // {address: , royalty_amount}
   });
 
   it(`Should success to read createOwnershipQuery of collection`, async () => {
@@ -338,6 +341,10 @@ describe('Dega Collection', () => {
     expect(wasmErrorComparison).toBe(true);
   });
 
+  // sendNFT to dummy contract success sendToReceiver
+
+  // sendNFT to dummy contract fail
+
   it(`Should fail to update collection info`, async () => {
     const execMsg = createUpdateCollectionInfo(appContext, testContext.testAddressOne);
     let wasmErrorComparison = false;
@@ -359,6 +366,26 @@ describe('Dega Collection', () => {
       gas: appContext.gasSettings,
     });
     expect(response.code).toBe(0);
+    // update with royalties
+    const execMsgRoyalties = createUpdateCollectionInfo(appContext, appContext.primaryAddress, {
+      share: "0.05",
+      payment_address: testContext.testAddressOne
+    });
+    const responseRoyalties = await appContext.primaryBroadcaster.broadcast({
+      msgs: execMsgRoyalties,
+      gas: appContext.gasSettings,
+    });
+    expect(responseRoyalties.code).toBe(0);
+    // query general royalties
+    const query = createExtensionQuery();
+    const responseQuery:any = await generalCollectionGetter(appContext, query);
+    expect(responseQuery.royalty_payments).toBe(true);
+    // query specific royalties
+    const queryRoyalty = createExtensionQuery(negativeTestTokenId);
+    const responseRoyalty:any = await generalCollectionGetter(appContext, queryRoyalty);
+    expect(responseRoyalty).toBeDefined();
+    expect(responseRoyalty.address).toBe(testContext.testAddressOne);
+    expect(responseRoyalty.royalty_amount).toBe("50000000000000000");
   });
 
 });
