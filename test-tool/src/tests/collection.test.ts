@@ -5,7 +5,7 @@ import { DegaCw721ExecuteMsg, DegaMinterExecuteMsg } from "../messages";
 import { TestContext, getTestContext } from "./testContext";
 import { logObjectFullDepth } from "./setup";
 import { MintRequest } from "../messages/dega_minter_execute";
-import { createApproveAllToken, createApproveToken, createBurnNft, createRevokeAlltoken, createRevokeToken, createTransferNft } from "../helpers/collection";
+import { createApproveAllToken, createApproveToken, createBurnNft, createMintMsg, createRevokeAlltoken, createRevokeToken, createSendNft, createTransferNft, createUpdateCollectionInfo } from "../helpers/collection";
 
 const mintToken = async (appContext: AppContext, recipient: string) => {
   const [mintRequestMsg, signature] = await createBasicTx(appContext, recipient, 0.000001);
@@ -23,13 +23,17 @@ const mintToken = async (appContext: AppContext, recipient: string) => {
 }
 
 const ERROR_MESSAGES = {
-  notExisting: `( DEGA Collection CW721 Error: ( Unable to execute CW721. ) | Caused by CW721`,
-  notOwner: `( DEGA Collection CW721 Error: ( Unable to execute CW721. ) | Caused by CW721 Error: ( Caller is not the contract's current owner ) ): execute wasm contract failed`
+  notExisting: `( DEGA Collection CW721 Error: ( Unable to execute CW721 TransferNft ) | Caused by CW721`,
+  transfer: `( DEGA Collection CW721 Error: ( Unable to execute CW721 TransferNft: User does not have permission for this token ) | Caused by CW721 Error: ( Caller is not the contract's current owner ) ): execute wasm contract failed`,
+  burn: `( DEGA Collection CW721 Error: ( Unable to execute CW721 Burn: User does not have permission for this token ) | Caused by CW721 Error: ( Caller is not the contract's current owner ) ): execute wasm contract failed`,
+  onlyMinter: `( DEGA Collection Unauthorized Error: ( Generic error: Action only available to minter ) ): execute wasm contract failed`,
+  sendToNonContract: `dispatch: submessages: contract: not found`,
+  updateCollectionInfo : `( DEGA Collection Unauthorized Error: ( Only minter admins can update collection info ) ): execute wasm contract failed`
 };
 
 jest.setTimeout(30000);
 
-describe.skip('Dega Collection', () => {
+describe('Dega Collection', () => {
   let appContext: AppContext;
   let testContext: TestContext;
   let negativeTestTokenId: string;
@@ -67,7 +71,7 @@ describe.skip('Dega Collection', () => {
         gas: appContext.gasSettings,
       })
     } catch (error: any) {
-      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.notOwner, error);
+      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.transfer, error);
     }
     expect(wasmErrorComparison).toBe(true);
   });
@@ -84,7 +88,7 @@ describe.skip('Dega Collection', () => {
         gas: appContext.gasSettings,
       })
     } catch (error: any) {
-      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.notOwner, error);
+      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.burn, error);
     }
     expect(wasmErrorComparison).toBe(true);
   });
@@ -196,5 +200,59 @@ describe.skip('Dega Collection', () => {
     })
     expect(transferResponse.code).toBe(0);
   })
+
+  it(`Should fail to mint directly to the collection instead of the Minter`, async () => {
+    // mint token
+    const mintExecMsg = createMintMsg(appContext, testContext.testAddressOne, testContext.testAddressTwo);
+    let wasmErrorComparison = false;
+    try {
+      const mintResponse = await testContext.twoBroadcaster.broadcast({
+        msgs: mintExecMsg,
+        gas: appContext.gasSettings,
+      });
+    } catch (error: any) {
+      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.onlyMinter, error);
+    }
+    expect(wasmErrorComparison).toBe(true);
+  });
+
+  it(`Should fail to send_nft to a non contract address`, async () => {
+    const tokenId = await mintToken(appContext, testContext.testAddressOne);
+    // create send nft
+    const execMsg = createSendNft(appContext, testContext.testAddressTwo, tokenId, testContext.testAddressOne);
+    let wasmErrorComparison = false;
+    try {
+      const response = await testContext.oneBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: appContext.gasSettings,
+      });
+    } catch (error: any) {
+      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.sendToNonContract, error);
+    }
+    expect(wasmErrorComparison).toBe(true);
+  });
+
+  it(`Should fail to update collection info`, async () => {
+    const execMsg = createUpdateCollectionInfo(appContext, testContext.testAddressOne);
+    let wasmErrorComparison = false;
+    try{
+      const response = await testContext.oneBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: appContext.gasSettings,
+      })
+    } catch (error: any) {
+      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.updateCollectionInfo, error);
+    }
+    expect(wasmErrorComparison).toBe(true);
+  });
+
+  it(`Should success to update collection info`, async () => {
+    const execMsg = createUpdateCollectionInfo(appContext, appContext.primaryAddress);
+    const response = await appContext.primaryBroadcaster.broadcast({
+      msgs: execMsg,
+      gas: appContext.gasSettings,
+    });
+    expect(response.code).toBe(0);
+  });
 
 });

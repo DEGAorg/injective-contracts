@@ -15,7 +15,7 @@ const ERROR_MESSAGES = {
 
 jest.setTimeout(30000);
 
-describe.skip('Dega Minter with Fuzz: ', () => {
+describe('Dega Minter with Fuzz: ', () => {
   let appContext: AppContext;
   let testContext: TestContext;
   beforeAll(async () => {
