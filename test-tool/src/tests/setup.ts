@@ -150,6 +150,10 @@ export async function findCodeIdsFromChecksums(): Promise<[number, number, numbe
 
     }
 
+    if (cw721CodeId == undefined) {
+        cw721CodeId = await store_wasm("cw721_receiver_tester.wasm")
+    }
+
     return [minterCodeId, cw721CodeId, receiverTesterCodeId];
 }
 
