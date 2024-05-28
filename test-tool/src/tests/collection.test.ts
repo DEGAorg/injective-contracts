@@ -33,6 +33,10 @@ const ERROR_MESSAGES = {
   updateCollectionInfo : `( DEGA Collection Unauthorized Error: ( Only minter admins can update collection info ) ): execute wasm contract failed`
 };
 
+const getSendToNonContractErrorTwo = (address: string) => {
+  return `dispatch: submessages: address ${address}: no such contract`
+}
+
 const ERROR_QUERRIES = {
   notExisting: `type: cw721_base::state::TokenInfo`
 }
@@ -333,7 +337,9 @@ describe('Dega Collection', () => {
         gas: appContext.gasSettings,
       });
     } catch (error: any) {
-      wasmErrorComparison = compareWasmError(ERROR_MESSAGES.sendToNonContract, error);
+      wasmErrorComparison =
+          compareWasmError(ERROR_MESSAGES.sendToNonContract, error) ||
+          compareWasmError(getSendToNonContractErrorTwo(testContext.testAddressTwo), error);
     }
     expect(wasmErrorComparison).toBe(true);
   });
