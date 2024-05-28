@@ -44,6 +44,9 @@ export async function query(args: string[]) {
         case "check-royalties":
             await queryRoyaltiesInfo(args);
             break;
+        case "all-operators":
+            await queryAllOperators(args);
+            break;
         default:
             console.log("Unknown test query sub-command: " + sub_command);
             break;
@@ -366,5 +369,28 @@ const queryRoyaltiesInfo = async (args: string[]) => {
     );
     const responseRoyaltyObject = fromBase64(Buffer.from(responseRoyalty.data).toString("base64"));
     console.log(responseRoyaltyObject);
+    return
+}
+
+// query all operators
+const queryAllOperators = async (args: string[]) => {
+    const context = await getAppContext();
+
+    const cw721Query: DegaCw721QueryMsg = {
+        all_operators: {
+            owner: context.primaryAddress,
+            include_expired: false,
+            limit: 10,
+            start_after: ""
+        }
+    }
+
+    const queryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.cw721Address,
+        toBase64(cw721Query)
+    );
+
+    const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
+    console.log(response);
     return
 }

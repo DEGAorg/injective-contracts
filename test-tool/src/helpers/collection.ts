@@ -2,8 +2,8 @@ import { MsgExecuteContractCompat, fromBase64, toBase64 } from "@injectivelabs/s
 import { AppContext } from "../context";
 import { DegaCw721ExecuteMsg, DegaCw721QueryMsg } from "../messages";
 import { getNFTWeiPrice } from "./minter";
-import { Cw2981QueryMsg } from "../messages/dega_cw721_query";
 import { RoyaltySettingsResponse } from "../messages/dega_cw721_execute";
+import { Convert, Cw721ReceiverTesterInnerMsg } from "../messages/cw721_receiver_tester_inner_msg";
 
 // Assistive functions for all write methods of Collection
 export const createTransferNft = (appContext: AppContext, recipient: string, tokenId: string, sender: string): MsgExecuteContractCompat => {
@@ -99,27 +99,17 @@ export const createRevokeAlltoken = (appContext: AppContext, spender: string, se
   return execMsg
 }
 
-export const createSendNft = (appContext: AppContext, recipient: string, tokenId: string, sender: string): MsgExecuteContractCompat => {
-  const price = getNFTWeiPrice(0.5)
-  const sellTokenMsg = {
-    sell_token: {
-      token_id: tokenId,
-      contract_address: appContext.cw721Address,
-      class_id: "injective",
-      price: {
-        native: [
-          {
-            amount: price,
-            denom: "inj"
-          }
-        ]
-      }
-    }
-  };
+export const createSendNft = (appContext: AppContext, recipient: string, tokenId: string, sender: string, success: boolean = true): MsgExecuteContractCompat => {
+  let innerMsg: Cw721ReceiverTesterInnerMsg =
+    success ?
+      Cw721ReceiverTesterInnerMsg.Succeed :
+      Cw721ReceiverTesterInnerMsg.Fail;
+  let jsonInnerMsg = Convert.cw721ReceiverTesterInnerMsgToJson(innerMsg);
+  let base64InnerMsg = Buffer.from(jsonInnerMsg).toString("base64");
   const contractMsg: DegaCw721ExecuteMsg = {
     send_nft: {
       contract: recipient,
-      msg: toBase64(sellTokenMsg),
+      msg: base64InnerMsg,
       token_id: tokenId,
     }
   }
@@ -204,7 +194,7 @@ export const createApprovalsQuery = (tokenId: string, includeExpired: boolean): 
   }
 }
 // all_operators
-export const createAllOperatorsQuery = (owner: string, includeExpired: boolean, limit: number, startAfter: string): DegaCw721QueryMsg => {
+export const createAllOperatorsQuery = (owner: string, includeExpired: boolean, limit: number, startAfter?: string): DegaCw721QueryMsg => {
   return {
     all_operators: {
       owner: owner,
