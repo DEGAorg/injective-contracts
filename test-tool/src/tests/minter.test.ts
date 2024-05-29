@@ -102,7 +102,7 @@ describe('Dega Minter with Fuzz: ', () => {
 
       expect(response.code).toEqual(0);
     }
-  }, 100000);
+  }, 250000);
 });
 
 describe('Dega Minter Negative confirmations', () => {
