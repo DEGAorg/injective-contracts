@@ -1190,7 +1190,7 @@ async function transferInj(args: string[]) {
     logResponse(response);
 }
 
-function getExpirationEpochSeconds(amount: string, units: string) {
+function getExpirationEpochInNanos(amount: string, units: string) {
     let expirationSpanInSeconds: number = 0;
 
     switch (units) {
@@ -1210,9 +1210,12 @@ function getExpirationEpochSeconds(amount: string, units: string) {
             throw new Error("Invalid time unit. Must be either day(s), hour(s), or minute(s)");
     }
 
-    let epochSeconds = Math.round(Date.now() * 1000);
+    let epochInMs = new BigNumberInBase(Math.round(Date.now()));
+    let epochInNanos = epochInMs.times(1_000_000);
+    let expirationInNanos =
+        new BigNumberInBase(Math.round(expirationSpanInSeconds)).times(1_000_000_000);
 
-    return epochSeconds + Math.round(expirationSpanInSeconds);
+    return epochInNanos.plus(expirationInNanos);
 }
 
 async function spender(args: string[]) {
@@ -1256,10 +1259,16 @@ async function spender(args: string[]) {
 
         if (args.length == 5) {
 
-            const expirationNum = args[2];
-            const timeUnit = args[3];
+            const expirationNum = args[3];
+            const timeUnit = args[4];
 
-            expiration.at_time = getExpirationEpochSeconds(expirationNum, timeUnit).toString();
+            let epochInMs = new BigNumberInBase(Math.round(Date.now()));
+            let epochInNanos = epochInMs.times(1_000_000);
+            console.log("Current epoch time in Nanos: " + epochInNanos.toString());
+
+            expiration.at_time = getExpirationEpochInNanos(expirationNum, timeUnit).toString();
+
+            console.log("Setting Expiration: " + expiration.at_time)
 
         } else {
             expiration.never = {};
@@ -1334,7 +1343,13 @@ async function operator(args: string[]) {
             const expirationNum = args[2];
             const timeUnit = args[3];
 
-            expiration.at_time = getExpirationEpochSeconds(expirationNum, timeUnit).toString();
+            let epochInMs = new BigNumberInBase(Math.round(Date.now()));
+            let epochInNanos = epochInMs.times(1_000_000);
+            console.log("Current epoch time in Nanos: " + epochInNanos.toString());
+
+            expiration.at_time = getExpirationEpochInNanos(expirationNum, timeUnit).toString();
+
+            console.log("Setting Expiration: " + expiration.at_time)
 
         } else {
             expiration.never = {};

@@ -14,6 +14,7 @@ import { execSync } from 'child_process';
 import { Cw2981QueryMsg } from "./messages/dega_cw721_query";
 import {createAdminsQuery, generalQueryGetter} from "./helpers/minter";
 import {createTokensQuery, generalCollectionGetter} from "./helpers/collection";
+import {logObjectFullDepth} from "./tests/setup";
 
 
 export async function query(args: string[]) {
@@ -366,7 +367,7 @@ async function signingDetails(args: string[]) {
 
     const accountQuery = execSync(execArgs.join(" "), {encoding: 'utf-8'});
 
-    console.log(accountQuery);
+    logObjectFullDepth(accountQuery);
 }
 
 // query royalty info
@@ -390,7 +391,7 @@ const queryRoyaltiesInfo = async (args: string[]) => {
     );
 
     const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
-    console.log(response);
+    logObjectFullDepth(response);
 
     const cw2981Royalty: Cw2981QueryMsg = {
         royalty_info:{
@@ -408,30 +409,7 @@ const queryRoyaltiesInfo = async (args: string[]) => {
         toBase64(query)
     );
     const responseRoyaltyObject = fromBase64(Buffer.from(responseRoyalty.data).toString("base64"));
-    console.log(responseRoyaltyObject);
-    return
-}
-
-// query all operators
-const queryAllOperators = async (args: string[]) => {
-    const context = await getAppContext();
-
-    const cw721Query: DegaCw721QueryMsg = {
-        all_operators: {
-            owner: context.primaryAddress,
-            include_expired: false,
-            limit: 10,
-            start_after: ""
-        }
-    }
-
-    const queryResponse = await context.queryWasmApi.fetchSmartContractState(
-        context.cw721Address,
-        toBase64(cw721Query)
-    );
-
-    const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
-    console.log(response);
+    logObjectFullDepth(responseRoyaltyObject);
     return
 }
 
@@ -450,7 +428,7 @@ const queryCollectionInfo = async (args: string[]) => {
     );
 
     const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
-    console.log(response);
+    logObjectFullDepth(response);
     return
 }
 
@@ -469,13 +447,13 @@ const queryMinterSettings = async (args: string[]) => {
     );
 
     const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
-    console.log(response);
+    logObjectFullDepth(response);
     return
 }
 
 async function queryAdmins(args: string[]) {
     const response = await generalQueryGetter(await getAppContext(), createAdminsQuery());
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 async function queryTokens(args: string[]) {
@@ -507,7 +485,7 @@ async function queryTokens(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), tokenQuery);
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 async function queryAllTokens(args: string[]) {
@@ -537,7 +515,7 @@ async function queryAllTokens(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), tokenQuery);
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 
@@ -573,7 +551,7 @@ async function queryOwnerOf(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), query);
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 async function queryApproval(args: string[]) {
@@ -609,7 +587,7 @@ async function queryApproval(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), query);
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 async function queryAllApprovals(args: string[]) {
@@ -643,7 +621,57 @@ async function queryAllApprovals(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), query);
-    console.log(response);
+    logObjectFullDepth(response);
+}
+
+// query all operators
+const queryAllOperators = async (args: string[]) => {
+
+    const usage = "Usage: query all-operators <address> [<include-expired> [<start-after> [<limit>]]]";
+
+    if (args.length < 1 || args.length > 4) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const owner = args[0];
+    let includeExpiredString;
+    let includeExpired;
+    let startAfter;
+    let limit;
+
+    if (args.length > 1) {
+        includeExpiredString = args[1];
+
+        if (includeExpiredString != "true" && includeExpiredString != "false") {
+            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
+            return;
+        }
+
+        includeExpired = includeExpiredString == "true";
+
+        if (args.length > 2) {
+
+            startAfter = args[2];
+
+            if (args.length == 4) {
+
+                limit = parseInt(args[3]);
+            }
+        }
+    }
+
+    const tokenQuery: DegaCw721QueryMsg = {
+        all_operators: {
+            owner: owner,
+            include_expired: includeExpired,
+            start_after: startAfter,
+            limit: limit,
+        }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), tokenQuery);
+    logObjectFullDepth(response);
 }
 
 async function queryNumTokens(args: string[]) {
@@ -660,7 +688,7 @@ async function queryNumTokens(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), query);
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 async function queryNftInfo(args: string[]) {
@@ -680,7 +708,7 @@ async function queryNftInfo(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), query);
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 async function queryAllNftInfo(args: string[]) {
@@ -714,7 +742,7 @@ async function queryAllNftInfo(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), query);
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 async function queryCollectionContractInfo(args: string[]) {
@@ -730,7 +758,7 @@ async function queryCollectionContractInfo(args: string[]) {
     };
 
     const response = await generalCollectionGetter(await getAppContext(), query);
-    console.log(response);
+    logObjectFullDepth(response);
 }
 
 const printBase64Object = (args: string[]) => {
@@ -742,5 +770,5 @@ const printBase64Object = (args: string[]) => {
 
     const base64ObjectString = args[0];
     const object = fromBase64(base64ObjectString);
-    console.log(object);
+    logObjectFullDepth(object);
 }
