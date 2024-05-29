@@ -12,7 +12,7 @@ import {MintRequest, SignerSourceTypeEnum} from "./messages/dega_minter_query";
 import {getNetworkEndpoints, Network} from "@injectivelabs/networks";
 import { execSync } from 'child_process';
 import { Cw2981QueryMsg } from "./messages/dega_cw721_query";
-
+import {createAdminsQuery, generalQueryGetter} from "./helpers/minter";
 
 
 export async function query(args: string[]) {
@@ -52,6 +52,12 @@ export async function query(args: string[]) {
             break;
         case "minter-settings":
             await queryMinterSettings(args);
+            break;
+        case "admins":
+            await queryAdmins(args);
+            break;
+        case "print-base64-object":
+            printBase64Object(args);
             break;
         default:
             console.log("Unknown test query sub-command: " + sub_command);
@@ -437,4 +443,21 @@ const queryMinterSettings = async (args: string[]) => {
     const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
     console.log(response);
     return
+}
+
+async function queryAdmins(args: string[]) {
+    const response = await generalQueryGetter(await getAppContext(), createAdminsQuery());
+    console.log(response);
+}
+
+const printBase64Object = (args: string[]) => {
+
+    if (args.length < 1) {
+        console.log("Usage: query print-base64-object <base64-string>");
+        return;
+    }
+
+    const base64ObjectString = args[0];
+    const object = fromBase64(base64ObjectString);
+    console.log(object);
 }
