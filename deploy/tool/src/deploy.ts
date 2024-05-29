@@ -65,6 +65,10 @@ function main() {
     })()
 }
 
+export function logObjectFullDepth(obj: any) {
+    console.log(util.inspect(obj, {showHidden: false, depth: null, colors: true}));
+}
+
 function teeLogfile() {
 
     if (fs.existsSync(`${pathsLogFile}`)) {
@@ -682,10 +686,6 @@ async function governanceProposal(
     govProposalSpec: GovProposalSpec
 ) {
 
-    if (context.spec.network == "Mainnet") {
-        throw new Error("Remove this error when ready to submit gov proposal test on Mainnet");
-    }
-
     // if (context.injectivedPassword == null) {
     //     throw new ScriptError("Must specify injectived password to submit governance proposals")
     // }
@@ -734,14 +734,6 @@ async function governanceProposal(
     const htmlPreviewPath = path.resolve(pathsDeployArtifacts, htmlPreviewFileName);
     fs.writeFileSync(htmlPreviewPath, htmlPreview);
 
-    // Replace carrots for HTML in the front end
-    //summaryContents = escapeGtLtWithUnicode(summaryContents);
-
-    // Replace line endings with \n
-    summaryContents = replaceLineEndingsWithSlashN(summaryContents);
-
-    // Replace double quotes for the command line command
-    summaryContents = escapeDoubleQuotes(summaryContents);
 
     console.log("Running governance proposal for: " + contractName)
 
@@ -753,7 +745,7 @@ async function governanceProposal(
     baseTxArgs.push("wasm-store");
     baseTxArgs.push(`"${wasmPath}"`);
     baseTxArgs.push(`--title="${govProposalSpec.title}"`);
-    baseTxArgs.push(`--summary="${summaryContents}"`);
+    baseTxArgs.push(`--summary="empty"`); // put an empty summary and replace later
     //baseTxArgs.push(`--summary="Example Summary"`);
     baseTxArgs.push(...instantiateArgs);
     baseTxArgs.push(`--deposit=${despositAmountInWei}inj`);
@@ -778,18 +770,44 @@ async function governanceProposal(
     generateTxArgs.push(`--gas=auto`);
     generateTxArgs.push(`--gas-adjustment=1.4`);
     generateTxArgs.push(`--gas-prices=500000000inj`);
-    const outputJsonTxFilepath =
-        path.join(pathsDeployArtifacts, "proposal-tx_" + contractName + "_" + context.spec.network + ".json");
 
 
     //const txJsonStringUnformatted = await run(context, "injectived", generateTxArgs);
-    const txJsonStringUnformatted = execSync(generateTxArgs.join(" "), { encoding: 'utf-8' });
-    console.log("Output String:")
-    console.log(txJsonStringUnformatted);
-    let txJsonObj = JSON.parse(txJsonStringUnformatted)
+    const txJsonStringGenerated = execSync(generateTxArgs.join(" "), { encoding: 'utf-8' });
+    console.log("Generated Tx:")
+    console.log("================================================")
+    logObjectFullDepth(txJsonStringGenerated);
+    console.log("================================================")
+
+    let txJsonObj: any = JSON.parse(txJsonStringGenerated) as any;
+
+    // Replace carrots for HTML in the front end
+    // summaryContents = escapeGtLtWithUnicode(summaryContents);
+
+    // Replace line endings with \n
+    summaryContents = replaceLineEndingsWithSlashN(summaryContents);
+
+    txJsonObj.body.messages[0].summary = summaryContents;
+
     // txJsonObj["auth_info"]["fee"]["gas_limit"] = adjustedGasEstimate.toString();
-    let prettyJsonTxString = JSON.stringify(txJsonObj, null, 2);
-    fs.writeFileSync(outputJsonTxFilepath, prettyJsonTxString);
+
+    console.log("Summary String Contents:")
+    console.log("================================================")
+    //logObjectFullDepth(summaryContents);
+    console.log(summaryContents)
+    console.log("================================================")
+
+    const noSuffixOutputJsonTxFilepath =
+        path.join(pathsDeployArtifacts, "proposal-tx_" + contractName + "_" + context.spec.network.toString().toLowerCase());
+
+    const formattedOutputJsonTxFilepath = noSuffixOutputJsonTxFilepath + ".json";
+    fs.writeFileSync(formattedOutputJsonTxFilepath, JSON.stringify(txJsonObj, null, 2));
+
+    // const rawOutputJsonTxFilepath = noSuffixOutputJsonTxFilepath + "_raw.json";
+    // fs.writeFileSync(rawOutputJsonTxFilepath, JSON.stringify(txJsonObj, null));
+
+    const summaryFilepath = noSuffixOutputJsonTxFilepath + "_summary.txt";
+    fs.writeFileSync(summaryFilepath, summaryContents);
 }
 
 
