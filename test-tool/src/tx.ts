@@ -26,6 +26,8 @@ import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
 import {Convert, Cw721ReceiverTesterInnerMsg} from "./messages/cw721_receiver_tester_inner_msg";
 import {binaryToBase64} from "@injectivelabs/sdk-ts/dist/cjs/utils/utf8";
 import {Cw721ReceiveMsg, Cw721ReceiverTesterExecuteMsg} from "./messages/cw721_receiver_tester_execute_msg";
+import {Expiration, Never} from "./messages/dega_cw721_execute";
+import {createApproveToken} from "./helpers/collection";
 
 
 // Transaction Exec example:
@@ -85,6 +87,12 @@ export async function tx(args: string[]) {
             break;
         case "transfer-inj":
             await transferInj(args);
+            break;
+        case "spender":
+            await spender(args);
+            break;
+        case "operator":
+            await operator(args);
             break;
         case "add-admin":
             await addAdmin(args);
@@ -1152,7 +1160,6 @@ async function burn(args: string[]) {
 
 async function transferInj(args: string[]) {
 
-
     if (args.length < 2) {
         throw new Error("Missing argument. Usage: tx transfer-inj <receiver> <amount>");
     }
@@ -1182,6 +1189,182 @@ async function transferInj(args: string[]) {
 
     logResponse(response);
 }
+
+function getExpirationEpochSeconds(amount: string, units: string) {
+    let expirationSpanInSeconds: number = 0;
+
+    switch (units) {
+        case "day":
+        case "days":
+            expirationSpanInSeconds = parseFloat(amount) * 24 * 60 * 60;
+            break;
+        case "hour":
+        case "hours":
+            expirationSpanInSeconds = parseFloat(amount) * 60 * 60;
+            break;
+        case "minute":
+        case "minutes":
+            expirationSpanInSeconds = parseFloat(amount) * 60;
+            break;
+        default:
+            throw new Error("Invalid time unit. Must be either day(s), hour(s), or minute(s)");
+    }
+
+    let epochSeconds = Math.round(Date.now() * 1000);
+
+    return epochSeconds + Math.round(expirationSpanInSeconds);
+}
+
+async function spender(args: string[]) {
+
+    const usage = "Usage: tx spender <add|remove> <address> <token-id> [<expiration-number> <day(s)|hour(s)|minute(s)>]";
+
+    if (args.length < 3 || args.length > 5) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const addRemoveString = args[0];
+
+    if (addRemoveString != "add" && addRemoveString != "remove") {
+        console.log("Invalid on value. Must be either add or remove");
+        return;
+    }
+
+    const isAdding: boolean = (addRemoveString == "add");
+
+    if (!isAdding && args.length != 3) {
+        console.log(`Expiration must only be provided if adding a spender. ${usage}`);
+        return;
+    }
+
+    const context = await getAppContext();
+
+    const spenderAddress = args[1];
+    const tokenId = args[2];
+
+    let contractMsg: DegaCw721ExecuteMsg = {};
+
+    if (isAdding) {
+
+        if (args.length == 4) {
+            console.log(`Must specify time unit if specifying expiration span (e.g. "3 days"). ${usage}`);
+            return;
+        }
+
+        let expiration: Expiration = {};
+
+        if (args.length == 5) {
+
+            const expirationNum = args[2];
+            const timeUnit = args[3];
+
+            expiration.at_time = getExpirationEpochSeconds(expirationNum, timeUnit).toString();
+
+        } else {
+            expiration.never = {};
+        }
+
+        contractMsg.approve = {
+            spender: spenderAddress,
+            token_id: tokenId,
+            expires: expiration
+        }
+    } else {
+        contractMsg.revoke = {
+            spender: spenderAddress,
+            token_id: tokenId
+        }
+    }
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: context.primaryAddress,
+        contractAddress: context.cw721Address,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+async function operator(args: string[]) {
+
+    const usage = "Usage: tx operator <add|remove> <address> [<expiration-number> <day(s)|hour(s)|minute(s)>]";
+
+    if (args.length < 2 || args.length > 4) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const addRemoveString = args[0];
+
+    if (addRemoveString != "add" && addRemoveString != "remove") {
+        console.log("Invalid on value. Must be either add or remove");
+        return;
+    }
+
+    const isAdding: boolean = (addRemoveString == "add");
+
+    if (!isAdding && args.length != 2) {
+        console.log(`Expiration must only be provided if adding an operator. ${usage}`);
+        return;
+    }
+
+    const context = await getAppContext();
+
+    const operatorAddress = args[1];
+
+    let contractMsg: DegaCw721ExecuteMsg = {};
+
+    if (isAdding) {
+
+        if (args.length == 3) {
+            console.log(`Must specify time unit if specifying expiration span (e.g. "3 days"). ${usage}`);
+            return;
+        }
+
+        let expiration: Expiration = {};
+
+        if (args.length == 4) {
+            const expirationNum = args[2];
+            const timeUnit = args[3];
+
+            expiration.at_time = getExpirationEpochSeconds(expirationNum, timeUnit).toString();
+
+        } else {
+            expiration.never = {};
+        }
+
+        contractMsg.approve_all = {
+            operator: operatorAddress,
+            expires: expiration
+        }
+    } else {
+        contractMsg.revoke_all = {
+            operator: operatorAddress,
+        }
+    }
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: context.primaryAddress,
+        contractAddress: context.cw721Address,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
 
 async function addAdmin(args: string[]) {
     if (args.length < 1) {
