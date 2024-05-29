@@ -1,0 +1,9 @@
+{
+  "note": "Signing a test minter store code proposal for submission to localnet",
+  "txJsonFilePath": "versions/1-0-0/local/tx-json/proposal-tx_dega-cw721_local.json",
+  "signerKeyName": "dev",
+  "network": "Local",
+  "offline": false,
+  "accountNumber": null,
+  "sequenceNumber": null
+}

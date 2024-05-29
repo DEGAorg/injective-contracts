@@ -122,16 +122,16 @@ async function runMain() {
         throw new Error(`Tx JSON file does not exist: ${txJsonFilePath}`);
     }
 
-    const txJsonObj = JSON.parse(fs.readFileSync(txJsonFilePath, 'utf-8'));
+    const unsignedTxJsonObj = JSON.parse(fs.readFileSync(txJsonFilePath, 'utf-8'));
 
-    if (!txJsonObj["body"] ||
-        !txJsonObj["body"]["messages"] ||
-        !txJsonObj["body"]["messages"].length ||
-        !txJsonObj["body"]["messages"][0]["proposer"]) {
+    if (!unsignedTxJsonObj["body"] ||
+        !unsignedTxJsonObj["body"]["messages"] ||
+        !unsignedTxJsonObj["body"]["messages"].length ||
+        !unsignedTxJsonObj["body"]["messages"][0]["proposer"]) {
         throw new Error("Invalid governance proposal transaction JSON file")
     }
 
-    const proposerAddress = txJsonObj["body"]["messages"][0]["proposer"];
+    const proposerAddress = unsignedTxJsonObj["body"]["messages"][0]["proposer"];
 
     console.log("Proposer address from Submit Proposal Tx: " + proposerAddress);
 
@@ -159,12 +159,13 @@ async function runMain() {
     txArgs.push(`${txJsonFilePath}`);
     txArgs.push(`--chain-id="${chainId}"`);
     txArgs.push(`--from=${signingInfoSpec.signerKeyName}`);
-    txArgs.push(`--node=${endpoint}`);
 
     if (signingInfoSpec.offline) {
         txArgs.push(`--offline`);
         txArgs.push(`--account-number=${signingInfoSpec.accountNumber}`);
         txArgs.push(`--sequence=${signingInfoSpec.sequenceNumber}`);
+    } else {
+        txArgs.push(`--node=${endpoint}`);
     }
 
     //txArgs.push(`--gas=auto`);
@@ -173,10 +174,10 @@ async function runMain() {
     console.log("CLI Command:");
     console.log(txArgs.join(` `));
 
-    const signedTx = execSync(txArgs.join(` `), { encoding: 'utf-8' });
+    const rawSignedTxString = execSync(txArgs.join(` `), { encoding: 'utf-8' });
 
     console.log("Signed Tx:");
-    console.log(signedTx);
+    console.log(rawSignedTxString);
     console.log("");
 
     let signedTxJsonFileName = "signed-" + path.basename(txJsonFilePath);
@@ -185,7 +186,10 @@ async function runMain() {
     console.log("Writing signed tx to: ");
     console.log(signedTxJsonFilePath);
     console.log("");
-    fs.writeFileSync(signedTxJsonFilePath, signedTx);
+
+    let signedTxJsonObj: any = JSON.parse(rawSignedTxString) as any;
+
+    fs.writeFileSync(signedTxJsonFilePath, JSON.stringify(signedTxJsonObj, null, 2));
 
     // txArgs.push(`--from=${govProposalSpec.proposerAddress}`);
     // txArgs.push(`--generate-only`);
