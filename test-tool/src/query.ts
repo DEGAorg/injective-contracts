@@ -13,7 +13,7 @@ import {getNetworkEndpoints, Network} from "@injectivelabs/networks";
 import { execSync } from 'child_process';
 import { Cw2981QueryMsg } from "./messages/dega_cw721_query";
 import {createAdminsQuery, generalQueryGetter} from "./helpers/minter";
-
+import {createTokensQuery, generalCollectionGetter} from "./helpers/collection";
 
 export async function query(args: string[]) {
 
@@ -44,9 +44,6 @@ export async function query(args: string[]) {
         case "check-royalties":
             await queryRoyaltiesInfo(args);
             break;
-        case "all-operators":
-            await queryAllOperators(args);
-            break;
         case "collection-info":
             await queryCollectionInfo(args);
             break;
@@ -55,6 +52,33 @@ export async function query(args: string[]) {
             break;
         case "admins":
             await queryAdmins(args);
+            break;
+        case "tokens":
+            await queryTokens(args);
+            break;
+        case "all-tokens":
+            await queryAllTokens(args);
+            break;
+        case "owner-of":
+            await queryOwnerOf(args);
+            break;
+        case "approval":
+            await queryApproval(args);
+            break;
+        case "all-approvals":
+            await queryAllApprovals(args);
+            break;
+        case "all-operators":
+            await queryAllOperators(args);
+            break;
+        case "num-tokens":
+            await queryNumTokens(args);
+            break;
+        case "nft-info":
+            await queryNftInfo(args);
+            break;
+        case "all-nft-info":
+            await queryAllNftInfo(args);
             break;
         case "print-base64-object":
             printBase64Object(args);
@@ -447,6 +471,245 @@ const queryMinterSettings = async (args: string[]) => {
 
 async function queryAdmins(args: string[]) {
     const response = await generalQueryGetter(await getAppContext(), createAdminsQuery());
+    console.log(response);
+}
+
+async function queryTokens(args: string[]) {
+
+    const usage = "Usage: query tokens <address> [<start-after> [<limit>]]";
+
+    if (args.length < 1 || args.length > 3) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const owner = args[0];
+    let startAfter;
+    let limit;
+
+    if (args.length > 1) {
+        startAfter = args[1];
+        if (args.length > 2) {
+            limit = parseInt(args[2]);
+        }
+    }
+
+    const tokenQuery: DegaCw721QueryMsg = {
+        tokens: {
+            owner: owner,
+            start_after: startAfter,
+            limit: limit
+        }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), tokenQuery);
+    console.log(response);
+}
+
+async function queryAllTokens(args: string[]) {
+
+    const usage = "Usage: query all-tokens [<start-after> [<limit>]]";
+
+    if (args.length > 2) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    let startAfter;
+    let limit;
+
+    if (args.length > 0) {
+        startAfter = args[0];
+        if (args.length > 1) {
+            limit = parseInt(args[1]);
+        }
+    }
+
+    const tokenQuery: DegaCw721QueryMsg = {
+        all_tokens: {
+            start_after: startAfter,
+            limit: limit
+        }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), tokenQuery);
+    console.log(response);
+}
+
+
+async function queryOwnerOf(args: string[]) {
+
+    const usage = "Usage: query owner-of <token-id> [<include-expired>]";
+
+    if (args.length < 1 || args.length > 2) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const tokenId = args[0];
+    let includeExpiredString;
+    let includeExpired;
+
+    if (args.length == 2) {
+        includeExpiredString = args[1];
+
+        if (includeExpiredString != "true" && includeExpiredString != "false") {
+            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
+            return;
+        }
+
+        includeExpired = includeExpiredString == "true";
+    }
+
+    const query: DegaCw721QueryMsg = {
+        owner_of: {
+            token_id: tokenId,
+            include_expired: includeExpired
+        }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), query);
+    console.log(response);
+}
+
+async function queryApproval(args: string[]) {
+    const usage = "Usage: query approval <spender> <token-id> [<include-expired>]";
+
+    if (args.length < 2 || args.length > 3) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const spenderAddress = args[0];
+    const tokenId = args[1];
+    let includeExpiredString;
+    let includeExpired;
+
+    if (args.length == 3) {
+        includeExpiredString = args[2];
+
+        if (includeExpiredString != "true" && includeExpiredString != "false") {
+            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
+            return;
+        }
+
+        includeExpired = includeExpiredString == "true";
+    }
+
+    const query: DegaCw721QueryMsg = {
+        approval: {
+            spender: spenderAddress,
+            token_id: tokenId,
+            include_expired: includeExpired
+        }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), query);
+    console.log(response);
+}
+
+async function queryAllApprovals(args: string[]) {
+    const usage = "Usage: query all-approvals <token-id> [<include-expired>]";
+
+    if (args.length < 1 || args.length > 2) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const tokenId = args[0];
+    let includeExpiredString;
+    let includeExpired;
+
+    if (args.length == 2) {
+        includeExpiredString = args[1];
+
+        if (includeExpiredString != "true" && includeExpiredString != "false") {
+            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
+            return;
+        }
+
+        includeExpired = includeExpiredString == "true";
+    }
+
+    const query: DegaCw721QueryMsg = {
+        approvals: {
+            token_id: tokenId,
+            include_expired: includeExpired
+        }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), query);
+    console.log(response);
+}
+
+async function queryNumTokens(args: string[]) {
+
+    const usage = "Usage: query num-tokens";
+
+    if (args.length > 1) {
+        console.log(`Arguments provided when none should be. ${usage}`);
+        return;
+    }
+
+    const query: DegaCw721QueryMsg = {
+        num_tokens: {}
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), query);
+    console.log(response);
+}
+
+async function queryNftInfo(args: string[]) {
+    const usage = "Usage: query nft-info <token-id>";
+
+    if (args.length != 1) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const tokenId = args[0];
+
+    const query: DegaCw721QueryMsg = {
+        nft_info: {
+            token_id: tokenId,
+        }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), query);
+    console.log(response);
+}
+
+async function queryAllNftInfo(args: string[]) {
+    const usage = "Usage: query all-nft-info <token-id> [<include-expired>]";
+
+    if (args.length < 1 || args.length > 2) {
+        console.log(`Bad arguments. ${usage}`);
+        return;
+    }
+
+    const tokenId = args[0];
+    let includeExpiredString;
+    let includeExpired;
+
+    if (args.length == 2) {
+        includeExpiredString = args[1];
+
+        if (includeExpiredString != "true" && includeExpiredString != "false") {
+            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
+            return;
+        }
+
+        includeExpired = includeExpiredString == "true";
+    }
+
+    const query: DegaCw721QueryMsg = {
+        all_nft_info: {
+            token_id: tokenId,
+            include_expired: includeExpired
+        }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), query);
     console.log(response);
 }
 
