@@ -53,7 +53,7 @@ describe('Dega Minter with Fuzz: ', () => {
       const sanitizedPrice = sanitizedMaxNumber(fuzzedPrice, mintMaxPrice);
       // console.warn(`=====Fuzzed Price: ${fuzzedPrice}`);
       // Basic tx
-      const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext.testAddressOne, sanitizedPrice);
+      const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, testContext.testAddressOne, sanitizedPrice);
 
       // Execute Mint
       const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
@@ -86,7 +86,7 @@ describe('Dega Minter with Fuzz: ', () => {
       const fuzzedPrice = fuzzFunc();
       const sanitizedPrice = sanitizedMaxNumber(fuzzedPrice, maxPrice);
       // Basic tx
-      const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext.testAddressTwo, sanitizedPrice);
+      const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, testContext.testAddressTwo, sanitizedPrice);
 
       // Execute Mint
       const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, testContext.testAddressTwo);
@@ -117,7 +117,7 @@ describe('Dega Minter Negative confirmations', () => {
   it('should fail to mint an NFT with a bad signature', async () => {
 
     // Basic tx
-    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext.testAddressOne);
+    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, testContext.testAddressOne);
 
     // Alter the signature
     signature[0] = 0;
@@ -142,7 +142,7 @@ describe('Dega Minter Negative confirmations', () => {
   it('should fail to mint an NFT with a bad price', async () => {
 
     // Basic tx
-    const [mintRequestMsg, signature] = await await createBasicTx(appContext, testContext.testAddressOne);
+    const [mintRequestMsg, signature] = await await createBasicTx(appContext, testContext, testContext.testAddressOne);
 
     // Alter the price
     mintRequestMsg.price = "0";
@@ -169,7 +169,7 @@ describe('Dega Minter Negative confirmations', () => {
 
   it(`should fail to mint an NFT with a signature from an unauthorized signer`, async () => {
     // Basic tx
-    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext.testAddressOne, 0.5, true);
+    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, testContext.testAddressOne, 0.5, true);
 
     // Execute Mint
     const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, testContext.testAddressTwo);
@@ -213,7 +213,7 @@ describe('Dega Minter Negative confirmations', () => {
     expect(pauseResponse.code).toEqual(0);
 
     // Basic tx
-    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext.testAddressOne);
+    const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, testContext.testAddressOne);
 
     // Execute Mint
     const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);

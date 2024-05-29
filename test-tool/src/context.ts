@@ -53,6 +53,7 @@ async function initAppContext(): Promise<AppContext> {
         throw new Error("PRIVATE_KEY_MNEMONIC is required");
     }
 
+    // Primary User
     let primaryPrivateKey =
         isJestRunning() ?
             PrivateKey.fromHex(config.TEST_PRIMARY_SEEDHEX) :
@@ -60,6 +61,7 @@ async function initAppContext(): Promise<AppContext> {
 
     const primaryAddress = primaryPrivateKey.toBech32();
 
+    // Signer Account
     if (config.SIGNER_KEY_MNEMONIC == "") {
         throw new Error("SIGNER_KEY_MNEMONIC is required");
     }

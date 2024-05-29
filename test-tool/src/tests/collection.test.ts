@@ -9,8 +9,8 @@ import { createAllNftInfoQuery, createAllOperatorsQuery, createAllTokensQuery, c
 import { info } from "../query";
 import { Cw2981QueryMsg } from "../messages/dega_cw721_query";
 
-const mintToken = async (appContext: AppContext, recipient: string) => {
-  const [mintRequestMsg, signature] = await createBasicTx(appContext, recipient, 0.000001);
+const mintToken = async (appContext: AppContext, testContext: TestContext, recipient: string) => {
+  const [mintRequestMsg, signature] = await createBasicTx(appContext, testContext, recipient, 0.000001);
   const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
   const response = await appContext.primaryBroadcaster.broadcast({
     msgs: execMsg,
@@ -51,7 +51,7 @@ describe('Dega Collection', () => {
   beforeAll(async () => {
     appContext = await getAppContext();
     testContext = await getTestContext();
-    negativeTestTokenId = await mintToken(appContext, testContext.testAddressOne);
+    negativeTestTokenId = await mintToken(appContext, testContext, testContext.testAddressOne);
   });
 
   // standard non parameterized tests
@@ -218,7 +218,7 @@ describe('Dega Collection', () => {
 
   it(`Should success to aprove token to another address`, async () => {
     // mint token
-    const tokenId = await mintToken(appContext, testContext.testAddressOne);
+    const tokenId = await mintToken(appContext, testContext, testContext.testAddressOne);
     // approve token
     const execMsg = createApproveToken(appContext, tokenId, testContext.testAddressTwo, testContext.testAddressOne);
 
@@ -239,7 +239,7 @@ describe('Dega Collection', () => {
 
   it(`Should success to revoke token to another address`, async () => {
     // mint token
-    const tokenId = await mintToken(appContext, testContext.testAddressOne);
+    const tokenId = await mintToken(appContext, testContext, testContext.testAddressOne);
     // approve token
     const mintExecMsg = createApproveToken(appContext, tokenId, testContext.testAddressTwo, testContext.testAddressOne);
     const mintResponse = await testContext.oneBroadcaster.broadcast({
@@ -308,7 +308,7 @@ describe('Dega Collection', () => {
 
   it(`Should success to transfer a token from an approved address`, async () => {
     // mint token
-    const tokenId = await mintToken(appContext, testContext.testAddressOne);
+    const tokenId = await mintToken(appContext, testContext, testContext.testAddressOne);
     // approve token
     const execMsg = createApproveToken(appContext, tokenId, testContext.testAddressTwo, testContext.testAddressOne);
 
@@ -344,7 +344,7 @@ describe('Dega Collection', () => {
   });
 
   it(`Should fail to send_nft to a non contract address`, async () => {
-    const tokenId = await mintToken(appContext, testContext.testAddressOne);
+    const tokenId = await mintToken(appContext, testContext, testContext.testAddressOne);
     // create send nft
     const execMsg = createSendNft(appContext, testContext.testAddressTwo, tokenId, testContext.testAddressOne);
     let wasmErrorComparison = false;
@@ -363,7 +363,7 @@ describe('Dega Collection', () => {
 
   // sendNFT to dummy contract success sendToReceiver
   it(`Should success to sendNFT to dummy contract`, async () => {
-    const tokenId = await mintToken(appContext, testContext.testAddressOne);
+    const tokenId = await mintToken(appContext, testContext, testContext.testAddressOne);
     // create send nft
     const execMsg = createSendNft(appContext, appContext.receiverContractAddress!, tokenId, testContext.testAddressOne);
     const response = await testContext.oneBroadcaster.broadcast({
@@ -375,7 +375,7 @@ describe('Dega Collection', () => {
 
   // sendNFT to dummy contract fail
   it(`Should fail to sendNFT to dummy contract`, async () => {
-    const tokenId = await mintToken(appContext, testContext.testAddressOne);
+    const tokenId = await mintToken(appContext, testContext, testContext.testAddressOne);
     // create send nft
     const execMsg = createSendNft(appContext, appContext.receiverContractAddress!, tokenId, testContext.testAddressOne, false);
     let wasmErrorComparison = false;
