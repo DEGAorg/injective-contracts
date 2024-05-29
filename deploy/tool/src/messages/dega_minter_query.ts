@@ -11,6 +11,7 @@ export interface DegaMinterQueryMsg {
     config?:    Config;
     check_sig?: CheckSig;
     admins?:    Admins;
+    is_admin?:  IsAdmin;
 }
 
 export interface Admins {
@@ -48,6 +49,10 @@ export enum SignerSourceTypeEnum {
 }
 
 export interface Config {
+}
+
+export interface IsAdmin {
+    address: string;
 }
 
 // Converts JSON strings to/from your types
@@ -219,6 +224,7 @@ const typeMap: any = {
         { json: "config", js: "config", typ: u(undefined, r("Config")) },
         { json: "check_sig", js: "check_sig", typ: u(undefined, r("CheckSig")) },
         { json: "admins", js: "admins", typ: u(undefined, r("Admins")) },
+        { json: "is_admin", js: "is_admin", typ: u(undefined, r("IsAdmin")) },
     ], false),
     "Admins": o([
     ], false),
@@ -246,6 +252,9 @@ const typeMap: any = {
         { json: "pub_key_binary", js: "pub_key_binary", typ: "" },
     ], false),
     "Config": o([
+    ], false),
+    "IsAdmin": o([
+        { json: "address", js: "address", typ: "" },
     ], false),
     "SignerSourceTypeEnum": [
         "config_signer_pub_key",

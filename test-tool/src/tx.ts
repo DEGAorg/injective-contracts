@@ -1,38 +1,31 @@
-import {
-    DegaCw721ExecuteMsg,
-    DegaMinterExecuteMsg,
-    DegaMinterInstantiateMsg, DegaMinterQueryMsg
-} from "./messages";
-import {
-    DegaMinterConfigSettings,
-    MintRequest, UpdateAdminCommand
-} from "./messages/dega_minter_execute";
+import {DegaCw721ExecuteMsg, DegaMinterExecuteMsg, DegaMinterInstantiateMsg, DegaMinterQueryMsg} from "./messages";
+import {MintRequest, UpdateAdminCommand, UpdateDegaMinterConfigSettingsMsg} from "./messages/dega_minter_execute";
 import {Config} from "./config";
-import {
-    getAppContext,
-} from "./context";
+import {getAppContext,} from "./context";
 import {
     fromBase64,
-    toBase64,
-    createTransaction,
     MsgExecuteContractCompat,
+    MsgInstantiateContract,
+    MsgMigrateContract,
     MsgSend,
-    ChainRestAuthApi,
-    BaseAccount,
-    ChainGrpcAuthApi, MsgStoreCode, MsgInstantiateContract, sha256, MsgExecuteContract, TxResponse, MsgMigrateContract,
+    MsgStoreCode,
+    sha256,
+    toBase64,
+    TxResponse,
 } from "@injectivelabs/sdk-ts";
 import {BigNumberInBase, BigNumberInWei} from '@injectivelabs/utils'
-import { exec } from 'child_process';
+import {exec} from 'child_process';
 import path from "node:path";
 import fs from "fs";
 import secp256k1 from "secp256k1";
 import {SignerSourceTypeEnum} from "./messages/dega_minter_query";
-import {Network} from "@injectivelabs/networks";
-import { v4 as uuidv4 } from 'uuid';
-import {DegaCw721QueryResponseMessages} from "./messages/dega_cw721_query_responses";
-import {DegaMinterConfigResponse, DegaMinterQueryResponseMessages} from "./messages/dega_minter_query_responses";
+import {v4 as uuidv4} from 'uuid';
+import {DegaMinterConfigResponse} from "./messages/dega_minter_query_responses";
 import {DegaCw721MigrateMsg} from "./messages/dega_cw721_migrate";
 import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
+import {Convert, Cw721ReceiverTesterInnerMsg} from "./messages/cw721_receiver_tester_inner_msg";
+import {binaryToBase64} from "@injectivelabs/sdk-ts/dist/cjs/utils/utf8";
+import {Cw721ReceiveMsg, Cw721ReceiverTesterExecuteMsg} from "./messages/cw721_receiver_tester_execute_msg";
 
 
 // Transaction Exec example:
@@ -74,6 +67,12 @@ export async function tx(args: string[]) {
             break;
         case "send":
             await sendToken(args);
+            break;
+        case "send-to-receiver":
+            await sendToReceiver(args);
+            break;
+        case "call-receive-nft-on-receiver":
+            await callReceiveNftOnReceiver(args);
             break;
         case "send-talis-sell":
             await sendTalisSale(args);
@@ -170,7 +169,10 @@ function logResponse(response: TxResponse) {
 async function mintCombined(args: string[]) {
 
     if (args.length < 2) {
-        throw new Error("Missing argument. Usage: mint-combined <receiver_address> <price>");
+        console.log("");
+        console.log("Invalid arguments. Usage: mint-combined <receiver_address> <price>");
+        console.log("");
+        return;
     }
 
     const context = await getAppContext();
@@ -519,6 +521,121 @@ async function sendToken(args: string[]) {
 }
 
 
+async function sendToReceiver(args: string[]) {
+
+    if (args.length < 2) {
+        throw new Error("Missing arguments. usage: send-to-receiver <token_id> <should-succeed>");
+    }
+
+    const tokenId = args[0];
+
+    const shouldSucceedString = args[1];
+
+    if (shouldSucceedString != "true" && shouldSucceedString != "false") {
+        throw new Error("Invalid should-succeed value. Must be either true or false");
+    }
+
+    const shouldSucceed: boolean = (shouldSucceedString == "true");
+
+    const context = await getAppContext();
+
+    if (context.receiverContractAddress == undefined) {
+        throw new Error("Receiver address not set in context")
+    }
+
+    let innerMsg: Cw721ReceiverTesterInnerMsg =
+        shouldSucceed ?
+            Cw721ReceiverTesterInnerMsg.Succeed :
+            Cw721ReceiverTesterInnerMsg.Fail;
+
+    // Wraps the string "succeed" or "fail" in an extra set of quotes to make it valid json
+    let jsonInnerMsg = Convert.cw721ReceiverTesterInnerMsgToJson(innerMsg);
+    let base64InnerMsg = Buffer.from(jsonInnerMsg).toString("base64");
+
+    const contractMsg: DegaCw721ExecuteMsg = {
+        send_nft: {
+            contract: context.receiverContractAddress,
+            token_id: tokenId,
+            msg: base64InnerMsg
+        }
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: context.primaryAddress,
+        contractAddress: context.cw721Address,
+        msg: contractMsg,
+        funds: []
+    })
+
+    const response = await context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: context.gasSettings,
+    })
+
+    logResponse(response);
+
+}
+
+async function callReceiveNftOnReceiver(args: string[]) {
+
+    if (args.length < 2) {
+        throw new Error("Missing arguments. usage: call-receive-nft-on-receiver <token_id> <should-succeed>");
+    }
+
+    const context = await getAppContext();
+
+    if (context.receiverContractAddress == undefined) {
+        throw new Error("Receiver address not set in context")
+    }
+
+    const tokenId = args[0];
+
+    const shouldSucceedString = args[1];
+
+    if (shouldSucceedString != "true" && shouldSucceedString != "false") {
+        throw new Error("Invalid should-succeed value. Must be either true or false");
+    }
+
+    const shouldSucceed: boolean = (shouldSucceedString == "true");
+
+    let innerMsg: Cw721ReceiverTesterInnerMsg =
+        shouldSucceed ?
+            Cw721ReceiverTesterInnerMsg.Succeed :
+            Cw721ReceiverTesterInnerMsg.Fail;
+
+    // Wraps the string "succeed" or "fail" in an extra set of quotes to make it valid json
+    let jsonInnerMsg = Convert.cw721ReceiverTesterInnerMsgToJson(innerMsg);
+    let base64InnerMsg = Buffer.from(jsonInnerMsg).toString("base64");
+
+    const receiveMsg: Cw721ReceiveMsg = {
+        msg: base64InnerMsg,
+        sender: context.primaryAddress,
+        token_id: tokenId
+    };
+
+    const executeMsg: Cw721ReceiverTesterExecuteMsg = {
+        receive_nft: receiveMsg
+    };
+
+    const execMsg = MsgExecuteContractCompat.fromJSON({
+        sender: context.primaryAddress,
+        contractAddress: context.receiverContractAddress,
+        msg: executeMsg,
+        funds: []
+    })
+
+    const response = await context.primaryBroadcaster.broadcast({
+        msgs: execMsg,
+        gas: context.gasSettings,
+    })
+
+    logResponse(response);
+}
+
+function seriealizeReceiverInnerMessage(innerMsg: Cw721ReceiverTesterInnerMsg) {
+    return Buffer.from(JSON.stringify(innerMsg)).toString("base64");
+}
+
 async function sendTalisSale(args: string[]) {
 
     if (args.length < 2) {
@@ -669,6 +786,18 @@ async function refillLocalCommandLine(args: string[]) {
 
 async function instantiate(args: string[]) {
 
+    if (args.length == 0 || (args.length == 1 && args[0] == "minter")) {
+        await instantiateMinterCmd()
+    } else if (args.length == 1 && args[0] == "receiver") {
+        await instantiateReceiver(true)
+    } else {
+        console.log("Unknown instantiate args. Usage: instantiate [receiver]");
+
+    }
+}
+
+async function instantiateMinterCmd() {
+
     const context = await getAppContext();
 
     const signerCompressedPubKeyBase64 = context.signerCompressedPublicKey.toString("base64")
@@ -680,7 +809,6 @@ async function instantiate(args: string[]) {
         collection_params: {
             code_id: context.cw721CodeId,
             info: {
-                creator: context.primaryAddress,
                 description: "A simple test collection description",
                 image: "https://storage.googleapis.com/dega-banner/banner.png"
             },
@@ -688,24 +816,11 @@ async function instantiate(args: string[]) {
             symbol: "TEST"
         },
         minter_params: {
-            creation_fee: {
-                amount: "0",
-                denom: "inj"
+            dega_minter_settings: {
+                signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
+                minting_paused: false
             },
-            extension: {
-                dega_minter_settings: {
-                    signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
-                    minting_paused: false
-                },
-                initial_admin: context.primaryAddress,
-            },
-            frozen: false,
-            max_trading_offset_secs: 0,
-            min_mint_price: {
-                amount: "0",
-                denom: "inj"
-            },
-            mint_fee_bps: 0
+            initial_admin: context.primaryAddress,
         },
         cw721_contract_label: "DEGA Collection - Test Collection",
         cw721_contract_admin: context.primaryAddress
@@ -798,6 +913,83 @@ export async function instantiateMinter(instantiateMessage: MsgInstantiateContra
 
 }
 
+
+export async function instantiateReceiver(shouldLogResponse: boolean): Promise<[any,string]> {
+
+    const context = await getAppContext();
+
+    if (!context.receiverCodeId) {
+        throw new Error("Cannot instantiate receiver, code id not available in context (try setting in the config for this environment)")
+    }
+
+    const instantiateContractMsg = MsgInstantiateContract.fromJSON({
+        sender: context.primaryAddress,
+        admin: context.primaryAddress,
+        codeId: context.receiverCodeId,
+        label: "CW721 Receiver Tester",
+        msg: {},
+    });
+
+    console.log("Instantiating code for CW721 Receiver Tester");
+    console.log("");
+
+    if (shouldLogResponse) {
+        console.log("Using Receiver Code ID: " + context.receiverCodeId);
+        console.log("");
+    }
+
+    const response = await context.primaryBroadcaster.broadcast({
+        msgs: instantiateContractMsg,
+        gas: context.gasSettings,
+    })
+
+    let codeAddressPairs = getCodeKeyValuePairsFromEvents(response.events);
+    let address = codeAddressPairs.get(context.receiverCodeId);
+    if (!address) {
+        throw new Error("Receiver code id not found in response")
+    }
+
+    if (shouldLogResponse) {
+        logResponse(response);
+        console.log("Contract address: " + address);
+    }
+
+    return [response, address];
+}
+
+
+function getCodeKeyValuePairsFromEvents(events: any): Map<number, string> {
+    let codeAddressMap = new Map<number, string>();
+    if (events != undefined) {
+        let decoder = new TextDecoder();
+
+        events.forEach((event: any) => {
+            let eventTyped: TxEvent = event as TxEvent;
+            if (eventTyped.type == "cosmwasm.wasm.v1.EventContractInstantiated") {
+                let code;
+                let address;
+                eventTyped.attributes.forEach((attr: TxAttribute) => {
+                    let key = decoder.decode(attr.key);
+                    let value = stripQuotes(decoder.decode(attr.value));
+                    if (key == "code_id") {
+                        code = parseInt(value);
+                    }
+                    if (key == "contract_address") {
+                        address = value;
+                    }
+                });
+
+                if (code != undefined && address != undefined) {
+                    codeAddressMap.set(code, address);
+                }
+
+            }
+
+        });
+    }
+    return codeAddressMap;
+}
+
 export function stripQuotes(input: string): string {
     if (input.startsWith('"') && input.endsWith('"')) {
         return input.slice(1, -1);
@@ -816,6 +1008,10 @@ async function store(args: string[]) {
             await store_wasm("dega_minter.wasm")
         } else if (args[1] == "dega-cw721") {
             await store_wasm("dega_cw721.wasm")
+        } else if (args[1] == "receiver" || args[1] == "cw721-receiver" || args[1] == "cw721-receiver-tester") {
+            fs.copyFileSync(path.resolve(__dirname, "../data/cw721_receiver_tester.wasm"),
+                path.resolve(__dirname, "../../artifacts-optimized/cw721_receiver_tester.wasm"));
+            await store_wasm("cw721_receiver_tester.wasm")
         } else {
             throw new Error("Unknown wasm contract: " + args[1]);
         }
@@ -1139,8 +1335,7 @@ async function pause(args: string[]) {
     //
     // newSettings.minting_paused = newSetting;
 
-    const newSettings: DegaMinterConfigSettings = {
-        signer_pub_key: context.signerCompressedPublicKey.toString("base64"),
+    const newSettings: UpdateDegaMinterConfigSettingsMsg = {
         minting_paused: newSetting
     };
 
@@ -1168,12 +1363,21 @@ async function pause(args: string[]) {
 
 async function migrate(args: string[]) {
 
+    if (args.length < 1) {
+        throw new Error("Missing argument. Usage: tx migrate <dev-version>");
+    }
+
     const context = await getAppContext();
+
+    const devVersion = args[0];
 
     {
         const minterCodeId = context.minterCodeId;
         const minterAddress = context.minterAddress
-        const migrateMinterMsg: DegaMinterMigrateMsg = {};
+        const migrateMinterMsg: DegaMinterMigrateMsg = {
+            is_dev: true,
+            dev_version: devVersion,
+        };
 
         await migrateContract(
             minterCodeId,
@@ -1186,7 +1390,10 @@ async function migrate(args: string[]) {
     {
         let cw721CodeId = context.cw721CodeId;
         const cw721Address = context.cw721Address;
-        const migrateCw721Msg: DegaCw721MigrateMsg = {};
+        const migrateCw721Msg: DegaCw721MigrateMsg = {
+            is_dev: true,
+            dev_version: devVersion,
+        };
 
         await migrateContract(
             cw721CodeId,

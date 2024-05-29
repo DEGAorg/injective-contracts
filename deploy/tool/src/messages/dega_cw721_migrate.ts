@@ -8,6 +8,8 @@
 // match the expected interface, even if the JSON is valid.
 
 export interface DegaCw721MigrateMsg {
+    dev_version: string;
+    is_dev:      boolean;
 }
 
 // Converts JSON strings to/from your types
@@ -176,5 +178,7 @@ function r(name: string) {
 
 const typeMap: any = {
     "DegaCw721MigrateMsg": o([
+        { json: "dev_version", js: "dev_version", typ: "" },
+        { json: "is_dev", js: "is_dev", typ: true },
     ], false),
 };

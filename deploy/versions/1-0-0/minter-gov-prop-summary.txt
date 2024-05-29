@@ -1,40 +1,42 @@
+
 <strong>Summary</strong>
-This proposal is for the uploading of DEGA’s Minter contract for use in deploying DEGA’s NFT collections to Injective.
+This proposal is for the uploading of DEGA’s Minter smart contract binary for use in deploying DEGA’s NFT collections to Injective.
 
-DEGA seeks to deploy a next generation Web3 Game Builder on Injective. DEGA Realms - The Wix for Gaming - is an AI-powered application that allows anyone to design, build and monetize games in minutes. Injective is particularly well suited for in-game transactions thanks to its speed and scalability.
+DEGA seeks to deploy a next generation Web3 Game Builder on Injective. DEGA Realms is an AI-powered application that allows anyone to design, build and monetize games in minutes. Injective is particularly well suited for in-game transactions thanks to its speed and scalability.
 
-DEGA Realms will ignite a vibrant ecosystem of thousands of games on Injective and accelerate the growth of the NFT in-game economy. DEGA Realms is not a one-time game deployment. It’s a platform that lowers the barrier to entry for non-technical users and allows anyone creative to tell their stories and engage their audience through gaming.
+The deployment of DEGA Realms will connect Injective to DEGA's growing gaming ecosystem and advance the NFT based in-game economy. DEGA Realms is not a one-time game deployment. It’s a platform that lowers the barrier to entry for non-technical users and allows anyone to engage an audience through gaming.
 
-As part of our strategy to reduce friction between creators and blockchain powered games we’re integrating the Injective API to DEGA’s Conversational AI smart glasses which opens the door for mass adoption.
+As part of our strategy to reduce friction between creators and blockchain powered games, we will be integrating the Injective NFT deployment to DEGA’s Conversational AI smart glasses to utilize Injective to power NFT based retail consumer transactions - a part of DEGA's initiative for wider mainstream adoption.
 
 <strong>Detailed Forum Post</strong>
-
 To see more detailed background information related to this store code proposal, please see our forum post here:
 
 <a href="https://gov.injective.network/discussions/NFT%27s">https://gov.injective.network/discussions/NFT's</a>
 
 <strong>About DEGA</strong>
-At DEGA, we see gaming The Rise of the Gamer Nation as a major effective beachhead for Web3 mass adoption because gamers are digitally native. They understand the value of digital goods. If gaming was a country, it would have the GDP of the United Arab Emirates.
+At DEGA, we see gaming as a major beachhead for Web3 mass adoption because gamers are digitally native. They understand the value of digital goods. If gaming were a country, it would have the GDP of the United Arab Emirates.
 
-Thanks to the power of our vision DEGA has already organically crossed $14 Million in TVL in our stake pools and we’ve grown a community of over 50k followers across our social media channels.
+DEGA has already organically crossed $14 Million in TVL in our stake pools and we’ve grown a community of over 50k followers across our social media channels.
 
-We’re currently coordinating with the Talis and Dagora NFT marketplaces to make sure that all our product offerings remain compatible across the Injective ecosystem.
+We’re currently coordinating with Talis and Dagora NFT marketplace protocols to make sure that all of our product offerings remain compatible across the Injective ecosystem.
 
-<strong>Contract Information</strong>
+With a team of seasoned professionals with experience at Animoca Brands, EA Games, Deloitte, Apple, Yuga Labs, Wells Fargo, IOHK, and many more top tier organizations, DEGA is uniquely positioned to make the mass adoption of Web3 gaming a reality.
+
+<strong>Smart Contract Information</strong>
 Contract version: 1.0.0
-Checksum: <insert>
-Rust version: 1.69.0
+Contract checksum: 2bd3ceb153bd1745478bad30e44c50bc378db161700472c29bd5ab7306dad851
+Rust version: 1.75.0
 CosmWasm version: 1.2.1
-Workspace Optimizer version: 0.15.0
+CosmWasm Optimizer version: 0.15.1
 
 <strong>Actions</strong>
-&emsp;- By voting YES on this proposal, you agree to uploading the DEGA Minter Wasm Contract as described in this proposal.
-&emsp;- By voting NO on the proposal, you do not support uploading the DEGA Minter Wasm Contract as described in this proposal.
+&emsp;- By voting YES on this proposal, you agree to uploading the DEGA Minter smart contract as described in this proposal.
+&emsp;- By voting NO on the proposal, you do not support uploading the DEGA Minter smart contract as described in this proposal.
 &emsp;- By voting NO WITH VETO, you find this proposal to be spam/irrelevant/malicious to governance, and contribute to burning 100 INJ deposit if NoWithVeto votes are greater than 1/3 of the total voting power.
 &emsp;- By voting ABSTAIN, you wish to contribute to quorum while formally declining to vote either for or against the proposal.
 
 <strong>Relevant Links</strong>
-Website: <a href="https://www.dega.org">https://www.dega.org</a>
-Discord: <a href="https://discord.com/invite/dega">https://discord.com/invite/dega</a>
-Telegram: <a href="https://t.me/dega_org">https://t.me/dega_org</a>
-Twitter: <a href="https://t.me/dega_org">https://t.me/dega_org</a>
+Website: <a href="https://www.dega.org"><u>https://www.dega.org</u></a>
+Discord: <a href="https://discord.com/invite/DEGA"><u>https://discord.com/invite/DEGA</u></a>
+Telegram: <a href="https://t.me/DEGA_org"><u>https://t.me/DEGA_org</u></a>
+Twitter: <a href="https://x.com/DEGA_org"><u>https://x.com/DEGA_org</u></a>

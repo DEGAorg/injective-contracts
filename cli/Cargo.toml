@@ -1,6 +1,6 @@
 [package]
 name            = "dega-inj-cli"
-authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
+authors         = ["DEGA Labs", "Unamint Studios", "Will Stahl <will@stahl.cc>"]
 version         = "1.0.0"
 edition         = "2021"
 
@@ -16,8 +16,8 @@ cw721                   = { workspace = true }
 cw721-base              = { workspace = true, features = ["library"] }
 cw-utils                = { workspace = true }
 cw-ownable              = { workspace = true }
-injective-cosmwasm      = { workspace = true }
-injective-math          = { workspace = true }
+#injective-cosmwasm      = { workspace = true }
+#injective-math          = { workspace = true }
 ethereum-types          = { workspace = true }
 schemars                = { workspace = true }
 serde                   = { workspace = true }
@@ -25,15 +25,11 @@ serde_repr              = { workspace = true }
 subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 
-sg2                     = { workspace = true }
-sg721                   = { workspace = true }
-sg721-base              = { workspace = true, features = ["library"] }
-
 dega-inj                = { workspace = true }
 dega-cw721              = { workspace = true }
 dega-minter             = { workspace = true }
 
-# Keeping CLI specific dependencies isolated here as they are less verified in terms of audit / security (not used in either production CW721 or SG721)
+# Keeping CLI specific dependencies isolated here as they are less verified in terms of audit / security
 anyhow                  = { version = "1"}
 env_logger              = { version = "0.10.2"}
 log                     = { version = "0.4"}

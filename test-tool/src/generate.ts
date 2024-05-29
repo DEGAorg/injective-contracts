@@ -117,4 +117,16 @@ export async function generate(args: string[]) {
         "../generated-ts/messages/dega_cw721_query_responses.ts",
         "DegaCw721QueryResponseMessages",
     );
+
+    await compileFile(
+        "../data/cw721-receiver-tester-execute-msg.json",
+        "../generated-ts/messages/cw721_receiver_tester_execute_msg.ts",
+        "Cw721ReceiverTesterExecuteMsg",
+    );
+
+    await compileFile(
+        "../data/cw721-receiver-tester-inner.json",
+        "../generated-ts/messages/cw721_receiver_tester_inner_msg.ts",
+        "Cw721ReceiverTesterInnerMsg",
+    );
 }

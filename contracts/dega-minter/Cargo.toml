@@ -1,6 +1,6 @@
 [package]
 name            = "dega-minter"
-authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
+authors         = ["DEGA Labs", "Unamint Studios", "Will Stahl <will@stahl.cc>"]
 description     = "The DEGA Injective NFT Minter smart contract"
 version         = { workspace = true }
 rust-version    = { workspace = true }
@@ -43,9 +43,9 @@ cw721                   = { workspace = true }
 cw721-base              = { workspace = true, features = ["library"] }
 cw-utils                = { workspace = true }
 cw-ownable              = { workspace = true }
-injective-cosmwasm      = { workspace = true }
+#injective-cosmwasm      = { workspace = true }
 #injective-std           = { workspace = true }
-injective-math          = { workspace = true }
+#injective-math          = { workspace = true }
 ethereum-types          = { workspace = true }
 schemars                = { workspace = true }
 serde                   = { workspace = true }
@@ -54,13 +54,6 @@ subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 sha2                    = { workspace = true }
 hex                     = { workspace = true }
-
-sg2                     = { workspace = true }
-sg4                     = { workspace = true }
-sg721                   = { workspace = true }
-sg-mod                  = { workspace = true }
-base-minter             = { workspace = true, features = ["library"] }
-sg721-base              = { workspace = true, features = ["library"] }
 
 dega-inj                = { workspace = true }
 url = "2.5.0"
@@ -72,3 +65,5 @@ k256                    = { version = "0.13.3", features = ["ecdsa"] }
 digest                  = { version = "0.10.7" }
 sha2                    = { version = "0.10" }
 base64                  = { version = "0.13.1" }
+coverage-helper         = { workspace = true }
+dega-inj                = { workspace = true, features = ["test-mode"] }

@@ -155,22 +155,12 @@
     "CollectionInfoResponse": {
       "type": "object",
       "required": [
-        "creator",
         "description",
         "image"
       ],
       "properties": {
-        "creator": {
-          "type": "string"
-        },
         "description": {
           "type": "string"
-        },
-        "explicit_content": {
-          "type": [
-            "boolean",
-            "null"
-          ]
         },
         "external_link": {
           "type": [
@@ -181,20 +171,10 @@
         "image": {
           "type": "string"
         },
-        "royalty_info": {
+        "royalty_settings": {
           "anyOf": [
             {
-              "$ref": "#/definitions/RoyaltyInfoResponse"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "start_trading_time": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Timestamp"
+              "$ref": "#/definitions/RoyaltySettingsResponse"
             },
             {
               "type": "null"
@@ -390,7 +370,7 @@
       },
       "additionalProperties": false
     },
-    "RoyaltyInfoResponse": {
+    "RoyaltySettingsResponse": {
       "type": "object",
       "required": [
         "payment_address",

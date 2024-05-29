@@ -24,6 +24,7 @@ import {DegaCw721MigrateMsg} from "./messages/dega_cw721_migrate";
 // Paths
 const pathsWorkspace = path.resolve(__dirname, "../../..")
 const pathsWorkspaceArtifacts = path.join(pathsWorkspace, "artifacts")
+const pathsWorkspaceArtifactsOptimized = path.join(pathsWorkspace, "artifacts-optimized")
 const pathsDeploy = path.join(pathsWorkspace, "deploy")
 const pathsDeployArtifacts = path.join(pathsDeploy, "artifacts")
 const pathsDeploySpecs = path.join(pathsDeploy, "specs")
@@ -62,6 +63,10 @@ function main() {
         }
 
     })()
+}
+
+export function logObjectFullDepth(obj: any) {
+    console.log(util.inspect(obj, {showHidden: false, depth: null, colors: true}));
 }
 
 function teeLogfile() {
@@ -209,12 +214,9 @@ const deploySpec = t.type({
     optionsMigrateCw721: t.boolean,
     collectionName: t.string,
     collectionSymbol: t.string,
-    collectionCreator: t.string,
     collectionDescription: t.string,
     collectionImageURL: t.string,
     collectionExternalLinkURL: t.string,
-    collectionExplicitContent: t.union([t.boolean, t.undefined, t.null]),
-    collectionStartTradingTime: t.union([t.string, t.undefined, t.null]),
     collectionSecondaryRoyaltyPaymentAddress: t.string,
     collectionSecondaryRoyaltyShare: t.string,
     cw721ContractLabel: t.string,
@@ -419,7 +421,10 @@ async function migrate(context: DeployContext) {
     if (context.spec.optionsMigrateMinter) {
 
         const minterCodeId = getMinterCodeIdForInstantiateOrMigrate(context);
-        const migrateMinterMsg: DegaMinterMigrateMsg = {};
+        const migrateMinterMsg: DegaMinterMigrateMsg = {
+            is_dev: true,
+            dev_version: "dev-1" // Todo, replace with deployment logic
+        };
         const minterAddress = getMinterAddressForMigrate(context);
 
         await migrateContract(
@@ -436,7 +441,10 @@ async function migrate(context: DeployContext) {
 
     if (context.spec.optionsMigrateCw721) {
 
-        const migrateCw721Msg: DegaCw721MigrateMsg = {};
+        const migrateCw721Msg: DegaCw721MigrateMsg = {
+            is_dev: true,
+            dev_version: "dev-1" // Todo, replace with deployment logic
+        };
         let cw721CodeId = getCw721CodeIdForInstantiateOrMigrate(context);
         const cw721Address = getCw721AddressForMigrate(context);
 
@@ -519,7 +527,7 @@ async function deploy(context: DeployContext) {
         if (context.spec.preExistingCw721Binary != null) {
             wasmPath = path.join(pathsDeploy, context.spec.preExistingCw721Binary);
         } else {
-            wasmPath = path.join(pathsDeployArtifacts, "dega_minter.wasm");
+            wasmPath = path.join(pathsDeployArtifacts, "dega_cw721.wasm");
         }
 
         await storeWasm(context, "dega-cw721", wasmPath)
@@ -564,16 +572,17 @@ async function deploy(context: DeployContext) {
 async function buildAndOptimize(context: DeployContext) {
 
     // Delete any binaries that may have been left over by the CLI
-    if (fs.existsSync(pathsWorkspaceArtifacts)) {
+    if (fs.existsSync(pathsWorkspaceArtifacts) && fs.readdirSync(pathsWorkspaceArtifacts).length !== 0) {
         await run(context, "rm", [`${pathsWorkspaceArtifacts}/*`])
     }
 
     // Run the production optimize tool from cosm-wasm
-    await run(context, "cargo", ["make", "optimize"])
+    await run(context, "cargo", ["make", "build"])
 
     // Delete any binaries that may be left over from the last deployment attempt
     if (fs.existsSync(pathsDeployArtifacts)) {
-        await run(context, "rm", [`${pathsDeployArtifacts}/*.wasm`])
+        await run(context, "rm", [`-f`, `${pathsDeployArtifacts}/*.wasm`])
+
         const checksumsPath = path.join(pathsDeployArtifacts, "checksums.txt")
         if (fs.existsSync(checksumsPath)) {
             fs.rmSync(`${pathsDeployArtifacts}/checksums.txt`)
@@ -581,7 +590,7 @@ async function buildAndOptimize(context: DeployContext) {
     }
 
     // Move the optimized binaries to a distinct artifacts directory for deployments
-    await run(context, "mv", [`${pathsWorkspaceArtifacts}/*`, `${pathsDeployArtifacts}`])
+    await run(context, "cp", [`${pathsWorkspaceArtifactsOptimized}/*`, `${pathsDeployArtifacts}`])
 }
 
 
@@ -677,10 +686,6 @@ async function governanceProposal(
     govProposalSpec: GovProposalSpec
 ) {
 
-    if (context.spec.network == "Mainnet") {
-        throw new Error("Remove this error when ready to submit gov proposal test on Mainnet");
-    }
-
     // if (context.injectivedPassword == null) {
     //     throw new ScriptError("Must specify injectived password to submit governance proposals")
     // }
@@ -729,14 +734,6 @@ async function governanceProposal(
     const htmlPreviewPath = path.resolve(pathsDeployArtifacts, htmlPreviewFileName);
     fs.writeFileSync(htmlPreviewPath, htmlPreview);
 
-    // Replace carrots for HTML in the front end
-    //summaryContents = escapeGtLtWithUnicode(summaryContents);
-
-    // Replace line endings with \n
-    summaryContents = replaceLineEndingsWithSlashN(summaryContents);
-
-    // Replace double quotes for the command line command
-    summaryContents = escapeDoubleQuotes(summaryContents);
 
     console.log("Running governance proposal for: " + contractName)
 
@@ -748,7 +745,7 @@ async function governanceProposal(
     baseTxArgs.push("wasm-store");
     baseTxArgs.push(`"${wasmPath}"`);
     baseTxArgs.push(`--title="${govProposalSpec.title}"`);
-    baseTxArgs.push(`--summary="${summaryContents}"`);
+    baseTxArgs.push(`--summary="empty"`); // put an empty summary and replace later
     //baseTxArgs.push(`--summary="Example Summary"`);
     baseTxArgs.push(...instantiateArgs);
     baseTxArgs.push(`--deposit=${despositAmountInWei}inj`);
@@ -758,7 +755,6 @@ async function governanceProposal(
 
     console.log("Base CLI Tx:");
     console.log(baseTxArgs.join(" "));
-
 
     const injectivedPassword = process.env.INJECTIVED_PASSWORD;
     if (injectivedPassword == null) {
@@ -774,18 +770,44 @@ async function governanceProposal(
     generateTxArgs.push(`--gas=auto`);
     generateTxArgs.push(`--gas-adjustment=1.4`);
     generateTxArgs.push(`--gas-prices=500000000inj`);
-    const outputJsonTxFilepath =
-        path.join(pathsDeployArtifacts, "proposal-tx_" + contractName + "_" + context.spec.network + ".json");
 
 
     //const txJsonStringUnformatted = await run(context, "injectived", generateTxArgs);
-    const txJsonStringUnformatted = execSync(generateTxArgs.join(" "), { encoding: 'utf-8' });
-    console.log("Output String:")
-    console.log(txJsonStringUnformatted);
-    let txJsonObj = JSON.parse(txJsonStringUnformatted)
+    const txJsonStringGenerated = execSync(generateTxArgs.join(" "), { encoding: 'utf-8' });
+    console.log("Generated Tx:")
+    console.log("================================================")
+    logObjectFullDepth(txJsonStringGenerated);
+    console.log("================================================")
+
+    let txJsonObj: any = JSON.parse(txJsonStringGenerated) as any;
+
+    // Replace carrots for HTML in the front end
+    // summaryContents = escapeGtLtWithUnicode(summaryContents);
+
+    // Replace line endings with \n
+    summaryContents = replaceLineEndingsWithSlashN(summaryContents);
+
+    txJsonObj.body.messages[0].summary = summaryContents;
+
     // txJsonObj["auth_info"]["fee"]["gas_limit"] = adjustedGasEstimate.toString();
-    let prettyJsonTxString = JSON.stringify(txJsonObj, null, 2);
-    fs.writeFileSync(outputJsonTxFilepath, prettyJsonTxString);
+
+    console.log("Summary String Contents:")
+    console.log("================================================")
+    //logObjectFullDepth(summaryContents);
+    console.log(summaryContents)
+    console.log("================================================")
+
+    const noSuffixOutputJsonTxFilepath =
+        path.join(pathsDeployArtifacts, "proposal-tx_" + contractName + "_" + context.spec.network.toString().toLowerCase());
+
+    const formattedOutputJsonTxFilepath = noSuffixOutputJsonTxFilepath + ".json";
+    fs.writeFileSync(formattedOutputJsonTxFilepath, JSON.stringify(txJsonObj, null, 2));
+
+    // const rawOutputJsonTxFilepath = noSuffixOutputJsonTxFilepath + "_raw.json";
+    // fs.writeFileSync(rawOutputJsonTxFilepath, JSON.stringify(txJsonObj, null));
+
+    const summaryFilepath = noSuffixOutputJsonTxFilepath + "_summary.txt";
+    fs.writeFileSync(summaryFilepath, summaryContents);
 }
 
 
@@ -851,11 +873,11 @@ async function instantiate(context: DeployContext) {
     //     collectionSecondaryRoyaltyPaymentAddress: t.string,
     //     collectionSecondaryRoyaltyShare: t.number,
 
-    let royalty_info = null;
+    let royalty_settings = null;
 
     if (context.spec.collectionSecondaryRoyaltyPaymentAddress != undefined &&
         context.spec.collectionSecondaryRoyaltyShare != undefined) {
-        royalty_info = {
+        royalty_settings = {
             payment_address: context.spec.collectionSecondaryRoyaltyPaymentAddress,
             share: context.spec.collectionSecondaryRoyaltyShare,
         };
@@ -867,35 +889,19 @@ async function instantiate(context: DeployContext) {
             name: context.spec.collectionName,
             symbol: context.spec.collectionSymbol,
             info: {
-                creator: context.spec.collectionCreator,
                 description: context.spec.collectionDescription,
                 image: context.spec.collectionImageURL,
                 external_link: context.spec.collectionExternalLinkURL,
-                explicit_content: context.spec.collectionExplicitContent,
-                start_trading_time: context.spec.collectionStartTradingTime,
-                royalty_info: royalty_info,
+                royalty_settings: royalty_settings,
             },
 
         },
         minter_params: {
-            creation_fee: {
-                amount: "0",
-                denom: "inj"
+            dega_minter_settings: {
+                signer_pub_key: context.spec.minterSignerPubKeyBase64,
+                minting_paused: context.spec.minterMintingPaused,
             },
-            extension: {
-                dega_minter_settings: {
-                    signer_pub_key: context.spec.minterSignerPubKeyBase64,
-                    minting_paused: context.spec.minterMintingPaused,
-                },
-                initial_admin: context.spec.minterInitialAdmin,
-            },
-            frozen: false,
-            max_trading_offset_secs: 0,
-            min_mint_price: {
-                amount: "0",
-                denom: "inj"
-            },
-            mint_fee_bps: 0
+            initial_admin: context.spec.minterInitialAdmin,
         },
         cw721_contract_label: context.spec.cw721ContractLabel,
         cw721_contract_admin: cw721MigrateAdmin,

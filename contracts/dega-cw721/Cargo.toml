@@ -1,6 +1,6 @@
 [package]
 name            = "dega-cw721"
-authors         = ["Unamint Studios", "Will Stahl <will@stahl.cc>"]
+authors         = ["DEGA Labs", "Unamint Studios", "Will Stahl <will@stahl.cc>"]
 description     = "The DEGA Injective CW721 NFT smart contract"
 version         = { workspace = true }
 rust-version    = { workspace = true }
@@ -42,8 +42,8 @@ cw721                   = { workspace = true }
 cw721-base              = { workspace = true, features = ["library"] }
 cw-utils                = { workspace = true }
 cw-ownable              = { workspace = true }
-injective-cosmwasm      = { workspace = true }
-injective-math          = { workspace = true }
+#injective-cosmwasm      = { workspace = true }
+#injective-math          = { workspace = true }
 ethereum-types          = { workspace = true }
 schemars                = { workspace = true }
 serde                   = { workspace = true }
@@ -52,13 +52,11 @@ subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 cw2981-royalties        = { workspace = true, features = ["library"] }
 
-sg2                     = { workspace = true }
-sg721                   = { workspace = true, features = ["library"] }
-sg721-base              = { workspace = true, features = ["library"] }
-base-minter             = { workspace = true, features = ["library"] }
-
 dega-inj                = { workspace = true }
+url = "2.5.0"
 
 [dev-dependencies]
 cosmwasm-schema         = { workspace = true }
 cw-multi-test           = { workspace = true }
+coverage-helper         = { workspace = true }
+dega-inj                = { workspace = true, features = ["test-mode"] }

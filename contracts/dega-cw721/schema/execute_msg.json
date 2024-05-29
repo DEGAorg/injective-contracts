@@ -243,28 +243,6 @@
       "additionalProperties": false
     },
     {
-      "description": "Extension msg",
-      "type": "object",
-      "required": [
-        "extension"
-      ],
-      "properties": {
-        "extension": {
-          "type": "object",
-          "required": [
-            "msg"
-          ],
-          "properties": {
-            "msg": {
-              "$ref": "#/definitions/Empty"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
       "type": "object",
       "required": [
         "update_collection_info"
@@ -277,80 +255,16 @@
           ],
           "properties": {
             "collection_info": {
-              "$ref": "#/definitions/UpdateCollectionInfoMsg_for_RoyaltyInfoResponse"
+              "$ref": "#/definitions/UpdateCollectionInfoMsg"
             }
           },
           "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "description": "Update the contract's ownership. The `action` to be provided can be either to propose transferring ownership to an account, accept a pending ownership transfer, or renounce the ownership permanently.",
-      "type": "object",
-      "required": [
-        "update_ownership"
-      ],
-      "properties": {
-        "update_ownership": {
-          "$ref": "#/definitions/Action"
         }
       },
       "additionalProperties": false
     }
   ],
   "definitions": {
-    "Action": {
-      "description": "Actions that can be taken to alter the contract's ownership",
-      "oneOf": [
-        {
-          "description": "Propose to transfer the contract's ownership to another account, optionally with an expiry time.\n\nCan only be called by the contract's current owner.\n\nAny existing pending ownership transfer is overwritten.",
-          "type": "object",
-          "required": [
-            "transfer_ownership"
-          ],
-          "properties": {
-            "transfer_ownership": {
-              "type": "object",
-              "required": [
-                "new_owner"
-              ],
-              "properties": {
-                "expiry": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/Expiration"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "new_owner": {
-                  "type": "string"
-                }
-              },
-              "additionalProperties": false
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "description": "Accept the pending ownership transfer.\n\nCan only be called by the pending owner.",
-          "type": "string",
-          "enum": [
-            "accept_ownership"
-          ]
-        },
-        {
-          "description": "Give up the contract's ownership and the possibility of appointing a new owner.\n\nCan only be invoked by the contract's current owner.\n\nAny existing pending ownership transfer is canceled.",
-          "type": "string",
-          "enum": [
-            "renounce_ownership"
-          ]
-        }
-      ]
-    },
     "Binary": {
       "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
       "type": "string"
@@ -410,7 +324,7 @@
         }
       ]
     },
-    "RoyaltyInfoResponse": {
+    "RoyaltySettingsResponse": {
       "type": "object",
       "required": [
         "payment_address",
@@ -438,24 +352,12 @@
       "description": "A thin wrapper around u64 that is using strings for JSON encoding/decoding, such that the full u64 range can be used for clients that convert JSON numbers to floats, like JavaScript and jq.\n\n# Examples\n\nUse `from` to create instances of this and `u64` to get the value out:\n\n``` # use cosmwasm_std::Uint64; let a = Uint64::from(42u64); assert_eq!(a.u64(), 42);\n\nlet b = Uint64::from(70u32); assert_eq!(b.u64(), 70); ```",
       "type": "string"
     },
-    "UpdateCollectionInfoMsg_for_RoyaltyInfoResponse": {
+    "UpdateCollectionInfoMsg": {
       "type": "object",
       "properties": {
-        "creator": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
         "description": {
           "type": [
             "string",
-            "null"
-          ]
-        },
-        "explicit_content": {
-          "type": [
-            "boolean",
             "null"
           ]
         },
@@ -471,12 +373,12 @@
             "null"
           ]
         },
-        "royalty_info": {
+        "royalty_settings": {
           "anyOf": [
             {
               "anyOf": [
                 {
-                  "$ref": "#/definitions/RoyaltyInfoResponse"
+                  "$ref": "#/definitions/RoyaltySettingsResponse"
                 },
                 {
                   "type": "null"

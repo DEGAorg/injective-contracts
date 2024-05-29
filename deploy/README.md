@@ -142,9 +142,6 @@ already on the chain to use for instantiating the minter smart contract instance
 `"collectionSymbol": "TEST",` - The ticker symbol of the collection in the collection properties of the CW721 contract.
 Note, this shows up as the "Denom" in the injective finder.
 
-`"collectionCreator": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` - The injective address of the creator of the collection,
-as exists in the default implementation of the stargate NFT contracts.
-
 `"collectionDescription": "This is a test collection",` - A description for the collection stored and queryable in the 
 smart contract.
 
@@ -152,10 +149,6 @@ smart contract.
 stored and queryable in the smart contract.
 
 `"collectionExternalLinkURL": "https://realms.degaplatform.com/",` - An external link for the collection stored and queryable in the smart contract.
-
-`"collectionExplicitContent": null,` (Optional) - Whether the collection contains explicit content. Stored and queryable in the smart contract.
-
-`"collectionStartTradingTime": null,` (Optional) - A holdover from the Stargaze CW721 contract, does not work outside the stargaze chain but could be implemented.
 
 `"collectionSecondaryRoyaltyPaymentAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` - The injective address of the secondary royalty payment address for the collection.
 

@@ -1,158 +1,312 @@
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdError, StdResult, to_json_binary, Uint128};
-use cw2981_royalties::msg::Cw2981QueryMsg;
+use cosmwasm_std::{ContractInfoResponse, DepsMut, Env, MessageInfo, Response, WasmQuery};
+use cw721::{ContractInfoResponse as Cw721ContractInfoResponse};
 use cw_utils::nonpayable;
-use dega_inj::cw721::{DegaCW721Contract, ExecuteMsg, QueryMsg};
-use dega_inj::minter::{DegaMinterConfigResponse};
+use dega_inj::cw721::{CollectionInfo, InstantiateMsg, MigrateMsg, RoyaltySettings};
+use url::Url;
+use dega_inj::helpers::{save_item_wrapped, set_contract_version_wrapped};
 use crate::error::ContractError;
+use crate::helpers::{initialize_owner_wrapped, share_validate};
+use crate::state::DegaCw721Contract;
 
-use sg721::{InstantiateMsg as Sg721BaseInstantiateMsg};
+const CONTRACT_NAME: &str = "dega-cw721";
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub(crate) const MAX_DESCRIPTION_LENGTH: u32 = 512;
 
-use sg721_base::contract::get_owner_minter;
-use sg721_base::msg::CollectionInfoResponse;
+impl<'a> DegaCw721Contract<'a>
+{
+    pub(crate) fn instantiate(
+        &self,
+        deps: DepsMut,
+        _env: Env,
+        info: MessageInfo,
+        msg: InstantiateMsg,
+    ) -> Result<Response, ContractError> {
 
+        set_contract_version_wrapped(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+            .map_err(|e| ContractError::Std("Error setting contract version".to_string(), e))?;
 
-pub fn _instantiate(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: Sg721BaseInstantiateMsg,
-) -> Result<Response, ContractError> {
+        // no funds should be sent to this contract
+        nonpayable(&info)
+            .map_err(|e| ContractError::Payment("Payment not permitted".to_string(), e))?;
 
-    DegaCW721Contract::default().instantiate(deps, env, info, msg)
-        .map_err(| e | ContractError::Base721("Error during base instantiation".to_string(), e))
-}
+        // check sender is a contract
+        let req = WasmQuery::ContractInfo {
+            contract_addr: info.sender.clone().into(),
+        }.into();
 
+        let _res: ContractInfoResponse = deps
+            .querier
+            .query(&req)
+            .map_err(|_| ContractError::Unauthorized ("Collection must be instantiated by contract".to_string()))?;
 
-pub fn _execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> Result<Response, ContractError> {
+        // cw721 instantiation
+        let contract_info = Cw721ContractInfoResponse {
+            name: msg.name,
+            symbol: msg.symbol,
+        };
+        save_item_wrapped(deps.storage, &self.parent.contract_info, &contract_info)
+            .map_err(|e| ContractError::Std("Unable to save contract info".to_string(), e))?;
 
-    if let ExecuteMsg::Mint { .. } = msg {
-        let minter_config = load_dega_minter_settings(&deps.as_ref())?;
-        if minter_config.dega_minter_settings.minting_paused {
-            return Err(ContractError::OperationPaused)
-        }
-    }
+        initialize_owner_wrapped(deps.storage, deps.api, Some(info.sender.as_str()))
+            .map_err(|e| ContractError::Std("Unable to initialize owner".to_string(), e))?;
 
-    //match msg {
-        // ExecuteMsg::UpdateTokenMetadata { token_id, token_uri} => {
-        //     execute_update_token_metadata(deps, env, info, token_id, token_uri)
-        // },
-        //_ => {
-            DegaCW721Contract::default().execute(deps, env, info, msg.into())
-                .map_err(| e | ContractError::Base721("Error during base execution".to_string(), e))
-        //}
-    //}
-
-}
-
-
-pub(crate) fn load_dega_minter_settings(deps: &Deps) -> Result<DegaMinterConfigResponse, ContractError> {
-    let minter_addr = get_owner_minter(deps.storage)
-        .map_err(|e| ContractError::Base721("Error during query for owner minter".to_string(), e))?;
-
-    let config_response: DegaMinterConfigResponse = deps.querier.query_wasm_smart(
-        minter_addr.clone(),
-        &dega_inj::minter::QueryMsg::Config {},
-    ).map_err(|e| ContractError::Std("Error during query for minter config".to_string(), e))?;
-
-    Ok(config_response)
-}
-
-
-pub fn _query(
-    deps: Deps,
-    env: Env,
-    msg: QueryMsg
-) -> StdResult<Binary> {
-
-    match msg {
-        QueryMsg::Extension { msg   } => {
-            match msg {
-                Cw2981QueryMsg::RoyaltyInfo { token_id, sale_price } => {
-                    to_json_binary(&query_royalties_info(deps, token_id, sale_price)?)
-                }
-                Cw2981QueryMsg::CheckRoyalties { } => {
-                    to_json_binary(&query_check_royalties(deps)?)
-                }
-            }
+        // dega instantiation
+        if msg.collection_info.description.len() > MAX_DESCRIPTION_LENGTH as usize {
+            return Err(ContractError::InvalidInput("Description is too long".to_string(), msg.collection_info.description));
         }
 
-        _ => {
-            DegaCW721Contract::default().query(deps, env, msg.into())
+        let image = Url::parse(&msg.collection_info.image)
+            .map_err(|_| ContractError::InvalidInput("Invalid image URL".to_string(), msg.collection_info.image.clone()))?;
+
+        if let Some(ref external_link) = msg.collection_info.external_link {
+            Url::parse(external_link)
+                .map_err(|_| ContractError::InvalidInput("Invalid external link URL".to_string(), external_link.to_string()))?;
         }
+
+        let royalty_settings: Option<RoyaltySettings> = match msg.collection_info.royalty_settings {
+            Some(royalty_settings) => {
+                let payment_address = deps.api.addr_validate(&royalty_settings.payment_address)
+                                              .map_err(|e| ContractError::Std("Invalid royalty payment address".to_string(), e))?;
+
+                let share = share_validate(royalty_settings.share)
+                    .map_err(|e| ContractError::Std("Invalid royalty share".to_string(), e))?;
+
+                Some(RoyaltySettings {
+                    payment_address,
+                    share,
+                })
+            },
+            None => None,
+        };
+
+        let collection_info = CollectionInfo {
+            description: msg.collection_info.description,
+            image: msg.collection_info.image,
+            external_link: msg.collection_info.external_link,
+            royalty_settings,
+        };
+
+        save_item_wrapped(deps.storage, &self.collection_info, &collection_info)
+            .map_err(|e| ContractError::Std("Unable to save collection info".to_string(), e))?;
+
+        Ok(Response::new()
+            .add_attribute("action", "instantiate")
+            .add_attribute("collection_name", contract_info.name)
+            .add_attribute("collection_symbol", contract_info.symbol)
+            .add_attribute("minter", info.sender.to_string())
+            .add_attribute("image", image.to_string()))
+    }
+
+    pub(crate) fn migrate(&self, _deps: DepsMut, _env: Env, _migrate_msg: MigrateMsg) -> Result<Response, ContractError> {
+
+        Ok(Response::new())
+
+        // if migrate_msg.is_dev {
+        //
+        //     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+        //         .map_err(|e| ContractError::Std("Unable to set contract version".to_string(), e))?;
+        //
+        //     Ok(
+        //         Response::new()
+        //             .add_attribute("is_dev", "true")
+        //             .add_attribute("dev_version", migrate_msg.dev_version)
+        //     )
+        // } else {
+        //     let prev_contract_version = cw2::get_contract_version(deps.storage)
+        //         .map_err(|e| ContractError::Std("Unable to get contract version".to_string(), e))?;
+        //
+        //     let valid_contract_names = [CONTRACT_NAME.to_string()];
+        //     if !valid_contract_names.contains(&prev_contract_version.contract) {
+        //         return Err(ContractError::Migration("Invalid contract name for migration".to_string()));
+        //     }
+        //
+        //     #[allow(clippy::cmp_owned)]
+        //     if prev_contract_version.version >= CONTRACT_VERSION.to_string() {
+        //         return Err(ContractError::Migration("Must upgrade contract version".to_string()));
+        //     }
+        //
+        //     let mut response = Response::new();
+        //
+        //     #[allow(clippy::cmp_owned)]
+        //     if prev_contract_version.version < "1.0.0".to_string() {
+        //         response = crate::upgrades::v1_0_0::upgrade(deps.branch(), &env, response)?;
+        //     }
+        //
+        //     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)
+        //         .map_err(|e| ContractError::Std("Unable to set contract version".to_string(), e))?;
+        //
+        //     response = response.add_event(
+        //         Event::new("migrate")
+        //             .add_attribute("from_name", prev_contract_version.contract)
+        //             .add_attribute("from_version", prev_contract_version.version)
+        //             .add_attribute("to_name", CONTRACT_NAME)
+        //             .add_attribute("to_version", CONTRACT_VERSION),
+        //     );
+        //
+        //     Ok(response)
+        // }
     }
 }
 
 
-pub fn query_royalties_info(
-    deps: Deps,
-    _token_id: String,
-    sale_price: Uint128,
-) -> StdResult<cw2981_royalties::msg::RoyaltiesInfoResponse> {
-    let contract = DegaCW721Contract::default();
+#[cfg(test)]
+mod tests {
+    #[allow(unused_imports)]
+    use super::*;
+    use cosmwasm_std::{Api, Coin, Decimal, Uint128};
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cw721::Cw721Query;
+    use cw_ownable::assert_owner;
+    use cw_utils::PaymentError;
+    use dega_inj::test_helpers::{add_save_error_item, clear_save_error_items, set_contract_version_error};
+    use crate::error::ContractError;
+    use crate::state::DegaCw721Contract;
+    use crate::test_helpers::{INITIALIZE_OWNER_ERROR, INJ_DENOM, MINTER_CONTRACT_ADDR, set_wasm_query_handler, template_collection, template_collection_via_msg, template_instantiate_msg};
+    #[test]
+    fn normal_initialization() {
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let contract = DegaCw721Contract::default();
 
-    let info = contract.collection_info.load(deps.storage)
-        .map_err(|e| StdError::generic_err(format!("Error during query for collection info: {}", e)))?;
+        let response = template_collection(&mut deps, env.clone(), &contract).unwrap();
 
-    Ok(match info.royalty_info {
-        Some(royalty_info) => cw2981_royalties::msg::RoyaltiesInfoResponse {
-            address: royalty_info.payment_address.to_string(),
-            royalty_amount: sale_price * royalty_info.share,
-        },
-        None => cw2981_royalties::msg::RoyaltiesInfoResponse {
-            address: String::from(""),
-            royalty_amount: Uint128::zero(),
-        },
-    })
-}
+        assert_eq!(response.messages.len(), 0);
 
-pub fn query_check_royalties(_deps: Deps) -> StdResult<cw2981_royalties::msg::CheckRoyaltiesResponse> {
-    Ok(cw2981_royalties::msg::CheckRoyaltiesResponse {
-        royalty_payments: true,
-    })
-}
+        // Ensure the minter address has been set as the contract owner
+        assert_owner(&deps.storage, &deps.api.addr_validate(MINTER_CONTRACT_ADDR).unwrap()).unwrap();
 
-pub fn _execute_update_token_metadata(
-    deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
-    token_id: String,
-    token_uri: Option<String>,
-) -> Result<Response, ContractError> {
-    nonpayable(&info)
-        .map_err(|e| ContractError::Payment("Payment not allowed during update token.".to_string(), e))?;
-    // Check if sender is minter
-    let owner = deps.api.addr_validate(info.sender.as_ref())
-        .map_err(|e| ContractError::Std("Could not validate sender address.".to_string(), e))?;
-    let collection_info: CollectionInfoResponse =
-        DegaCW721Contract::default().query_collection_info(deps.as_ref())
-            .map_err(|e| ContractError::Std("Unable to query collection info.".to_string(), e))?;
-    if owner != collection_info.creator {
-        return Err(ContractError::Unauthorized("Sender is not creator.".to_string()));
+        let template_msg = template_instantiate_msg();
+
+        let contract_info = contract.parent.contract_info(deps.as_ref()).unwrap();
+
+        // Check that the SG base constructor ran properly
+        assert_eq!(contract_info.name, template_msg.name);
+        assert_eq!(contract_info.symbol, template_msg.symbol);
+
+        let collection_info = contract.query_collection_info(deps.as_ref()).unwrap();
+        assert_eq!(collection_info.description, template_msg.collection_info.description);
+        assert_eq!(collection_info.image, template_msg.collection_info.image);
+        assert_eq!(collection_info.external_link, template_msg.collection_info.external_link);
+        assert_eq!(collection_info.royalty_settings.unwrap(), template_msg.collection_info.royalty_settings.unwrap());
+
+        // Initialize without a royalty set
+        deps = mock_dependencies();
+        let mut msg = template_instantiate_msg();
+        msg.collection_info.royalty_settings = None;
+        template_collection_via_msg(&mut deps, mock_env(), &contract, msg.clone())
+            .unwrap();
+        assert!(contract.query_collection_info(deps.as_ref()).unwrap().royalty_settings.is_none());
+
+        // Initialize without an external link
+        deps = mock_dependencies();
+        let mut msg = template_instantiate_msg();
+        msg.collection_info.external_link = None;
+        template_collection_via_msg(&mut deps, mock_env(), &contract, msg.clone())
+            .unwrap();
     }
 
-    // Update token metadata
-    DegaCW721Contract::default().tokens.update(
-        deps.storage,
-        &token_id,
-        |token| match token {
-            Some(mut token_info) => {
-                token_info.token_uri.clone_from(&token_uri);
-                Ok(token_info)
-            }
-            None => Err(StdError::generic_err(format!("Token ID not found. Token ID: {}", token_id))),
-        },
-    ).map_err(|e| ContractError::Std("Error updating token metadata".to_string(), e))?;
+    #[test]
+    fn sending_funds_on_instantiate() {
+        let mut deps = mock_dependencies();
 
-    let mut event = Event::new("update_update_token_metadata")
-        .add_attribute("sender", info.sender)
-        .add_attribute("token_id", token_id);
-    if let Some(token_uri) = token_uri {
-        event = event.add_attribute("token_uri", token_uri);
+        let msg = template_instantiate_msg();
+
+        let info = mock_info(MINTER_CONTRACT_ADDR, &[
+            Coin {
+                denom: INJ_DENOM.to_string(),
+                amount: Uint128::new(1000000),
+            },
+        ]);
+
+        let contract = DegaCw721Contract::default();
+
+        let err = contract.instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap_err();
+        assert_eq!(err, ContractError::Payment("Payment not permitted".to_string(), PaymentError::NonPayable {}));
     }
-    Ok(Response::new().add_event(event))
+
+    #[test]
+    fn save_item_errors() {
+        let contract = DegaCw721Contract::default();
+
+        add_save_error_item(&contract.collection_info);
+
+        assert!(template_collection(&mut mock_dependencies(), mock_env(), &contract).unwrap_err().to_string()
+            .contains("Unable to save collection info"));
+
+        clear_save_error_items();
+
+        add_save_error_item(&contract.parent.contract_info);
+
+        assert!(template_collection(&mut mock_dependencies(), mock_env(), &contract).unwrap_err().to_string()
+            .contains("Unable to save contract info"));
+
+        clear_save_error_items();
+
+        INITIALIZE_OWNER_ERROR.set(true);
+        let error_string = template_collection(&mut mock_dependencies(), mock_env(), &contract).unwrap_err().to_string();
+        assert!(error_string.contains("Mock initialize owner error"));
+        assert!(error_string.contains("Unable to initialize owner"));
+        INITIALIZE_OWNER_ERROR.set(false);
+
+        set_contract_version_error(true);
+        let error_string = template_collection(&mut mock_dependencies(), mock_env(), &contract).unwrap_err().to_string();
+        assert!(error_string.contains("Mock set contract version error"));
+        assert!(error_string.contains("Error setting contract version"));
+        set_contract_version_error(false);
+    }
+
+    #[test]
+    fn bad_instantiate_inputs() {
+        let contract = DegaCw721Contract::default();
+        let mut msg;
+
+        let not_a_url = "not a url".to_string();
+        let invalid_address = "Invalid Address".to_string();
+
+        msg = template_instantiate_msg();
+        msg.collection_info.image.clone_from(&not_a_url);
+        assert!(template_collection_via_msg(&mut mock_dependencies(), mock_env(), &contract, msg.clone())
+            .unwrap_err().to_string().contains("Invalid image URL"));
+
+        msg = template_instantiate_msg();
+        msg.collection_info.external_link.clone_from(&Some(not_a_url));
+        assert!(template_collection_via_msg(&mut mock_dependencies(), mock_env(), &contract, msg.clone())
+            .unwrap_err().to_string().contains("Invalid external link URL"));
+
+        msg = template_instantiate_msg();
+        msg.collection_info.description = "a".repeat(MAX_DESCRIPTION_LENGTH as usize + 1);
+        assert!(template_collection_via_msg(&mut mock_dependencies(), mock_env(), &contract, msg.clone())
+            .unwrap_err().to_string().contains("Description is too long"));
+
+        msg = template_instantiate_msg();
+        if let Some(ref mut settings) = msg.collection_info.royalty_settings {
+            settings.payment_address.clone_from(&invalid_address);
+        }
+        assert!(template_collection_via_msg(&mut mock_dependencies(), mock_env(), &contract, msg.clone())
+            .unwrap_err().to_string().contains("Invalid royalty payment address"));
+
+        msg = template_instantiate_msg();
+        if let Some(ref mut settings) = msg.collection_info.royalty_settings {
+            settings.share = Decimal::percent(101);
+        }
+        assert!(template_collection_via_msg(&mut mock_dependencies(), mock_env(), &contract, msg.clone())
+            .unwrap_err().to_string().contains("Invalid royalty share"));
+    }
+
+    #[test]
+    fn instantiate_not_by_contract() {
+        let mut deps = mock_dependencies();
+
+        set_wasm_query_handler(&mut deps);
+
+        let msg = template_instantiate_msg();
+
+        let info = mock_info("regular_sender_addr", &[]);
+
+        let contract = DegaCw721Contract::default();
+
+        let err = contract.instantiate(deps.as_mut(), mock_env(), info.clone(), msg.clone()).unwrap_err();
+        assert!(err.to_string().contains("Collection must be instantiated by contract"));
+    }
+
 }
