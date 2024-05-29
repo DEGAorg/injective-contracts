@@ -47,6 +47,12 @@ export async function query(args: string[]) {
         case "all-operators":
             await queryAllOperators(args);
             break;
+        case "collection-info":
+            await queryCollectionInfo(args);
+            break;
+        case "minter-settings":
+            await queryMinterSettings(args);
+            break;
         default:
             console.log("Unknown test query sub-command: " + sub_command);
             break;
@@ -388,6 +394,44 @@ const queryAllOperators = async (args: string[]) => {
     const queryResponse = await context.queryWasmApi.fetchSmartContractState(
         context.cw721Address,
         toBase64(cw721Query)
+    );
+
+    const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
+    console.log(response);
+    return
+}
+
+// collection info
+const queryCollectionInfo = async (args: string[]) => {
+    const context = await getAppContext();
+
+    const cw721Query: DegaCw721QueryMsg = {
+        collection_info: {
+        }
+    }
+
+    const queryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.cw721Address,
+        toBase64(cw721Query)
+    );
+
+    const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
+    console.log(response);
+    return
+}
+
+// minter settings
+const queryMinterSettings = async (args: string[]) => {
+    const context = await getAppContext();
+
+    const minterQuery: DegaMinterQueryMsg = {
+        config: {
+        }
+    }
+
+    const queryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.minterAddress,
+        toBase64(minterQuery)
     );
 
     const response = fromBase64(Buffer.from(queryResponse.data).toString("base64"));
