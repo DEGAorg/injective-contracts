@@ -22,7 +22,7 @@ const ERROR_MESSAGES = {
 
 jest.setTimeout(30000);
 
-describe.skip('Dega Minter with Fuzz: ', () => {
+describe('Dega Minter with Fuzz: ', () => {
   let appContext: AppContext;
   let testContext: TestContext;
   beforeAll(async () => {
@@ -105,7 +105,7 @@ describe.skip('Dega Minter with Fuzz: ', () => {
   }, 250000);
 });
 
-describe.skip('Dega Minter Negative confirmations', () => {
+describe('Dega Minter Negative confirmations', () => {
   let appContext: AppContext;
   let testContext: TestContext;
   beforeAll(async () => {

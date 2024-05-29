@@ -44,7 +44,7 @@ const ERROR_QUERRIES = {
 
 jest.setTimeout(30000);
 
-describe.skip('Dega Collection', () => {
+describe('Dega Collection', () => {
   let appContext: AppContext;
   let testContext: TestContext;
   let negativeTestTokenId: string;
