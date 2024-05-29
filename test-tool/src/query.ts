@@ -15,6 +15,7 @@ import { Cw2981QueryMsg } from "./messages/dega_cw721_query";
 import {createAdminsQuery, generalQueryGetter} from "./helpers/minter";
 import {createTokensQuery, generalCollectionGetter} from "./helpers/collection";
 
+
 export async function query(args: string[]) {
 
     let sub_command = "info"; // default to query
@@ -79,6 +80,9 @@ export async function query(args: string[]) {
             break;
         case "all-nft-info":
             await queryAllNftInfo(args);
+            break;
+        case "collection-contract-info":
+            await queryCollectionContractInfo(args);
             break;
         case "print-base64-object":
             printBase64Object(args);
@@ -707,6 +711,22 @@ async function queryAllNftInfo(args: string[]) {
             token_id: tokenId,
             include_expired: includeExpired
         }
+    };
+
+    const response = await generalCollectionGetter(await getAppContext(), query);
+    console.log(response);
+}
+
+async function queryCollectionContractInfo(args: string[]) {
+    const usage = "Usage: query contract-info";
+
+    if (args.length > 1) {
+        console.log(`Arguments provided when none should be. ${usage}`);
+        return;
+    }
+
+    const query: DegaCw721QueryMsg = {
+        contract_info: {}
     };
 
     const response = await generalCollectionGetter(await getAppContext(), query);
