@@ -48,7 +48,7 @@ export const createMintRequest = (appContext: AppContext, price: string, recipie
   };
 }
 
-const createSignature = (mintRequestMsg: MintRequest, appContext: AppContext, unAuthorized: boolean): [Buffer, Buffer] => {
+const createSignature = (mintRequestMsg: MintRequest, appContext: AppContext, testContext: TestContext, unAuthorized: boolean, newSigner: boolean): [Buffer, Buffer] => {
   let rawMessage = Buffer.from(toBase64(mintRequestMsg), "base64")
   let msgMd5Hash = Buffer.from(sha256(rawMessage))
   let signature: Buffer;
@@ -57,7 +57,11 @@ const createSignature = (mintRequestMsg: MintRequest, appContext: AppContext, un
     const randomSigningKey = Buffer.from(randomPK.toPrivateKeyHex().slice(2), "hex");
     signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, randomSigningKey).signature);
   } else {
-    signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, appContext.signerSigningKey).signature)
+    if (newSigner) {
+      signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, testContext.signerTwoSigningKey).signature)
+    } else {
+      signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, appContext.signerSigningKey).signature)
+    }
   }
   return [msgMd5Hash, signature];
 };
@@ -100,12 +104,12 @@ export const createExecuteMintMessage = (appContext: AppContext, mintRequestMsg:
   return execMsg;
 }
 
-export const createBasicTx = async (appContext: AppContext, recipient: string, price: number = 0.5, unAuthorized:boolean = false): Promise<[MintRequest, Buffer]> => {
+export const createBasicTx = async (appContext: AppContext, testContext: TestContext, recipient: string, price: number = 0.5, unAuthorized:boolean = false, newSigner: boolean = false): Promise<[MintRequest, Buffer]> => {
   // Create Mint Request And Signature
   let nft_price_wei = getNFTWeiPrice(price)
   // console.warn(`=====NFT Price: ${nft_price_wei}`);
   let mintRequestMsg = createMintRequest(appContext, nft_price_wei, recipient);
-  const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext, unAuthorized);
+  const [msgMd5Hash, signature] = createSignature(mintRequestMsg, appContext, testContext, unAuthorized, newSigner);
   console.log("PubKey Compressed: " + appContext.signerCompressedPublicKey.toString("base64"));
 
   // Check Signature

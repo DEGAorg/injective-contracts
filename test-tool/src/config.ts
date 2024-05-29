@@ -89,6 +89,7 @@ function initConfig() {
         CW721_ADDRESS_MAINNET: process.env.CW721_ADDRESS_MAINNET ?? "",
         TEST_PRIMARY_SEEDHEX: process.env.TEST_PRIMARY_SEEDHEX ?? "",
         TEST_SIGNER_SEEDHEX: process.env.TEST_SIGNER_SEEDHEX ?? "",
+        TEST_SIGNER_TWO_SEEDHEX: process.env.TEST_SIGNER_TWO_SEEDHEX ?? "",
         TEST_TEST_ONE_SEEDHEX: process.env.TEST_TEST_ONE_SEEDHEX ?? "",
         TEST_TEST_TWO_SEEDHEX: process.env.TEST_TEST_TWO_SEEDHEX ?? "",
         TEST_TEST_THREE_SEEDHEX: process.env.TEST_TEST_THREE_SEEDHEX ?? "",

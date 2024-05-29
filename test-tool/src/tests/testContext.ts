@@ -16,6 +16,10 @@ export interface TestContext {
     testMinterWasmChecksum: string,
     testCw721WasmChecksum: string,
     testReceiverTesterWasmChecksum?: string,
+    signerTwoPrivateKey: PrivateKey;
+    signerTwoSigningKey: Buffer;
+    signerTwoCompressedPublicKey: Buffer;
+    signerTwoAddress: string;
     localGenesisPrivateKey: PrivateKey,
     localGenesisAddress: string,
     localGenesisBroadcaster: MsgBroadcasterWithPk,
@@ -52,6 +56,18 @@ async function initTestContext(): Promise<TestContext> {
     });
 
     localGenesisBroadcaster.chainId = ChainId.Mainnet; // Fix for local testnet chain ID being wrong for Local in the injective typescript library
+
+    // Signer Two
+    const signerTwoPrivateKey = PrivateKey.fromHex(config.TEST_SIGNER_TWO_SEEDHEX);
+
+    const signerTwoSigningKey = Buffer.from(signerTwoPrivateKey.toPrivateKeyHex().slice(2), "hex");
+
+    if (!secp256k1.privateKeyVerify(signerTwoSigningKey)) {
+        throw new Error("Invalid signer two private key");
+    }
+
+    const signerTwoCompressedPublicKey = Buffer.from(secp256k1.publicKeyCreate(signerTwoSigningKey, true))
+    const signerTwoAddress = signerTwoPrivateKey.toBech32();
 
     const testPrivateKeyOne = PrivateKey.fromHex(config.TEST_TEST_ONE_SEEDHEX);
     const testAddressOne = testPrivateKeyOne.toBech32();
@@ -181,6 +197,10 @@ async function initTestContext(): Promise<TestContext> {
         oneBroadcaster,
         twoBroadcaster,
         threeBroadcaster,
+        signerTwoPrivateKey,
+        signerTwoSigningKey,
+        signerTwoCompressedPublicKey,
+        signerTwoAddress,
     }
 }
 

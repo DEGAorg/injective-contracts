@@ -230,6 +230,7 @@ function generateTestEnvFile() {
 
     appendTestEnvFile("TEST_PRIMARY_SEEDHEX=" + generatePrivateKeySeedHex());
     appendTestEnvFile("TEST_SIGNER_SEEDHEX=" + generatePrivateKeySeedHex());
+    appendTestEnvFile("TEST_SIGNER_TWO_SEEDHEX=" + generatePrivateKeySeedHex());
     appendTestEnvFile("TEST_TEST_ONE_SEEDHEX=" + generatePrivateKeySeedHex());
     appendTestEnvFile("TEST_TEST_TWO_SEEDHEX=" + generatePrivateKeySeedHex());
     appendTestEnvFile("TEST_TEST_THREE_SEEDHEX=" + generatePrivateKeySeedHex());
