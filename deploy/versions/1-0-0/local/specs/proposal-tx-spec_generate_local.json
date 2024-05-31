@@ -8,8 +8,8 @@
   "preExistingMinterBinaryChecksum": "8fb52e70d738587b474cf18314674206298a5c5ad7edadf49b9b14c848ce1a68",
   "optionsGovernanceProposalForMinter": true,
   "govProposalSpecForMinter": {
-    "title": "Upload DEGA Minter Contract Wasm Code",
-    "summaryFilePath": "versions/1-0-0/minter-gov-prop-summary-short.txt",
+    "title": "Upload DEGA Minter Contract",
+    "summaryFilePath": "versions/1-0-0/minter-gov-prop-summary-very-short.txt",
     "proposerAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
     "instantiateAddresses": ["inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6"],
     "depositAmountINJ": 100
@@ -20,8 +20,8 @@
   "preExistingCw721BinaryChecksum": "bd79391b58ea587036ac47e6eeebc5332c8e1f8f40c5811dccd277a60e78902c",
   "optionsGovernanceProposalForCw721": true,
   "govProposalSpecForCw721": {
-    "title": "Upload DEGA Collection Contract Wasm Code",
-    "summaryFilePath": "versions/1-0-0/cw721-gov-prop-summary-short.txt",
+    "title": "Upload DEGA CW721 Contract",
+    "summaryFilePath": "versions/1-0-0/cw721-gov-prop-summary-very-short.txt",
     "proposerAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
     "instantiateAddresses": null,
     "depositAmountINJ": 100
