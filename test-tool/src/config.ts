@@ -2,6 +2,7 @@ import {config} from "dotenv";
 import path from "node:path";
 import {randomBytes} from "crypto";
 import {PrivateKey} from "@injectivelabs/sdk-ts";
+import fs from "fs";
 
 function isEmpty(value: any) {
     return value === null || value === undefined;
@@ -31,8 +32,11 @@ function initConfig() {
     config();
 
     if (isJestRunning()) {
-        const testEnvPath = path.resolve(__dirname, "..", "cache", ".env.test")
-        config({path: testEnvPath, override: true});
+        const testEnvPath = path.resolve(__dirname, "..", "cache", ".env.test");
+
+        if (fs.existsSync(testEnvPath)) {
+            config({path: testEnvPath, override: true});
+        }
     }
 
     let networkType: "Local" | "Testnet" | "Mainnet";
@@ -53,11 +57,11 @@ function initConfig() {
         networkType = "Local";
     }
 
-    if (!process.env.PRIVATE_KEY_MNEMONIC) {
+    if (!process.env.PRIVATE_KEY_MNEMONIC && !isJestRunning()) {
         throw new Error("PRIVATE_KEY_MNEMONIC must be defined in the environment");
     }
 
-    if (!process.env.SIGNER_KEY_MNEMONIC) {
+    if (!process.env.SIGNER_KEY_MNEMONIC && !isJestRunning()) {
         throw new Error("SIGNER_KEY_MNEMONIC must be defined in the environment");
     }
 
@@ -66,8 +70,8 @@ function initConfig() {
     }
 
     return {
-        PRIVATE_KEY_MNEMONIC: process.env.PRIVATE_KEY_MNEMONIC,
-        SIGNER_KEY_MNEMONIC: process.env.SIGNER_KEY_MNEMONIC,
+        PRIVATE_KEY_MNEMONIC: process.env.PRIVATE_KEY_MNEMONIC ?? "",
+        SIGNER_KEY_MNEMONIC: process.env.SIGNER_KEY_MNEMONIC ?? "",
         LOCAL_GENESIS_MNEMONIC: process.env.LOCAL_GENESIS_MNEMONIC ?? "",
         INJECTIVED_PASSWORD: process.env.INJECTIVED_PASSWORD ?? "",
         NETWORK: networkType,

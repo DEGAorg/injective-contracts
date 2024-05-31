@@ -2,3 +2,5 @@ artifacts
 private-keys
 /specs/*
 !/specs/versioned
+!*.wasm
+!*.txt

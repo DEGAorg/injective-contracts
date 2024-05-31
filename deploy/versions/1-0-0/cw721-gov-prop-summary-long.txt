@@ -24,7 +24,7 @@ With a team of seasoned professionals with experience at Animoca Brands, EA Game
 
 <strong>Smart Contract Information</strong>
 Contract version: 1.0.0
-Contract checksum: 38100d698de14ba53bad08cb5b4963be61d737fae4bdb602bf1c775c4f789558
+Contract checksum: bd79391b58ea587036ac47e6eeebc5332c8e1f8f40c5811dccd277a60e78902c
 Rust version: 1.75.0
 CosmWasm version: 1.2.1
 CosmWasm Optimizer version: 0.15.1

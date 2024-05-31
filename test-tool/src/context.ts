@@ -49,7 +49,7 @@ async function initAppContext(): Promise<AppContext> {
     // doesn't have the values from the .env.test we just dynamically loaded
     const config = reloadConfig();
 
-    if (config.PRIVATE_KEY_MNEMONIC == "") {
+    if (config.PRIVATE_KEY_MNEMONIC == "" && !isJestRunning()) {
         throw new Error("PRIVATE_KEY_MNEMONIC is required");
     }
 
@@ -62,7 +62,7 @@ async function initAppContext(): Promise<AppContext> {
     const primaryAddress = primaryPrivateKey.toBech32();
 
     // Signer Account
-    if (config.SIGNER_KEY_MNEMONIC == "") {
+    if (config.SIGNER_KEY_MNEMONIC == "" && !isJestRunning()) {
         throw new Error("SIGNER_KEY_MNEMONIC is required");
     }
 

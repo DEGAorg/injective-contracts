@@ -224,8 +224,12 @@ export function logObjectFullDepth(obj: any) {
 
 function generateTestEnvFile() {
 
-    const testEnvFilePath = path.resolve(__dirname, "..", "..", "cache", ".env.test");
+    const cacheDirPath = path.resolve(__dirname, "..", "..", "cache");
+    if (!fs.existsSync(cacheDirPath)) {
+        fs.mkdirSync(cacheDirPath);
+    }
 
+    const testEnvFilePath = path.join(cacheDirPath, ".env.test");
     fs.writeFileSync(testEnvFilePath, "");
 
     appendTestEnvFile("TEST_PRIMARY_SEEDHEX=" + generatePrivateKeySeedHex());
