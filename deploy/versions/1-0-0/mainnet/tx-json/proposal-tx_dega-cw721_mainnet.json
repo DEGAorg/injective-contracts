@@ -37,10 +37,10 @@
       "amount": [
         {
           "denom": "inj",
-          "amount": "31353849000000000"
+          "amount": "25000000000000000"
         }
       ],
-      "gas_limit": "62707698",
+      "gas_limit": "50000000",
       "payer": "",
       "granter": ""
     },

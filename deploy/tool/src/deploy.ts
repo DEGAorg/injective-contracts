@@ -767,8 +767,11 @@ async function governanceProposal(
     generateTxArgs.push(`|`);
     generateTxArgs = generateTxArgs.concat(baseTxArgs);
     generateTxArgs.push(`--generate-only`);
-    generateTxArgs.push(`--gas=auto`);
-    generateTxArgs.push(`--gas-adjustment=1.4`);
+
+    //generateTxArgs.push(`--gas=auto`);
+    //generateTxArgs.push(`--gas-adjustment=1.4`);
+    generateTxArgs.push(`--gas=50000000`);
+
     generateTxArgs.push(`--gas-prices=500000000inj`);
 
 
