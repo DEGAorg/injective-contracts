@@ -44,7 +44,6 @@ ethereum-types          = { workspace = true }
 schemars                = { workspace = true }
 serde                   = { workspace = true }
 serde_repr              = { workspace = true }
-subtle-encoding         = { workspace = true }
 thiserror               = { workspace = true }
 
 [dev-dependencies]

@@ -2,7 +2,6 @@ use cosmwasm_std::{ContractInfoResponse, DepsMut, Env, MessageInfo, Response, Wa
 use cw721::{ContractInfoResponse as Cw721ContractInfoResponse};
 use cw_utils::nonpayable;
 use dega_inj::cw721::{CollectionInfo, InstantiateMsg, MigrateMsg, RoyaltySettings};
-use url::Url;
 use dega_inj::helpers::{save_item_wrapped, set_contract_version_wrapped};
 use crate::error::ContractError;
 use crate::helpers::{initialize_owner_wrapped, share_validate};
@@ -55,14 +54,6 @@ impl<'a> DegaCw721Contract<'a>
             return Err(ContractError::InvalidInput("Description is too long".to_string(), msg.collection_info.description));
         }
 
-        let image = Url::parse(&msg.collection_info.image)
-            .map_err(|_| ContractError::InvalidInput("Invalid image URL".to_string(), msg.collection_info.image.clone()))?;
-
-        if let Some(ref external_link) = msg.collection_info.external_link {
-            Url::parse(external_link)
-                .map_err(|_| ContractError::InvalidInput("Invalid external link URL".to_string(), external_link.to_string()))?;
-        }
-
         let royalty_settings: Option<RoyaltySettings> = match msg.collection_info.royalty_settings {
             Some(royalty_settings) => {
                 let payment_address = deps.api.addr_validate(&royalty_settings.payment_address)
@@ -94,7 +85,7 @@ impl<'a> DegaCw721Contract<'a>
             .add_attribute("collection_name", contract_info.name)
             .add_attribute("collection_symbol", contract_info.symbol)
             .add_attribute("minter", info.sender.to_string())
-            .add_attribute("image", image.to_string()))
+        )
     }
 
     pub(crate) fn migrate(&self, _deps: DepsMut, _env: Env, _migrate_msg: MigrateMsg) -> Result<Response, ContractError> {
@@ -260,18 +251,7 @@ mod tests {
         let contract = DegaCw721Contract::default();
         let mut msg;
 
-        let not_a_url = "not a url".to_string();
         let invalid_address = "Invalid Address".to_string();
-
-        msg = template_instantiate_msg();
-        msg.collection_info.image.clone_from(&not_a_url);
-        assert!(template_collection_via_msg(&mut mock_dependencies(), mock_env(), &contract, msg.clone())
-            .unwrap_err().to_string().contains("Invalid image URL"));
-
-        msg = template_instantiate_msg();
-        msg.collection_info.external_link.clone_from(&Some(not_a_url));
-        assert!(template_collection_via_msg(&mut mock_dependencies(), mock_env(), &contract, msg.clone())
-            .unwrap_err().to_string().contains("Invalid external link URL"));
 
         msg = template_instantiate_msg();
         msg.collection_info.description = "a".repeat(MAX_DESCRIPTION_LENGTH as usize + 1);

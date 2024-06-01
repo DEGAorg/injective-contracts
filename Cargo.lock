@@ -1581,13 +1581,10 @@ dependencies = [
  "cw721 0.18.0",
  "cw721-base 0.18.0",
  "dega-inj",
- "ethereum-types 0.5.2",
  "schemars",
  "serde",
  "serde_repr",
- "subtle-encoding",
  "thiserror",
- "url",
 ]
 
 [[package]]
@@ -1608,7 +1605,6 @@ dependencies = [
  "schemars",
  "serde",
  "serde_repr",
- "subtle-encoding",
  "thiserror",
 ]
 
@@ -1693,7 +1689,6 @@ dependencies = [
  "sha2 0.10.8",
  "subtle-encoding",
  "thiserror",
- "url",
 ]
 
 [[package]]

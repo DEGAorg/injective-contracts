@@ -48,7 +48,6 @@ pub(crate) const BUYER_ADDR: &str = "buyer_addr";
 pub(crate) const PRIMARY_SALE_RECIPIENT_ADDR: &str = "primary_sale_recipient_addr";
 pub(crate) const MINT_URI: &str = "http://example.com/";
 pub(crate) const INVALID_ADDR: &str = "INVALID_ADDR"; // upper case will be normalized to lower case and fail the validation check
-pub(crate) const INVALID_URI: &str = "INVALID_URI"; // upper case will be normalized to lower case and fail the validation check
 
 
 pub(crate) fn get_signer_pub_key(signing_key: &SigningKey) -> String {

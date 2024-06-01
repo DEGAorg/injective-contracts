@@ -2,7 +2,6 @@ use cosmwasm_std::{DepsMut, Empty, Env, Event, MessageInfo, Response, StdError};
 use cw721_base::Extension;
 use cw721_base::state::TokenInfo;
 use cw_utils::nonpayable;
-use url::Url;
 use dega_inj::cw721::{ExecuteMsg, NftParams, RoyaltySettings, UpdateCollectionInfoMsg};
 use dega_inj::helpers::{load_item_wrapped, save_item_wrapped};
 use crate::helpers::{assert_minter_owner, get_dega_minter_settings, get_substring_before_bracket, increment_tokens_wrapped, is_minter_admin, share_validate};
@@ -164,8 +163,6 @@ impl<'a> DegaCw721Contract<'a>
         }
 
         if let Some(new_image) = update_collection_msg.image {
-            Url::parse(&new_image)
-                .map_err(|_| ContractError::InvalidInput("Invalid image URL".to_string(), new_image.clone()))?;
 
             collection_info.image.clone_from(&new_image);
             event = event.add_attribute("image", new_image);
@@ -173,8 +170,6 @@ impl<'a> DegaCw721Contract<'a>
 
         if let Some(maybe_new_external_link) = update_collection_msg.external_link {
             if let Some(new_external_link) = maybe_new_external_link.as_ref() {
-                Url::parse(new_external_link)
-                    .map_err(|_| ContractError::InvalidInput("Invalid external link URL".to_string(), new_external_link.to_string()))?;
 
                 collection_info.external_link = Some(new_external_link.clone());
                 event = event.add_attribute("external_link", new_external_link);
@@ -506,7 +501,6 @@ mod tests {
         let minter_admin_msg_info = mock_info(MINTER_ADMIN_ONE_ADDR, &[]);
 
         let new_description_string = "New Description".to_string();
-        let invalid_url = "invalid url".to_string();
         let invalid_address = "Invalid Address".to_string();
 
         // Check that we error when the owner is not set
@@ -579,30 +573,6 @@ mod tests {
         }).unwrap_err().to_string();
         assert!(err_string.contains("Description is too long"));
         assert_eq!(contract.collection_info.load(&deps.storage).unwrap().description, default_collection_info.description);
-
-        // Error when the new image URL is invalid
-        deps = mock_dependencies();
-        template_collection(&mut deps, mock_env(), &contract).unwrap();
-        err_string = contract.execute_update_collection_info(deps.as_mut(), mock_env(), minter_admin_msg_info.clone(), UpdateCollectionInfoMsg {
-            description: None,
-            image: Some(invalid_url.clone()),
-            external_link: None,
-            royalty_settings: None,
-        }).unwrap_err().to_string();
-        assert!(err_string.contains("Invalid image URL"));
-        assert_eq!(contract.collection_info.load(&deps.storage).unwrap().image, default_collection_info.image);
-
-        // Error when the external link URL is invalid
-        deps = mock_dependencies();
-        template_collection(&mut deps, mock_env(), &contract).unwrap();
-        err_string = contract.execute_update_collection_info(deps.as_mut(), mock_env(), minter_admin_msg_info.clone(), UpdateCollectionInfoMsg {
-            description: None,
-            image: None,
-            external_link: Some(Some(invalid_url.clone())),
-            royalty_settings: None,
-        }).unwrap_err().to_string();
-        assert!(err_string.contains("Invalid external link URL"));
-        assert_eq!(contract.collection_info.load(&deps.storage).unwrap().external_link, default_collection_info.external_link);
 
         // Error when the new royalty payment address is invalid
         deps = mock_dependencies();

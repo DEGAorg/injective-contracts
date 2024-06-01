@@ -1,5 +1,4 @@
 use cosmwasm_std::{BankMsg, CosmosMsg, DepsMut, Empty, Env, MessageInfo, Order, Response, Uint128, Uint256, WasmMsg};
-use url::Url;
 use dega_inj::helpers::{load_item_wrapped, save_item_wrapped, save_map_item_wrapped, to_json_binary_wrapped};
 use dega_inj::minter::{ExecuteMsg, MintRequest, SignerSourceType, UpdateAdminCommand, UpdateDegaMinterConfigSettingsMsg, VerifiableMsg};
 use crate::error::ContractError;
@@ -193,8 +192,6 @@ pub(crate) fn execute_mint(
         return Err(ContractError::Generic(format!("Overpayment | Price: {} | Paid: {}", request.price, funds.amount)));
     }
 
-    Url::parse(&request.uri.to_string()).map_err(|_| ContractError::Generic("Invalid URI".to_string()))?;
-
     let this_collection_address = load_item_wrapped(deps.storage, &COLLECTION_ADDRESS)
                                                     .map_err(|e| ContractError::Std("Error while loading collection address".to_string(), e))?;
 
@@ -269,7 +266,7 @@ mod tests {
     use crate::execute::{execute_mint, execute_update_admin, execute_update_settings};
     use crate::query::{query_admins, query_config};
     use crate::state::TOKEN_INDEX;
-    use crate::test_helpers::{BUYER_ADDR, COLLECTION_CONTRACT_ADDR, get_inj_wei_from_kilo_inj, get_signer_pub_key, INJ_DENOM, INVALID_ADDR, INVALID_URI, MINT_URI, NEW_ADMIN_ADDR, NORMAL_USER_ADDR, PRIMARY_SALE_RECIPIENT_ADDR, query_typed, sign_mint_request, template_mint_msg, template_minter, USER_ADMIN_ADDR};
+    use crate::test_helpers::{BUYER_ADDR, COLLECTION_CONTRACT_ADDR, get_inj_wei_from_kilo_inj, get_signer_pub_key, INJ_DENOM, INVALID_ADDR, MINT_URI, NEW_ADMIN_ADDR, NORMAL_USER_ADDR, PRIMARY_SALE_RECIPIENT_ADDR, query_typed, sign_mint_request, template_mint_msg, template_minter, USER_ADMIN_ADDR};
     #[test]
     fn access_restriction() {
 
@@ -894,31 +891,6 @@ mod tests {
         assert_eq!(uuid_err, ContractError::Generic("UUID already registered".to_string()));
     }
 
-    #[test]
-    fn mint_invalid_uri() {
-        let price_wei = get_inj_wei_from_kilo_inj(100);
-
-        // Create a first keypair and store the pubkey in the minter
-        let signing_key_one = SigningKey::random(&mut OsRng);
-        let signer_pub_key = get_signer_pub_key(&signing_key_one);
-
-        let mock_env = mock_env();
-
-        let msg_info = mock_info(NORMAL_USER_ADDR, &[Coin { denom: INJ_DENOM.into(), amount: price_wei, }]);
-
-        // Initialize fresh DB and minter
-        let mut deps = mock_dependencies();
-        template_minter(&mut deps.as_mut(), signer_pub_key.clone(), false).unwrap();
-
-        // Mint with an invalid URI
-        let mut mint_msg = template_mint_msg(&mock_env, price_wei);
-        mint_msg.uri = INVALID_URI.to_string();
-        let mint_sig = sign_mint_request(signing_key_one.clone(), mint_msg.clone());
-        let invalid_uri_err = execute_mint(deps.as_mut(), mock_env.clone(), msg_info.clone(),
-                                           mint_msg.clone(), mint_sig.clone()).unwrap_err();
-
-        assert_eq!(invalid_uri_err, ContractError::Generic("Invalid URI".to_string()));
-    }
 
     #[test]
     fn mint_invalid_signature() {
