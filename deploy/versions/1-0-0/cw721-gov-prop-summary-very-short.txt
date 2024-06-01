@@ -1,4 +1,0 @@
-
-This proposal is for the uploading of DEGA’s CW721 Collection smart contract binary for use in deploying DEGA’s NFT collections to Injective.
-
-To see the background on this proposal, please see our forum post here: <a href="https://gov.injective.network/discussion/22737-dega-design-build-and-monetize-games"><u>Link</u></a>

@@ -1,6 +1,6 @@
 
 <strong>Summary</strong>
-This proposal is for the uploading of DEGA’s Minter smart contract binary for use in deploying DEGA’s NFT collections to Injective.
+This proposal is for the uploading of DEGA’s CW721 Collection smart contract binary for use in deploying DEGA’s NFT collections to Injective.
 
 DEGA seeks to deploy a next generation Web3 Game Builder on Injective. DEGA Realms is an AI-powered application that allows anyone to design, build and monetize games in minutes. Injective is particularly well suited for in-game transactions thanks to its speed and scalability.
 
@@ -24,14 +24,14 @@ With a team of seasoned professionals with experience at Animoca Brands, EA Game
 
 <strong>Smart Contract Information</strong>
 Contract version: 1.0.0
-Contract checksum: 8fb52e70d738587b474cf18314674206298a5c5ad7edadf49b9b14c848ce1a68
+Contract checksum: 540e0fab71a02c8bc50d93ae38b90b6f8f73027b8e8f853a9ab17d7de16d04e3
 Rust version: 1.75.0
 CosmWasm version: 1.2.1
 CosmWasm Optimizer version: 0.15.1
 
 <strong>Actions</strong>
-&emsp;- By voting YES on this proposal, you agree to uploading the DEGA Minter smart contract as described in this proposal.
-&emsp;- By voting NO on the proposal, you do not support uploading the DEGA Minter smart contract as described in this proposal.
+&emsp;- By voting YES on this proposal, you agree to uploading the DEGA CW721 Collection smart contract as described in this proposal.
+&emsp;- By voting NO on the proposal, you do not support uploading the DEGA CW721 Collection smart contract as described in this proposal.
 &emsp;- By voting NO WITH VETO, you find this proposal to be spam/irrelevant/malicious to governance, and contribute to burning 100 INJ deposit if NoWithVeto votes are greater than 1/3 of the total voting power.
 &emsp;- By voting ABSTAIN, you wish to contribute to quorum while formally declining to vote either for or against the proposal.
 
