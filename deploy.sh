@@ -1,5 +1,3 @@
 #!/bin/bash
 
-cd deploy/tool
-
-npm run "$@"
+npm --prefix deploy/tool run "$@"

@@ -8,9 +8,10 @@ import {
     MsgInstantiateContract,
     MsgMigrateContract,
     MsgStoreCode, MsgSubmitTextProposal,
-    PrivateKey, sha256
+    PrivateKey, sha256, toBase64
 } from "@injectivelabs/sdk-ts"
 import * as t from 'io-ts'
+import excess from "io-ts-excess";
 import { isLeft } from 'fp-ts/lib/Either'
 import {Network, getNetworkEndpoints} from "@injectivelabs/networks"
 import {BigNumberInWei, BigNumberInBase} from "@injectivelabs/utils"
@@ -19,6 +20,7 @@ import {DegaMinterInstantiateMsg} from "./messages"
 import * as util from 'util';
 import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
 import {DegaCw721MigrateMsg} from "./messages/dega_cw721_migrate";
+import {failure} from "io-ts/PathReporter";
 
 
 // Paths
@@ -63,6 +65,36 @@ function main() {
         }
 
     })()
+}
+
+export function decode<I, A>(type: t.Decoder<I, A>, input: I) {
+    const result = type.decode(input)
+    if (isLeft(result)) {
+        const errors = result.left;
+        const errorDetails = failure(errors)
+            .map(s => {
+                const excessPropIndex = s.search("excess properties");
+                if (excessPropIndex != -1) {
+                    s = s.slice(excessPropIndex)
+                }
+                return '- ' + s
+            })
+            .join('\n');
+
+        const errorMsg =
+            `Validation failed for input:
+
+${JSON.stringify(input, null, 2)}
+
+Error details:
+
+${errorDetails}
+`;
+
+        throw new Error(errorMsg);
+    }
+
+    return result.right;
 }
 
 export function logObjectFullDepth(obj: any) {
@@ -145,18 +177,21 @@ async function runMain() {
     let specPath = ""
 
     if (args.length > 0) {
-        specPath = args[0]
+        const callerWorkingDirFromEnv = process.env.INIT_CWD;
+        if (!callerWorkingDirFromEnv) {
+            throw new ScriptError("Missing INIT_CWD in PATH to find the caller's working directory");
+        }
+        const callerWorkingDir = path.resolve(callerWorkingDirFromEnv);
+
+        const specPathArg = args[0];
+        specPath = path.resolve(callerWorkingDir, specPathArg);
+        console.log('Spec path: ' + specPath);
     } else {
-        throw new ScriptError("Missing spec file argument")
+        throw new ScriptError("Missing spec file argument");
     }
 
-    let deploySpecResult = loadSpec(specPath)
+    const spec: DeploySpec = loadSpec(specPath)
 
-    if (isLeft(deploySpecResult)) {
-        throw new ScriptError('Invalid data:' + deploySpecResult.left)
-    }
-
-    const spec: DeploySpec = deploySpecResult.right
     console.log('Loaded deploy spec:')
     console.log(spec)
 
@@ -178,17 +213,17 @@ async function runMain() {
 }
 
 
-const govProposalSpec = t.type({
+const govProposalSpec = excess(t.type({
     title: t.string,
     summaryFilePath: t.string,
     proposerAddress: t.string,
     instantiateAddresses: t.union([t.array(t.string), t.undefined, t.null]),
     depositAmountINJ: t.number,
-})
+}, "GovProposalSpec"));
 
-type GovProposalSpec = t.TypeOf<typeof govProposalSpec>
+type GovProposalSpec = t.TypeOf<typeof govProposalSpec>;
 
-const deploySpec = t.type({
+const deploySpec = excess(t.type({
     privateKeyFilename: t.union([t.string, t.undefined, t.null]),
     network: t.keyof({
         Local: null,
@@ -212,6 +247,7 @@ const deploySpec = t.type({
     optionsInstantiate: t.boolean,
     optionsMigrateMinter: t.boolean,
     optionsMigrateCw721: t.boolean,
+    optionsBroadcast: t.union([t.boolean, t.undefined, t.null]),
     collectionName: t.string,
     collectionSymbol: t.string,
     collectionDescription: t.string,
@@ -230,16 +266,15 @@ const deploySpec = t.type({
     minterContractMigratable: t.boolean,
     minterMigrateAdmin: t.union([t.string, t.undefined, t.null]),
     minterAddressForMigration: t.union([t.string, t.undefined, t.null]),
-})
+}, "DeploySpec"));
 
 type DeploySpec = t.TypeOf<typeof deploySpec>
 
 function loadSpec(specPath: string) {
 
-    const fullSpecPath = path.join(pathsDeploy, specPath)
-    const fileContents = fs.readFileSync(fullSpecPath, 'utf-8')
+    const fileContents = fs.readFileSync(specPath, 'utf-8')
     const jsonData = JSON.parse(fileContents)
-    return deploySpec.decode(jsonData)
+    return decode(deploySpec, jsonData)
 }
 
 
@@ -257,14 +292,14 @@ interface DeployContext {
     injectivedPassword: string | null | undefined
 }
 
-const privateKeyDef = t.type({
+const privateKeyDef = excess(t.type({
     format: t.keyof({
         Mnemonic: null,
         SeedHex: null
     }),
     key: t.string,
     injectivedPassword: t.union([t.string, t.undefined, t.null]),
-})
+}, "PrivateKeyDef"));
 
 type PrivateKeyDef = t.TypeOf<typeof privateKeyDef>;
 
@@ -339,6 +374,7 @@ async function makeContext(spec: DeploySpec): Promise<DeployContext> {
             cw721CodeIdMigrated: null,
             minterAddress: null,
             cw721Address: null,
+            txJsonPath: null,
         },
         chainId: chainId,
         node: node,
@@ -361,13 +397,8 @@ async function loadPrivateKey(spec: DeploySpec): Promise<[PrivateKey|undefined,s
     const privateKeyFilePath = path.join(pathsDeployPrivateKeys, spec.privateKeyFilename);
     const fileContents = fs.readFileSync(privateKeyFilePath, 'utf-8');
     const jsonData = JSON.parse(fileContents);
-    const result = privateKeyDef.decode(jsonData);
+    const privateKeyData: PrivateKeyDef = decode(privateKeyDef, jsonData);
 
-    if (isLeft(result)) {
-        throw new Error('Invalid private key definition data:' + result.left);
-    }
-
-    const privateKeyData: PrivateKeyDef = result.right;
     let privateKey: PrivateKey;
 
     if (privateKeyData.format === "Mnemonic") {
@@ -385,7 +416,7 @@ async function loadPrivateKey(spec: DeploySpec): Promise<[PrivateKey|undefined,s
 }
 
 // Use only null and not undefined so that it's always clear when output values are absent
-const deployOutput = t.type({
+const deployOutput = excess(t.type({
     minterCodeIdStored: t.union([t.number, t.null]),
     cw721CodeIdStored: t.union([t.number, t.null]),
     minterCodeIdInstantiated: t.union([t.number, t.null]),
@@ -394,7 +425,8 @@ const deployOutput = t.type({
     cw721CodeIdMigrated: t.union([t.number, t.null]),
     minterAddress: t.union([t.string, t.null]),
     cw721Address: t.union([t.string, t.null]),
-})
+    txJsonPath: t.union([t.string, t.null]),
+}, "DeployOutput"));
 
 type DeployOutput = t.TypeOf<typeof deployOutput>
 
@@ -752,6 +784,14 @@ async function governanceProposal(
     baseTxArgs.push(`--chain-id="${context.chainId}"`);
     baseTxArgs.push(`--from=${govProposalSpec.proposerAddress}`);
     baseTxArgs.push(`--node=${context.node}`);
+    baseTxArgs.push(`--generate-only`);
+    baseTxArgs.push(`--gas-prices=500000000inj`);
+
+    // Max out the gas instead of estimating, since the margin for going through can be small and the gas cost is often high
+    baseTxArgs.push(`--gas=50000000`);
+    //baseTxArgs.push(`--gas=auto`);
+    //baseTxArgs.push(`--gas-adjustment=1.4`);
+
 
     console.log("Base CLI Tx:");
     console.log(baseTxArgs.join(" "));
@@ -761,22 +801,15 @@ async function governanceProposal(
         throw new ScriptError("Must specify INJECTIVED_PASSWORD in environment to generate governance proposal transactions");
     }
 
-    let generateTxArgs = [];
-    generateTxArgs.push("echo");
-    generateTxArgs.push(`${injectivedPassword}`);
-    generateTxArgs.push(`|`);
-    generateTxArgs = generateTxArgs.concat(baseTxArgs);
-    generateTxArgs.push(`--generate-only`);
-
-    //generateTxArgs.push(`--gas=auto`);
-    //generateTxArgs.push(`--gas-adjustment=1.4`);
-    generateTxArgs.push(`--gas=50000000`);
-
-    generateTxArgs.push(`--gas-prices=500000000inj`);
+    let fullTxArgs = [];
+    fullTxArgs.push("echo");
+    fullTxArgs.push(`${injectivedPassword}`);
+    fullTxArgs.push(`|`);
+    fullTxArgs = fullTxArgs.concat(baseTxArgs);
 
 
     //const txJsonStringUnformatted = await run(context, "injectived", generateTxArgs);
-    const txJsonStringGenerated = execSync(generateTxArgs.join(" "), { encoding: 'utf-8' });
+    const txJsonStringGenerated = execSync(fullTxArgs.join(" "), { encoding: 'utf-8' });
     console.log("Generated Tx:")
     console.log("================================================")
     logObjectFullDepth(txJsonStringGenerated);
@@ -784,15 +817,10 @@ async function governanceProposal(
 
     let txJsonObj: any = JSON.parse(txJsonStringGenerated) as any;
 
-    // Replace carrots for HTML in the front end
-    // summaryContents = escapeGtLtWithUnicode(summaryContents);
-
     // Replace line endings with \n
     summaryContents = replaceLineEndingsWithSlashN(summaryContents);
 
     txJsonObj.body.messages[0].summary = summaryContents;
-
-    // txJsonObj["auth_info"]["fee"]["gas_limit"] = adjustedGasEstimate.toString();
 
     console.log("Summary String Contents:")
     console.log("================================================")
@@ -806,8 +834,9 @@ async function governanceProposal(
     const formattedOutputJsonTxFilepath = noSuffixOutputJsonTxFilepath + ".json";
     fs.writeFileSync(formattedOutputJsonTxFilepath, JSON.stringify(txJsonObj, null, 2));
 
-    // const rawOutputJsonTxFilepath = noSuffixOutputJsonTxFilepath + "_raw.json";
-    // fs.writeFileSync(rawOutputJsonTxFilepath, JSON.stringify(txJsonObj, null));
+    console.log("Formatted Proposal Tx JSON File: " + formattedOutputJsonTxFilepath);
+
+    context.output.txJsonPath = formattedOutputJsonTxFilepath;
 
     const summaryFilepath = noSuffixOutputJsonTxFilepath + "_summary.txt";
     fs.writeFileSync(summaryFilepath, summaryContents);
@@ -847,86 +876,14 @@ function getMinterCodeIdForInstantiateOrMigrate(context: DeployContext) {
 }
 
 
-async function instantiate(context: DeployContext) {
+async function broadcastInstantiate(context: DeployContext, minterMigrateAdmin: string, minterCodeId: number, instantiateMinterMsg: DegaMinterInstantiateMsg, cw721CodeId: number) {
 
     if (context.deployTxPrivateKey == null || context.deployTxBroadcaster == null || context.deployTxAddress == null) {
-        throw new ScriptError("Must specify a broadcast key to instantiate");
+        throw new ScriptError("Must specify a deploy key and broadcaster to instantiate");
     }
 
-    const minterCodeId = getMinterCodeIdForInstantiateOrMigrate(context);
-    const cw721CodeId = getCw721CodeIdForInstantiateOrMigrate(context);
-
-    let cw721MigrateAdmin: string | null | undefined = null;
-
-    if (context.spec.cw721ContractMigratable) {
-
-        cw721MigrateAdmin = context.spec.cw721MigrateAdmin;
-
-        if (cw721MigrateAdmin == null) {
-            throw new ScriptError("Must specify a cw721 migrate admin to make cw721 contract migratable")
-        }
-    } else if (context.spec.cw721MigrateAdmin != undefined) {
-        throw new ScriptError("Specified cw721 migrate admin when cw721 contract is not migratable")
-    }
-
-
-    // collectionExternalLinkURL: t.string,
-    //     collectionExplicitContent: t.union([t.boolean, t.undefined, t.null]),
-    //     collectionStartTradingTime: t.union([t.number, t.undefined, t.null]),
-    //     collectionSecondaryRoyaltyPaymentAddress: t.string,
-    //     collectionSecondaryRoyaltyShare: t.number,
-
-    let royalty_settings = null;
-
-    if (context.spec.collectionSecondaryRoyaltyPaymentAddress != undefined &&
-        context.spec.collectionSecondaryRoyaltyShare != undefined) {
-        royalty_settings = {
-            payment_address: context.spec.collectionSecondaryRoyaltyPaymentAddress,
-            share: context.spec.collectionSecondaryRoyaltyShare,
-        };
-    }
-
-    const instantiateMinterMsg: DegaMinterInstantiateMsg = {
-        collection_params: {
-            code_id: cw721CodeId,
-            name: context.spec.collectionName,
-            symbol: context.spec.collectionSymbol,
-            info: {
-                description: context.spec.collectionDescription,
-                image: context.spec.collectionImageURL,
-                external_link: context.spec.collectionExternalLinkURL,
-                royalty_settings: royalty_settings,
-            },
-
-        },
-        minter_params: {
-            dega_minter_settings: {
-                signer_pub_key: context.spec.minterSignerPubKeyBase64,
-                minting_paused: context.spec.minterMintingPaused,
-            },
-            initial_admin: context.spec.minterInitialAdmin,
-        },
-        cw721_contract_label: context.spec.cw721ContractLabel,
-        cw721_contract_admin: cw721MigrateAdmin,
-    }
-
-
-    console.log("InstantiateMsg : ")
-    console.log(instantiateMinterMsg)
+    console.log("Broadcasting instantiation for Dega Minter and Collection")
     console.log("")
-
-    let minterMigrateAdmin: string = "";
-
-    if (context.spec.minterContractMigratable) {
-
-        if (context.spec.minterMigrateAdmin == null) {
-            throw new ScriptError("Must specify a minter migrate admin to make minter contract migratable")
-        } else {
-            minterMigrateAdmin = context.spec.minterMigrateAdmin;
-        }
-    } else if (context.spec.minterMigrateAdmin != undefined) {
-        throw new ScriptError("Specified minter migrate admin when minter contract is not migratable")
-    }
 
     const instantiateContractMsg = MsgInstantiateContract.fromJSON({
         sender: context.deployTxAddress,
@@ -936,7 +893,7 @@ async function instantiate(context: DeployContext) {
         msg: instantiateMinterMsg,
     })
 
-    console.log("Instantiating code for Dega Minter")
+    console.log("Broadcasting instantiation for Dega Minter and Collection")
     console.log("")
 
     const response = await context.deployTxBroadcaster.broadcast({
@@ -991,6 +948,156 @@ async function instantiate(context: DeployContext) {
 
         })
         console.log("")
+    }
+}
+
+async function generateInstantiate(context: DeployContext, minterMigrateAdmin: string, minterCodeId: number, instantiateMinterMsg: DegaMinterInstantiateMsg) {
+
+    console.log("Generating instantiation transaction for DEGA Minter and Collection")
+    console.log("")
+
+    if (context.deployTxAddress == null) {
+        throw new ScriptError("Must specify a deploy key instantiate");
+    }
+
+    //const instantiateMsgBuffer = new Buffer(toBase64(instantiateMinterMsg), "base64");
+
+    let baseTxArgs = [];
+    baseTxArgs.push("injectived");
+    baseTxArgs.push("tx");
+    baseTxArgs.push("wasm");
+    baseTxArgs.push("instantiate");
+    baseTxArgs.push(`${minterCodeId}`);
+
+    baseTxArgs.push(`'` + JSON.stringify(instantiateMinterMsg, null, 0) + `'`);
+
+    baseTxArgs.push(`--label="${context.spec.minterContractLabel}"`);
+
+    if (minterMigrateAdmin != null) {
+        baseTxArgs.push(`--admin="${minterMigrateAdmin}"`);
+    }
+    baseTxArgs.push(`--chain-id="${context.chainId}"`);
+    baseTxArgs.push(`--from=${context.deployTxAddress}`);
+    baseTxArgs.push(`--node=${context.node}`);
+    baseTxArgs.push(`--generate-only`);
+    baseTxArgs.push(`--gas=auto`);
+    baseTxArgs.push(`--gas-adjustment=1.4`);
+    baseTxArgs.push(`--gas-prices=500000000inj`);
+
+    console.log("Base CLI Tx:");
+    console.log(baseTxArgs.join(" "));
+
+    const injectivedPassword = process.env.INJECTIVED_PASSWORD;
+    if (injectivedPassword == null) {
+        throw new ScriptError("Must specify INJECTIVED_PASSWORD in environment to generate transactions");
+    }
+
+    let fullTxArgs = [];
+    fullTxArgs.push("echo");
+    fullTxArgs.push(`${injectivedPassword}`);
+    fullTxArgs.push(`|`);
+    fullTxArgs = fullTxArgs.concat(baseTxArgs);
+
+    //const txJsonStringUnformatted = await run(context, "injectived", generateTxArgs);
+    const txJsonStringGenerated = execSync(fullTxArgs.join(" "), { encoding: 'utf-8' });
+    console.log("Generated Tx:");
+    console.log("================================================");
+    logObjectFullDepth(txJsonStringGenerated);
+    console.log("================================================");
+
+    let txJsonObj: any = JSON.parse(txJsonStringGenerated) as any;
+
+    //txJsonObj.body.messages[0].summary = summaryContents;
+
+    const noSuffixOutputJsonTxFilepath =
+        path.join(pathsDeployArtifacts, "instantiate-tx_" + context.spec.network.toString().toLowerCase());
+
+    console.log("Formatted Instantiate Tx JSON File: " + noSuffixOutputJsonTxFilepath);
+    context.output.txJsonPath = noSuffixOutputJsonTxFilepath;
+
+    const formattedOutputJsonTxFilepath = noSuffixOutputJsonTxFilepath + ".json";
+    fs.writeFileSync(formattedOutputJsonTxFilepath, JSON.stringify(txJsonObj, null, 2));
+}
+
+
+async function instantiate(context: DeployContext) {
+
+    if (context.deployTxAddress == null) {
+        throw new ScriptError("Must specify a deploy key to instantiate");
+    }
+
+    const minterCodeId = getMinterCodeIdForInstantiateOrMigrate(context);
+    const cw721CodeId = getCw721CodeIdForInstantiateOrMigrate(context);
+
+    let cw721MigrateAdmin: string | null | undefined = null;
+
+    if (context.spec.cw721ContractMigratable) {
+
+        cw721MigrateAdmin = context.spec.cw721MigrateAdmin;
+
+        if (cw721MigrateAdmin == null) {
+            throw new ScriptError("Must specify a cw721 migrate admin to make cw721 contract migratable")
+        }
+    } else if (context.spec.cw721MigrateAdmin != undefined) {
+        throw new ScriptError("Specified cw721 migrate admin when cw721 contract is not migratable")
+    }
+
+    let royalty_settings = null;
+
+    if (context.spec.collectionSecondaryRoyaltyPaymentAddress != undefined &&
+        context.spec.collectionSecondaryRoyaltyShare != undefined) {
+        royalty_settings = {
+            payment_address: context.spec.collectionSecondaryRoyaltyPaymentAddress,
+            share: context.spec.collectionSecondaryRoyaltyShare,
+        };
+    }
+
+    const instantiateMinterMsg: DegaMinterInstantiateMsg = {
+        collection_params: {
+            code_id: cw721CodeId,
+            name: context.spec.collectionName,
+            symbol: context.spec.collectionSymbol,
+            info: {
+                description: context.spec.collectionDescription,
+                image: context.spec.collectionImageURL,
+                external_link: context.spec.collectionExternalLinkURL,
+                royalty_settings: royalty_settings,
+            },
+
+        },
+        minter_params: {
+            dega_minter_settings: {
+                signer_pub_key: context.spec.minterSignerPubKeyBase64,
+                minting_paused: context.spec.minterMintingPaused,
+            },
+            initial_admin: context.spec.minterInitialAdmin,
+        },
+        cw721_contract_label: context.spec.cw721ContractLabel,
+        cw721_contract_admin: cw721MigrateAdmin,
+    }
+
+
+    console.log("InstantiateMsg : ")
+    console.log(instantiateMinterMsg)
+    console.log("")
+
+    let minterMigrateAdmin: string = "";
+
+    if (context.spec.minterContractMigratable) {
+
+        if (context.spec.minterMigrateAdmin == null) {
+            throw new ScriptError("Must specify a minter migrate admin to make minter contract migratable")
+        } else {
+            minterMigrateAdmin = context.spec.minterMigrateAdmin;
+        }
+    } else if (context.spec.minterMigrateAdmin != undefined) {
+        throw new ScriptError("Specified minter migrate admin when minter contract is not migratable")
+    }
+
+    if (context.spec.optionsBroadcast) {
+        await broadcastInstantiate(context, minterMigrateAdmin, minterCodeId, instantiateMinterMsg, cw721CodeId);
+    } else {
+        await generateInstantiate(context, minterMigrateAdmin, minterCodeId, instantiateMinterMsg);
     }
 }
 
@@ -1139,5 +1246,6 @@ interface TxAttribute {
     value: Uint8Array,
 }
 
-
-main()
+if (require.main === module) {
+    main()
+}

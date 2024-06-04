@@ -11,6 +11,7 @@
   "optionsGovernanceProposalForCw721": false,
   "optionsInstantiate": true,
   "optionsMigrateMinter": false,
+  "optionsBroadcast": false,
   "minterAddressForMigration": null,
   "optionsMigrateCw721": false,
   "cw721AddressForMigration": null,
