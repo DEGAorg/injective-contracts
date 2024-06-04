@@ -230,6 +230,7 @@ const deploySpec = excess(t.type({
         Testnet: null,
         Mainnet: null
     }),
+    deployAddress: t.union([t.string, t.undefined, t.null]),
     grpcEndpoint: t.union([t.string, t.undefined, t.null]),
     optionsBuildAndOptimize: t.boolean,
     optionsStoreCodeForMinter: t.boolean,
@@ -879,11 +880,15 @@ function getMinterCodeIdForInstantiateOrMigrate(context: DeployContext) {
 async function broadcastInstantiate(context: DeployContext, minterMigrateAdmin: string, minterCodeId: number, instantiateMinterMsg: DegaMinterInstantiateMsg, cw721CodeId: number) {
 
     if (context.deployTxPrivateKey == null || context.deployTxBroadcaster == null || context.deployTxAddress == null) {
-        throw new ScriptError("Must specify a deploy key and broadcaster to instantiate");
+        throw new ScriptError("Must specify a deployment private key via 'privateKeyFileName' to broadcast instantiate");
     }
 
     console.log("Broadcasting instantiation for Dega Minter and Collection")
     console.log("")
+
+    if (context.spec.deployAddress && context.spec.deployAddress != context.deployTxAddress) {
+        throw new ScriptError("Deploy address in the spec does not match the private key address in the spec");
+    }
 
     const instantiateContractMsg = MsgInstantiateContract.fromJSON({
         sender: context.deployTxAddress,
@@ -956,8 +961,13 @@ async function generateInstantiate(context: DeployContext, minterMigrateAdmin: s
     console.log("Generating instantiation transaction for DEGA Minter and Collection")
     console.log("")
 
-    if (context.deployTxAddress == null) {
-        throw new ScriptError("Must specify a deploy key instantiate");
+    if (context.spec.deployAddress == null) {
+        throw new ScriptError("Must specify deployAddress to generate an instantiate transaction");
+    }
+
+    if (context.spec.privateKeyFilename) {
+        throw new ScriptError("For safety, must not specify a private key file when generating transactions, this transaction will use" +
+            "the address in the 'deployAddress' field as the sender");
     }
 
     //const instantiateMsgBuffer = new Buffer(toBase64(instantiateMinterMsg), "base64");
@@ -977,7 +987,7 @@ async function generateInstantiate(context: DeployContext, minterMigrateAdmin: s
         baseTxArgs.push(`--admin="${minterMigrateAdmin}"`);
     }
     baseTxArgs.push(`--chain-id="${context.chainId}"`);
-    baseTxArgs.push(`--from=${context.deployTxAddress}`);
+    baseTxArgs.push(`--from=${context.spec.deployAddress}`);
     baseTxArgs.push(`--node=${context.node}`);
     baseTxArgs.push(`--generate-only`);
     baseTxArgs.push(`--gas=auto`);
@@ -1021,10 +1031,6 @@ async function generateInstantiate(context: DeployContext, minterMigrateAdmin: s
 
 
 async function instantiate(context: DeployContext) {
-
-    if (context.deployTxAddress == null) {
-        throw new ScriptError("Must specify a deploy key to instantiate");
-    }
 
     const minterCodeId = getMinterCodeIdForInstantiateOrMigrate(context);
     const cw721CodeId = getCw721CodeIdForInstantiateOrMigrate(context);

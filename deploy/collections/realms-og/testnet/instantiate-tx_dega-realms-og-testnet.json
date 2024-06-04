@@ -1,0 +1,59 @@
+{
+  "body": {
+    "messages": [
+      {
+        "@type": "/cosmwasm.wasm.v1.MsgInstantiateContract",
+        "sender": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
+        "admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
+        "code_id": "9450",
+        "label": "DEGA Realms OG - Minter",
+        "msg": {
+          "collection_params": {
+            "code_id": 9451,
+            "name": "DEGA Realms OG",
+            "symbol": "REALMSOG",
+            "info": {
+              "description": "The original DEGA Realm collection of maps for the DEGA Open World.",
+              "image": "ipfs://bafybeicn4ykdoyvttdeultebdu4kva3wa3aeanw5b2pupk67u34gtgzsii/DEGA_Realms_OG.png",
+              "external_link": "https://www.dega.org/",
+              "royalty_settings": {
+                "payment_address": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
+                "share": "0.025"
+              }
+            }
+          },
+          "minter_params": {
+            "dega_minter_settings": {
+              "signer_pub_key": "AkclV9SpYNlIdVVDsPkzQgXT2y0/pmMX537Xp10AR17h",
+              "minting_paused": false
+            },
+            "initial_admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00"
+          },
+          "cw721_contract_label": "DEGA Realms OG - Collection",
+          "cw721_contract_admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00"
+        },
+        "funds": []
+      }
+    ],
+    "memo": "",
+    "timeout_height": "0",
+    "extension_options": [],
+    "non_critical_extension_options": []
+  },
+  "auth_info": {
+    "signer_infos": [],
+    "fee": {
+      "amount": [
+        {
+          "denom": "inj",
+          "amount": "247453000000000"
+        }
+      ],
+      "gas_limit": "494906",
+      "payer": "",
+      "granter": ""
+    },
+    "tip": null
+  },
+  "signatures": []
+}
