@@ -681,7 +681,7 @@ async function storeWasm(
     }
 }
 
-function replaceLineEndingsWithBreaks(input: string): string {
+export function replaceLineEndingsWithBreaks(input: string): string {
     // Replace Windows-style line endings
     let result = input.replace(/\r\n/g, '<br>\r\n');
 
@@ -691,7 +691,7 @@ function replaceLineEndingsWithBreaks(input: string): string {
     return result;
 }
 
-function replaceLineEndingsWithSlashN(input: string): string {
+export function replaceLineEndingsWithSlashN(input: string): string {
     // Replace Windows-style line endings
     let result = input.replace(/\r\n/g, '\n');
 
