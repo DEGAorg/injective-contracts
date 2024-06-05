@@ -5,11 +5,11 @@
         "@type": "/cosmwasm.wasm.v1.MsgInstantiateContract",
         "sender": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
         "admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
-        "code_id": "9450",
+        "code_id": "974",
         "label": "DEGA Elements - Minter",
         "msg": {
           "collection_params": {
-            "code_id": 9451,
+            "code_id": 973,
             "name": "DEGA Elements",
             "symbol": "ELEMENTS",
             "info": {
@@ -46,10 +46,10 @@
       "amount": [
         {
           "denom": "inj",
-          "amount": "248790000000000"
+          "amount": "240804500000000"
         }
       ],
-      "gas_limit": "497580",
+      "gas_limit": "481609",
       "payer": "",
       "granter": ""
     },

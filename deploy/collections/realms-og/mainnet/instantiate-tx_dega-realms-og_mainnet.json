@@ -5,20 +5,20 @@
         "@type": "/cosmwasm.wasm.v1.MsgInstantiateContract",
         "sender": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
         "admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
-        "code_id": "9450",
-        "label": "DEGA Elements - Minter",
+        "code_id": "974",
+        "label": "DEGA Realms OG - Minter",
         "msg": {
           "collection_params": {
-            "code_id": 9451,
-            "name": "DEGA Elements",
-            "symbol": "ELEMENTS",
+            "code_id": 973,
+            "name": "DEGA Realms OG",
+            "symbol": "REALMSOG",
             "info": {
-              "description": "The collection of DEGA Elements items that provide in-game power ups across the DEGA Ecosystem.",
-              "image": "ipfs://bafybeieftd6nmpptacovvgktlmwmzjitd7jn5usgkwjxf4v7sismhq5o2y/elements.jpg",
+              "description": "The original DEGA Realm collection of maps for the DEGA Open World.",
+              "image": "ipfs://bafybeicn4ykdoyvttdeultebdu4kva3wa3aeanw5b2pupk67u34gtgzsii/DEGA_Realms_OG.png",
               "external_link": "https://www.dega.org/",
               "royalty_settings": {
                 "payment_address": "inj1san33zpsefrzlq3cykcatn82x74eplj764q4sr",
-                "share": "0.05"
+                "share": "0.025"
               }
             }
           },
@@ -29,7 +29,7 @@
             },
             "initial_admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00"
           },
-          "cw721_contract_label": "DEGA Elements - Collection",
+          "cw721_contract_label": "DEGA Realms OG - Collection",
           "cw721_contract_admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00"
         },
         "funds": []
@@ -46,10 +46,10 @@
       "amount": [
         {
           "denom": "inj",
-          "amount": "248790000000000"
+          "amount": "239455000000000"
         }
       ],
-      "gas_limit": "497580",
+      "gas_limit": "478910",
       "payer": "",
       "granter": ""
     },

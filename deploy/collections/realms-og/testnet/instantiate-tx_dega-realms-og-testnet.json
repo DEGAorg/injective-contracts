@@ -17,14 +17,14 @@
               "image": "ipfs://bafybeicn4ykdoyvttdeultebdu4kva3wa3aeanw5b2pupk67u34gtgzsii/DEGA_Realms_OG.png",
               "external_link": "https://www.dega.org/",
               "royalty_settings": {
-                "payment_address": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
+                "payment_address": "inj1san33zpsefrzlq3cykcatn82x74eplj764q4sr",
                 "share": "0.025"
               }
             }
           },
           "minter_params": {
             "dega_minter_settings": {
-              "signer_pub_key": "AkclV9SpYNlIdVVDsPkzQgXT2y0/pmMX537Xp10AR17h",
+              "signer_pub_key": "A6aom+xMPFjOrP0kq27udDfIl0Te9aar6qGxrf+GqlfH",
               "minting_paused": false
             },
             "initial_admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00"
