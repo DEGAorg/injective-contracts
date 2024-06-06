@@ -3,8 +3,6 @@ members = [
     "packages/dega-inj",
     "contracts/dega-cw721",
     "contracts/dega-minter",
-    "packages/wasm-deploy",
-    "cli",
 ]
 resolver = "2"
 
