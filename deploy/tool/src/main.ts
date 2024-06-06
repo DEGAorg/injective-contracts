@@ -5,24 +5,74 @@ import util from "util";
 import { instantiate } from "./instantiate";
 import { govProp } from "./gov-prop";
 import {sign} from "./sign-new";
+import {pathsDeployArtifacts, pathsWorkspace} from "./context";
+import {DeployError} from "./error";
+import {execSync} from "child_process";
+import {migrate} from "./migrate";
 
-// Used for a hard fatal error, often with the logic in the script or some bad state
-class ScriptError {
-    constructor(message: string) {
-        this.message = `Deploy Script Error: ${message}`;
+let usage = "Usage: node deploy.js <command> <signing-info-spec-path>";
+let usageCommand = "<command>"
+let additionalUsage = "";
+
+export function addUsage(newUsage: string) {
+    if (additionalUsage) {
+        additionalUsage += newUsage;
+    } else {
+        additionalUsage += " " + newUsage;
     }
-
-    message: string
 }
 
-// Used for a soft error such as bad calling semantics
-class InputError {
-    constructor(message: string) {
-        const usage = "Usage: node deploy.js <command> <signing-info-spec-path>";
-        this.message = message + ". " + usage;
+export function getUsageCommand() {
+    return usageCommand;
+}
+
+function getUsage() {
+    let output = `Usage: node deploy.js ${usageCommand} <signing-info-spec-path>`;
+    if (additionalUsage) {
+        output += " " + additionalUsage;
+    }
+    return output;
+}
+
+function handleError(e: unknown) {
+    let errorCode;
+
+    if (e instanceof DeployError) {
+
+        console.error("");
+        console.error(`${e.err_type}: ${e.message}`);
+        if (e.err_type == "UsageError") {
+            console.error("");
+            console.error(getUsage());
+        }
+        console.error("");
+        switch (e.err_type) {
+            case "ScriptError":
+                errorCode = 2;
+                break;
+            case "UsageError":
+                errorCode = 3;
+                break;
+            case "InputError":
+                errorCode = 4;
+                break;
+            case "DecodeError":
+                errorCode = 5;
+                break;
+            default:
+                errorCode = 1;
+                console.error(`Unknown error type: ${e.err_type}`);
+                console.error("");
+                break;
+        }
+    } else {
+        errorCode = 1;
+        console.error(e);
     }
 
-    message: string
+    //fs.writeFileSync(pathsErrorFile, util.inspect(e))
+
+    process.exit(errorCode);
 }
 
 function main() {
@@ -32,30 +82,7 @@ function main() {
         try {
             await runMain()
         } catch (e) {
-
-            let errorCode;
-            const isInputError = e instanceof InputError;
-            const isScriptError = e instanceof ScriptError;
-
-            if (isInputError || isScriptError) {
-                console.log("");
-                console.error(e.message);
-                console.log("");
-            } else {
-                console.error(e);
-            }
-
-            if (isInputError) {
-                errorCode = 1;
-            } else if (isScriptError) {
-                errorCode = 2;
-            } else {
-                errorCode = 3;
-            }
-
-            //fs.writeFileSync(pathsErrorFile, util.inspect(e))
-
-            process.exit(errorCode);
+            handleError(e);
         }
 
     })()
@@ -66,35 +93,48 @@ async function runMain() {
     let args = new Array<string>()
 
     // Find the index of the argument containing the filename
-    let filenameIndex = process.argv.findIndex(arg => arg.includes('deploy-new.js'))
+    let filenameIndex = process.argv.findIndex(arg => arg.includes('main.js'))
     if (filenameIndex !== -1) {
         // Get all the remaining arguments after the filename
 
         args = process.argv.slice(filenameIndex + 1)
 
     } else {
-        throw new ScriptError("Improper calling semantics - missing script name argument");
+        throw new DeployError("UsageError", "Improper calling semantics - missing script name argument");
     }
 
+    const makeFilePath = path.join(pathsWorkspace, "Makefile.toml")
 
+    if (!(fs.existsSync(makeFilePath))) {
+        throw new Error("Not in correct directory. Deploy script must be run from deploy-tool/dist" +
+            "directory relative to the workspace root.")
+    }
 
     const command = args.shift();
     if (!command) {
-        throw new InputError(`Missing deploy command`);
+        throw new DeployError("UsageError", `Missing deploy command`);
     }
 
     const specPathArg = args.shift();
     if (!specPathArg) {
-        throw new InputError(`Missing deploy spec path argument`);
+        throw new DeployError("UsageError", `Missing deploy spec path argument`);
     }
 
-    if (args.length > 1) {
-        throw new InputError(`Extra arguments`);
+    const callerWorkingDirFromEnv = process.env.INIT_CWD;
+    if (!callerWorkingDirFromEnv) {
+        throw new DeployError("ScriptError", "Missing INIT_CWD in PATH to find the caller's working directory");
     }
+    const callerWorkingDir = path.resolve(callerWorkingDirFromEnv);
 
-    const working_dir = process.cwd();
-    const specPath = path.resolve(working_dir, specPathArg);
+    const specPath = path.join(callerWorkingDir, specPathArg);
+
     console.log('Signing info spec path: ' + specPath);
+    console.log("");
+    usageCommand = command;
+
+    if (fs.existsSync(pathsDeployArtifacts) && fs.readdirSync(pathsDeployArtifacts).length) {
+        execSync(`rm ${pathsDeployArtifacts}/*`, {encoding: 'utf-8'})
+    }
 
     switch (command) {
         case "instantiate":
@@ -104,12 +144,16 @@ async function runMain() {
             await govProp(specPath, args);
             break;
         case "migrate":
-            await govProp(specPath, args);
+            await migrate(specPath, args);
             break;
         case "sign":
             await sign(specPath, args);
             break;
         default:
-            throw new InputError(`Invalid command: ${command}`);
+            throw new DeployError("UsageError", `Invalid command: ${command}`);
     }
+}
+
+if (require.main === module) {
+    main()
 }

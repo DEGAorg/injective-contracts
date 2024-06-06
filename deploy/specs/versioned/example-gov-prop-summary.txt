@@ -1,48 +1,37 @@
-<strong>Introduction</strong>
-Injective has grown rapidly since its inception, establishing itself as the leading blockchain for finance. The core asset powering Injective and its rapid ecosystem expansion is its native token INJ.
 
-INJ is utilized for a diverse array of functions throughout Injective, such as staking to secure the network and governance. Uniquely, upon the launch of the Injective mainnet, token burn auctions on Injective commenced, decreasing the supply of INJ weekly. The introduction of INJ 2.0 in August of 2023 introduced a more comprehensive token burn auction, enabling any dApp on Injective to contribute to the weekly burn auctions. In turn, this set the stage for larger amounts of INJ to be burned weekly. As of today, nearly 5.9 Million INJ has been burned to date, totaling ~$190 Million at the time of writing.
-
-In pursuit of creating the ultimate form of INJ, a new proposal is set to be enacted for INJ 3.0 which would introduce the largest upgrade to Injective’s tokenomics. In essence, this would reduce on-chain parameters for the minting of new INJ, enabling it to become more deflationary than ever before.
-
-The reasoning is two-fold. The first is that Injective is already one of the largest PoS L1 chains today and is secured by billions of dollars in assets. As a result, decreasing the supply of INJ can occur while the chain continues to retain the highest levels of security. The second is to create a more robust asset for the ecosystem that can adopt the properties of true ultrasound money.
-
-Bitcoin has long been praised for its sound money properties, largely due to its immutable supply cap and halving schedule. Drawing inspiration from the disinflationary nature of Bitcoin halving events, this proposal aims to decrease the INJ token inflation rate over two years while increasing the responsiveness to staking activity. The schedule for decreasing INJ supply would be put into an accelerated timeline which would directly reduce the supply of INJ while also bringing INJ one step closer to becoming the most deflationary crypto asset in existence.
+<strong>Test Summary</strong>
+This is a test.
 
 <strong>Proposal Details:</strong>
-1. <b>Decrease of Inflation Rate Bounds:</b>
-&emsp;- Lower Bound: Currently set at 5%. Propose to decrease 25% over two years on a uniform quarterly basis.
-&emsp;- Upper Bound: Currently set at 10%. Propose to decrease 30% over the same two-year period.
-&emsp;- The proposed schedule for [lower bound, upper bound] is as follows:
-&emsp;&emsp;- End 24Q1: [5%, 10%] (Current, no changes needed)
-&emsp;&emsp;- End 24Q2: [4.875%, 9.625%]
-&emsp;&emsp;- End 24Q3: [4.75%, 9.25%]
-&emsp;&emsp;- End 24Q4: [4.625%, 8.875%]
-&emsp;&emsp;- End 25Q1: [4.5%, 8.5%]
-&emsp;&emsp;- End 25Q2: [4.375%, 8.125%]
-&emsp;&emsp;- End 25Q3: [4.25%, 7.75%]
-&emsp;&emsp;- End 25Q4: [4.125%, 7.375%]
-&emsp;&emsp;- End 26Q1: [4%, 7%]
-&emsp;&emsp;- End 26Q2+: Re-evaluate inflation parameters for further decreases
-2. <b>Adjustment of Inflation Rate Change:</b>
-&emsp;- Increase the inflation rate change parameter from 0.1 to 0.5 to increase its responsiveness to staking activity.
+&emsp;- Item 1
+&emsp;- Item 2
+&emsp;- Item 3
 
-<strong>Expected Outcomes:</strong>
-1. <b>Optimized Tokenomics:</b>
-&emsp;- By decreasing the inflation rate bounds of the INJ token, Injective aims to emulate and eventually surpass the disinflationary characteristics of Bitcoin to become the most deflationary crypto asset. Just as Bitcoin's halving events decrease its supply over time, adjusting the inflation rate of INJ will create a more deflationary asset.
-2. <b>Ensuring Future Sustainability:</b>
-&emsp;- A controlled reduction in the inflation rate bounds ensures that INJ can continue to be ultrasound money. By balancing participation incentives and token scarcity, Injective can create a sustainable ecosystem that both rewards early adopters and attracts new participants.
-3. <b>Enhancing Emissions Responsiveness to Staking Activity:</b>
-&emsp;- Increasing the inflation rate change parameter to 0.5 will allow the protocol to react more swiftly to fluctuations in staking activity. As a result, as more INJ is staked, deflationary properties also increase more rapidly. This adjustment ensures that the protocol remains adaptive and resilient, capable of adjusting its monetary policy in real-time to maintain equilibrium and security within the ecosystem.
+<em>Italic Text</em>
+<u>Underline Text</u>
+<a href="http://www.google.com">Link Text</a>
+<a href="http://www.google.com"><u>Underlined Link Text</u></a>
+<a href="https://gov.injective.network/discussion/12345678-this-is-a-really-long-url-with-a-lot-of-words-and-a-lot-of-characters-together"><u>https://gov.injective.network/discussion/12345678-this-is-a-really-long-url-with-a-lot-of-words-and-a-lot-of-characters-together</u></a>
 
-<strong>Conclusion</strong>
-With the introduction of INJ 3.0, the ecosystem can take the next step in its growth by creating the most robust deflationary asset in crypto that aligns with the long-term goals of Injective. Through reductions in inflation rates and increased responsiveness to staking activity, INJ can foster a sustainable ecosystem that rewards stakeholders and ensures the chain’s continued success in the continuously evolving crypto landscape.
 
-<strong>Actions:</strong>
+Contract Information:
+&emsp;Contract Name: Test Contract
+&emsp;Contract Number: 123456
+&emsp;Contract Type: Test Type
 
-- By voting YES on this proposal, you agree to update the Injective chain’s inflation parameters according to the above description.
-- By voting NO on the proposal, you do not support updating the Injective chain’s inflation parameters according to the above description.
-- By voting NO WITH VETO, you find this proposal to be (1) spam, i.e., irrelevant to the Injective ecosystem, (2) disproportionately infringes on minority interests, or (3) violates or encourages violation of the rules of engagement as currently set out by Injective governance. If the number of ‘NoWithVeto’ votes is greater than a third of the total votes, the proposal is rejected and the 500 INJ deposit is burned.
-- By voting ABSTAIN, you wish to contribute to the quorum while formally declining to vote either for or against the proposal.
+<strong>Background Information:</strong>
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-<em>Disclosure: I am a member of the Injective Labs team.</em>
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+
+<em>Disclosure: Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</em>

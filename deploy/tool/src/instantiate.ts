@@ -1,7 +1,9 @@
 import excess from "io-ts-excess";
 import * as t from "io-ts";
-import {createTxContext, TxContext, generateTxJsonObj, writeTxJsonOutput} from "./transaction";
+import {createTxContext, TxContext, writeTxJsonOutput} from "./transaction";
 import {DegaMinterInstantiateMsg} from "./messages";
+import {generateTxJsonObj} from "./generate";
+import {DeployError} from "./error";
 
 
 const instantiateSpecDef = excess(t.type({
@@ -44,6 +46,10 @@ export async function instantiate(specPath: string, remainingArgs: string[]) {
 
     console.log("Creating instantiation transaction...");
     console.log("");
+
+    if (remainingArgs.length) {
+        throw new DeployError("UsageError", `Extra arguments`);
+    }
 
     const output: InstantiateOutput = {
         txJsonPath: ""

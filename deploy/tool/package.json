@@ -5,8 +5,7 @@
   "main": "dist/deploy.js",
   "scripts": {
     "tsc": "npx tsc",
-    "deploy": "npm run tsc && node dist/deploy.js",
-    "sign": "npm run tsc && node dist/sign.js"
+    "deploy": "npm run tsc && node dist/main.js"
   },
   "author": "Unamint Studios, Will Stahl <will@stahl.cc>",
   "license": "None (all rights reserved)",

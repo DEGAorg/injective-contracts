@@ -5,9 +5,10 @@ import * as t from "io-ts";
 import {
     createTxContext,
     TxContext,
-    generateTxJsonObj,
     writeTxJsonOutput
 } from "./transaction";
+import {generateTxJsonObj} from "./generate";
+import {DeployError} from "./error";
 
 const migrateSpecDef = excess(t.type({
     network: t.keyof({
@@ -59,9 +60,14 @@ export async function migrate(specPath: string, remainingArgs: string[]) {
     console.log("Creating migration transaction...");
     console.log("");
 
+    if (remainingArgs.length) {
+        throw new DeployError("InputError", `Extra arguments`);
+    }
+
     const output: MigrateOutput = {
         txJsonPath: ""
     };
+
     let context: MigrateContext = createTxContext(specPath, migrateSpecDef, output, "migrate");
 
     const migrateMsg: MigrateMessage = getMigrateMsgForVariant(context);
@@ -74,7 +80,7 @@ export async function migrate(specPath: string, remainingArgs: string[]) {
     txArgs.push("migrate");
     txArgs.push(context.spec.contractAddressForMigration);
     txArgs.push(context.spec.codeId.toString());
-    txArgs.push(JSON.stringify(migrateMsg));
+    txArgs.push(`'${JSON.stringify(migrateMsg)}'`);
 
     const migrateTxJson = await generateTxJsonObj(context, txArgs);
     writeTxJsonOutput(context, migrateTxJson);

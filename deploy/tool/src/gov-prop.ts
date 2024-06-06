@@ -3,7 +3,6 @@ import * as t from "io-ts";
 import {
     createTxContext,
     TxContext,
-    generateTxJsonObj,
     InjectiveTx,
     writeTxJsonOutput
 } from "./transaction";
@@ -11,9 +10,17 @@ import fs from "fs";
 import {sha256} from "@injectivelabs/sdk-ts";
 import {BigNumberInBase} from "@injectivelabs/utils";
 import path from "node:path";
-import {replaceLineEndingsWithBreaks, replaceLineEndingsWithSlashN} from "./deploy";
-import {pathsDeploy, pathsDeployArtifacts} from "./context";
+import {
+    getFilePathFromSpecFile,
+    pathsDeploy,
+    pathsDeployArtifacts,
+    pathsWorkspace,
+    replaceLineEndingsWithBreaks,
+    replaceLineEndingsWithSlashN
+} from "./context";
 import * as zlib from "node:zlib";
+import {generateTxJsonObj} from "./generate";
+import {DeployError} from "./error";
 
 
 const govPropSpecDef = excess(t.type({
@@ -32,7 +39,6 @@ const govPropSpecDef = excess(t.type({
     wasmChecksum: t.string,
     proposalTitle: t.string,
     summaryFilePath: t.string,
-    proposerAddress: t.string,
     instantiateAddresses: t.union([t.array(t.string), t.undefined, t.null]),
     depositAmountINJ: t.number,
     note: t.union([t.string, t.undefined, t.null]),
@@ -68,6 +74,10 @@ export async function govProp(specPath: string, remainingArgs: string[]) {
     console.log("Creating governance proposal transaction...");
     console.log("");
 
+    if (remainingArgs.length) {
+        throw new DeployError("InputError", `Extra arguments`);
+    }
+
     const output: GovPropOutput = {
         txJsonPath: ""
     };
@@ -76,11 +86,7 @@ export async function govProp(specPath: string, remainingArgs: string[]) {
     console.log(`Contract variant: ${context.spec.contractVariant}`);
     console.log("");
 
-    const wasmPath = path.join(pathsDeploy, context.spec.wasmPath);
-
-    if (!fs.existsSync(wasmPath)) {
-        throw new DeployError("InputError", "Wasm file does not exist: " + wasmPath);
-    }
+    const wasmPath = getFilePathFromSpecFile(context.spec.wasmPath);
 
     console.log(`Checksum for ${context.spec.contractVariant}: ${context.spec.wasmChecksum}`);
     const wasmContents = fs.readFileSync(wasmPath);
@@ -91,16 +97,10 @@ export async function govProp(specPath: string, remainingArgs: string[]) {
         throw new DeployError("InputError", `Wasm checksum does not match for: ${context.spec.contractVariant}`);
     }
 
-    //const gasPrices = context.gasPricesAmountWei.toFixed();
-    //const gas = new BigNumberInWei(60000000).toFixed();
     const despositAmountInBaseInj = context.spec.depositAmountINJ;
     const despositAmountInWei = new BigNumberInBase(despositAmountInBaseInj).toWei().toFixed();
 
-
-
-
-    const relativeSummaryFilePath = context.spec.summaryFilePath;
-    const summaryFilePath = path.join(pathsDeploy, relativeSummaryFilePath);
+    const summaryFilePath = getFilePathFromSpecFile(context.spec.summaryFilePath);
     const summaryFileName = path.basename(summaryFilePath);
     let summaryContents = fs.readFileSync(summaryFilePath, "utf-8");
 

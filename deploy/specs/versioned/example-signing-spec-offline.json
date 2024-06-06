@@ -1,0 +1,9 @@
+{
+  "note": "Signing a transaction with the key 'dev' for to localnet",
+  "network": "Local",
+  "signerKeyName": "dev",
+  "txJsonFilePath": "<deploy>/versions/1-0-0/local/tx-json/proposal-tx_dega-cw721_local.json",
+  "offline": true,
+  "accountNumber": 12345,
+  "sequenceNumber": 12345
+}

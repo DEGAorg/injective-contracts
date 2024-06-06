@@ -1,10 +1,12 @@
 
-type DeployErrorType = "InputError" | "ScriptError" | "DecodeError"
+export type DeployErrorType = "UsageError" | "InputError" | "ScriptError" | "DecodeError"
 
-class DeployError {
+export class DeployError {
     constructor(type : DeployErrorType, message: string) {
         this.message = message
+        this.err_type = type
     }
 
-    message: string
+    message: string;
+    err_type: DeployErrorType;
 }
