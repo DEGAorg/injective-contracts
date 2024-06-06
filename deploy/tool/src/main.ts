@@ -132,7 +132,7 @@ async function runMain() {
 
     if (!fs.existsSync(pathsDeployArtifacts)) {
         fs.mkdirSync(pathsDeployArtifacts);
-    } else if (fs.readdirSync(pathsDeployArtifacts).length) {
+    } else if (fs.readdirSync(pathsDeployArtifacts).length && command !== "sign") {
         execSync(`rm ${pathsDeployArtifacts}/*`, {encoding: 'utf-8'})
     }
 
