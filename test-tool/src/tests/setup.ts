@@ -132,7 +132,7 @@ export async function findCodeIdsFromChecksums(): Promise<[number, number, numbe
     if (receiverTesterCodeId == undefined && testContext.testReceiverTesterWasmChecksum != undefined) {
 
         let isCorrectWasmCopiedToArtifacts = false;
-        let targetWasmPath = path.join(__dirname, "..", "..", "..", "artifacts-optimized", "cw721_receiver_tester.wasm");
+        let targetWasmPath = path.join(__dirname, "..", "..", "..", "artifacts", "cw721_receiver_tester.wasm");
         if (fs.existsSync(targetWasmPath)) {
             let artifactsWasmChecksum = Buffer.from(sha256(fs.readFileSync(targetWasmPath))).toString("hex");
             if (artifactsWasmChecksum == testContext.testReceiverTesterWasmChecksum) {

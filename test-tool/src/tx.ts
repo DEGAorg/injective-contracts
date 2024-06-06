@@ -1018,7 +1018,7 @@ async function store(args: string[]) {
             await store_wasm("dega_cw721.wasm")
         } else if (args[1] == "receiver" || args[1] == "cw721-receiver" || args[1] == "cw721-receiver-tester") {
             fs.copyFileSync(path.resolve(__dirname, "../data/cw721_receiver_tester.wasm"),
-                path.resolve(__dirname, "../../artifacts-optimized/cw721_receiver_tester.wasm"));
+                path.resolve(__dirname, "../../artifacts/cw721_receiver_tester.wasm"));
             await store_wasm("cw721_receiver_tester.wasm")
         } else {
             throw new Error("Unknown wasm contract: " + args[1]);
@@ -1032,7 +1032,7 @@ export async function store_wasm(wasm_name: string): Promise<number> {
 
     const context = await getAppContext();
 
-    const artifactsDir = path.resolve(__dirname, "../../artifacts-optimized");
+    const artifactsDir = path.resolve(__dirname, "../../artifacts");
     const wasmPath = path.resolve(artifactsDir, wasm_name);
     const wasmBytes = new Uint8Array(Array.from(fs.readFileSync(wasmPath)));
 
