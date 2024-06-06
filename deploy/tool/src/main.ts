@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import fs from "fs";
 import path from "node:path";
 import {isLeft} from "fp-ts/Either";
@@ -93,7 +95,9 @@ async function runMain() {
     let args = new Array<string>()
 
     // Find the index of the argument containing the filename
-    let filenameIndex = process.argv.findIndex(arg => arg.includes('main.js'))
+    let filenameIndex = process.argv.findIndex(arg => {
+        return arg.includes('main.js') || arg.includes('dega-inj-deploy');
+    })
     if (filenameIndex !== -1) {
         // Get all the remaining arguments after the filename
 
@@ -120,13 +124,7 @@ async function runMain() {
         throw new DeployError("UsageError", `Missing deploy spec path argument`);
     }
 
-    const callerWorkingDirFromEnv = process.env.INIT_CWD;
-    if (!callerWorkingDirFromEnv) {
-        throw new DeployError("ScriptError", "Missing INIT_CWD in PATH to find the caller's working directory");
-    }
-    const callerWorkingDir = path.resolve(callerWorkingDirFromEnv);
-
-    const specPath = path.join(callerWorkingDir, specPathArg);
+    const specPath = path.resolve(process.cwd(), specPathArg);
 
     console.log('Signing info spec path: ' + specPath);
     console.log("");

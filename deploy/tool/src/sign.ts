@@ -65,13 +65,7 @@ export async function sign(specPath: string, remainingArgs: string[]) {
             throw new DeployError("UsageError", `Too many arguments`)
         }
 
-        const callerWorkingDirFromEnv = process.env.INIT_CWD;
-        if (!callerWorkingDirFromEnv) {
-            throw new DeployError("ScriptError", "Missing INIT_CWD in PATH to find the caller's working directory");
-        }
-        const callerWorkingDir = path.resolve(callerWorkingDirFromEnv);
-
-        txJsonFilePath = path.join(callerWorkingDir, txJsonArgFilePathArg);
+        txJsonFilePath = path.resolve(process.cwd(), txJsonArgFilePathArg);
 
         if (!fs.existsSync(txJsonFilePath)) {
             throw new DeployError("UsageError", `Tx JSON file specified at the command line does not exist: ${txJsonFilePath}`);

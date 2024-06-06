@@ -29,7 +29,7 @@ export function generatePrivateKey() {
 
 function initConfig() {
 
-    config();
+    config({path: __dirname + "/../.env"});
 
     if (isJestRunning()) {
         const testEnvPath = path.resolve(__dirname, "..", "cache", ".env.test");

@@ -2,16 +2,20 @@
   "name": "deploy-tool",
   "version": "1.0.0",
   "description": "A typescript deployment tool for the dega inj contracts",
-  "main": "dist/deploy.js",
+  "main": "dist/main.js",
+  "bin": {
+    "dega-inj-deploy": "./dist/main.js"
+  },
   "scripts": {
     "tsc": "npx tsc",
-    "deploy": "npm run tsc && node dist/main.js"
+    "run": "npm run tsc && node dist/main.js",
+    "clear": "rm -rf dist",
+    "prepare": "tsc"
   },
-  "author": "Unamint Studios, Will Stahl <will@stahl.cc>",
+  "author": "DEGA Labs, Unamint Studios, Will Stahl <will@stahl.cc>",
   "license": "None (all rights reserved)",
   "dependencies": {
     "@injectivelabs/sdk-ts": "^1.14.7",
-    "@injectivelabs/wallet-ts": "^1.14.7",
     "dotenv": "^16.4.5",
     "io-ts": "^2.2.21",
     "io-ts-excess": "^1.0.1",

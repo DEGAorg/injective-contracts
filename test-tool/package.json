@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "description": "A typescript testing tool for the dega inj contracts",
   "main": "dist/main.js",
+  "bin": {
+    "dega-inj-test": "./dist/main.js"
+  },
   "scripts": {
     "tsc": "npx tsc",
     "run": "npx tsc && node dist/main.js",
     "test": "npx tsc && npx jest --detectOpenHandles",
-    "clear": "rm -rf dist"
+    "clear": "rm -rf dist",
+    "prepare": "tsc"
   },
-  "author": "Unamint Studios, Will Stahl <will@stahl.cc>",
+  "author": "DEGA Labs, Unamint Studios, Will Stahl <will@stahl.cc>",
   "license": "None (all rights reserved)",
   "dependencies": {
     "@injectivelabs/sdk-ts": "^1.14.7",
