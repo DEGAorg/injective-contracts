@@ -26,7 +26,9 @@ function main() {
         let command: string | null = null; // default to query
         let args = new Array<string>();
         // Find the index of the argument containing the filename
-        let filenameIndex = process.argv.findIndex(arg => arg.includes('main.js'));
+        let filenameIndex = process.argv.findIndex(arg => {
+            return arg.includes('main.js') || arg.includes('dega-inj-test');
+        });
         if (filenameIndex !== -1) {
             // Get all the remaining arguments after the filename
             args = process.argv.slice(filenameIndex + 1);
@@ -56,7 +58,7 @@ function main() {
                 await generate(args);
                 break;
             case "make-sig":
-                await generate(args);
+                await makeSig(args);
                 break;
             default:
                 console.log("Unknown command: " + command);
@@ -72,9 +74,14 @@ if (require.main === module) {
 
 
 
-async function makeSig(message: string) {
+async function makeSig(args: string[]) {
 
     const context = await getAppContext();
+    const message = args.shift();
+    if (!message) {
+        console.error("No message provided");
+        return;
+    }
 
     let mintRequestBase64 = toBase64({message});
     let buffer = Buffer.from(mintRequestBase64, "base64");

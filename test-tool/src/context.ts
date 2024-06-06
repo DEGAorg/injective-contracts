@@ -40,6 +40,8 @@ export interface AppContext {
     minterAddress: string;
     cw721Address: string;
     receiverContractAddress: string | undefined;
+    cliNode: string;
+    chainId: string;
 }
 
 // Run before each integration test
@@ -93,16 +95,24 @@ async function initAppContext(): Promise<AppContext> {
             undefined;
 
     let network;
+    let cliNode;
+    let chainId;
 
     switch (config.NETWORK) {
         case "Local":
             network = Network.Local;
+            cliNode = "http://localhost:26657";
+            chainId = ChainId.Mainnet;
             break;
         case "Testnet":
             network = Network.Testnet;
+            cliNode = "https://testnet.sentry.tm.injective.network:443";
+            chainId = ChainId.Testnet;
             break;
         case "Mainnet":
             network = Network.Mainnet;
+            cliNode = "https://sentry.tm.injective.network:443";
+            chainId = "injective-1";
             break;
     }
 
@@ -245,6 +255,8 @@ async function initAppContext(): Promise<AppContext> {
         minterAddress: minterAddress,
         cw721Address: cw721Address,
         receiverContractAddress: receiverContractAddress,
+        cliNode: cliNode,
+        chainId: chainId,
     }
 }
 

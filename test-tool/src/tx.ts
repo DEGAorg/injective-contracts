@@ -1,5 +1,5 @@
 import {DegaCw721ExecuteMsg, DegaMinterExecuteMsg, DegaMinterInstantiateMsg, DegaMinterQueryMsg} from "./messages";
-import {MintRequest, UpdateAdminCommand, UpdateDegaMinterConfigSettingsMsg} from "./messages/dega_minter_execute";
+import {MintRequest} from "./messages/dega_minter_execute";
 import {Config} from "./config";
 import {getAppContext,} from "./context";
 import {
@@ -20,20 +20,16 @@ import fs from "fs";
 import secp256k1 from "secp256k1";
 import {SignerSourceTypeEnum} from "./messages/dega_minter_query";
 import {v4 as uuidv4} from 'uuid';
-import {DegaMinterConfigResponse} from "./messages/dega_minter_query_responses";
 import {DegaCw721MigrateMsg} from "./messages/dega_cw721_migrate";
 import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
 import {Convert, Cw721ReceiverTesterInnerMsg} from "./messages/cw721_receiver_tester_inner_msg";
-import {binaryToBase64} from "@injectivelabs/sdk-ts/dist/cjs/utils/utf8";
 import {Cw721ReceiveMsg, Cw721ReceiverTesterExecuteMsg} from "./messages/cw721_receiver_tester_execute_msg";
-import {Expiration, Never} from "./messages/dega_cw721_execute";
-import {createApproveToken} from "./helpers/collection";
+import {Expiration} from "./messages/dega_cw721_execute";
+import {addAdmin, pause, removeAdmin, setMintSigner, updateCollectionInfo} from "./tx-admin";
 
 
 // Transaction Exec example:
 // https://github.com/InjectiveLabs/injective-create-app-template-nuxt-sc-counter/blob/c94c68de41cb0292c6df27dcd4354d64906ca901/store/counter.ts#L21
-
-
 
 
 export async function tx(args: string[]) {
@@ -106,6 +102,9 @@ export async function tx(args: string[]) {
         case "pause":
             await pause(args);
             break;
+        case "update-collection-info":
+            await updateCollectionInfo(args);
+            break;
         case "migrate":
             await migrate(args);
             break;
@@ -116,7 +115,7 @@ export async function tx(args: string[]) {
             await govSummaryTest(args);
             break;
         default:
-            console.log("Unknown test execute sub-command: " + sub_command);
+            console.log("Unknown tx sub-command: " + sub_command);
             break;
     }
 }
@@ -137,7 +136,7 @@ async function sleep(seconds: number) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
 
-function logResponse(response: TxResponse) {
+export function logResponse(response: TxResponse) {
 
     if (response.code !== 0) {
         console.log(`Transaction failed: ${response.rawLog}`);
@@ -1381,184 +1380,6 @@ async function operator(args: string[]) {
 }
 
 
-async function addAdmin(args: string[]) {
-    if (args.length < 1) {
-        throw new Error("Missing argument. Usage: tx add-admin <new-admin-address>");
-    }
-
-    const context = await getAppContext();
-
-    const newAdminAddress = args[0];
-
-    const contractMsg: DegaMinterExecuteMsg = {
-        update_admin: {
-            address: newAdminAddress,
-            command: UpdateAdminCommand.Add,
-        }
-    };
-
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: context.primaryAddress,
-        contractAddress: context.minterAddress,
-        msg: contractMsg,
-        funds: []
-    })
-
-    const response = await context.primaryBroadcaster.broadcast({
-        msgs: execMsg,
-        gas: context.gasSettings,
-    })
-
-    logResponse(response);
-}
-
-async function removeAdmin(args: string[]) {
-    if (args.length < 1) {
-        throw new Error("Missing argument. Usage: tx remove-admin <revoked-admin-address>");
-    }
-
-    const context = await getAppContext();
-
-    const revokedAdminAddress = args[0];
-
-    const contractMsg: DegaMinterExecuteMsg = {
-        update_admin: {
-            address: revokedAdminAddress,
-            command: UpdateAdminCommand.Remove,
-        }
-    };
-
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: context.primaryAddress,
-        contractAddress: context.minterAddress,
-        msg: contractMsg,
-        funds: []
-    })
-
-    const response = await context.primaryBroadcaster.broadcast({
-        msgs: execMsg,
-        gas: context.gasSettings,
-    })
-
-    logResponse(response);
-}
-
-async function setMintSigner(args: string[]) {
-
-    const context = await getAppContext();
-
-    let newSigningKeyBase64 = undefined;
-
-    if (args.length < 1) {
-        newSigningKeyBase64 = context.signerCompressedPublicKey.toString("base64");
-
-    } else {
-        newSigningKeyBase64 = args[0];
-    }
-
-    let configQuery: DegaMinterQueryMsg = {
-        config: {}
-    };
-
-    const configQueryResponse = await context.queryWasmApi.fetchSmartContractState(
-        context.minterAddress,
-        toBase64(configQuery),
-    );
-
-    const configQueryResponseData: DegaMinterConfigResponse = fromBase64(
-        Buffer.from(configQueryResponse.data).toString("base64")
-    ) as DegaMinterConfigResponse;
-
-    let newSettings = configQueryResponseData.dega_minter_settings;
-
-    newSettings.signer_pub_key = newSigningKeyBase64;
-
-    const contractMsg: DegaMinterExecuteMsg = {
-        update_settings: {
-            settings: newSettings
-        }
-    };
-
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: context.primaryAddress,
-        contractAddress: context.minterAddress,
-        msg: contractMsg,
-        funds: []
-    })
-
-    const response = await context.primaryBroadcaster.broadcast({
-        msgs: execMsg,
-        gas: context.gasSettings,
-    })
-
-    logResponse(response);
-}
-
-
-async function pause(args: string[]) {
-
-    if (args.length < 1) {
-        throw new Error("Missing argument. Usage: tx pause <new-setting>");
-    }
-
-    const context = await getAppContext();
-
-    const onString = args[0];
-
-    if (onString != "true" && onString != "false") {
-        throw new Error("Invalid on value. Must be either true or false");
-    }
-
-    const newSetting: boolean = (onString == "true");
-
-    // let configQuery: DegaMinterQueryMsg = {
-    //     config: {}
-    // };
-    //
-    // const configQueryResponse = await context.chainGrpcWasmApi.fetchSmartContractState(
-    //     context.minterAddress,
-    //     toBase64(configQuery),
-    // );
-    //
-    // const configQueryResponseData: DegaMinterConfigResponse = fromBase64(
-    //     Buffer.from(configQueryResponse.data).toString("base64")
-    // ) as DegaMinterConfigResponse;
-    //
-    // let newSettings = configQueryResponseData.dega_minter_settings;
-    //
-    // if (newSettings.minting_paused == newSetting) {
-    //     console.log("Pause already in desired state");
-    //     return;
-    // }
-    //
-    // newSettings.minting_paused = newSetting;
-
-    const newSettings: UpdateDegaMinterConfigSettingsMsg = {
-        minting_paused: newSetting
-    };
-
-    const contractMsg: DegaMinterExecuteMsg = {
-        update_settings: {
-            settings: newSettings
-        }
-    };
-
-    const execMsg = MsgExecuteContractCompat.fromJSON({
-        sender: context.primaryAddress,
-        contractAddress: context.minterAddress,
-        msg: contractMsg,
-        funds: []
-    })
-
-    const response = await context.primaryBroadcaster.broadcast({
-        msgs: execMsg,
-        gas: context.gasSettings,
-    })
-
-    logResponse(response);
-}
-
-
 async function migrate(args: string[]) {
 
     if (args.length < 1) {
@@ -1868,3 +1689,4 @@ async function govSummaryTest(args: string[]) {
     console.log(escapedSummaryString);
     console.log("")
 }
+

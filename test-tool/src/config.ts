@@ -4,7 +4,12 @@ import {randomBytes} from "crypto";
 import {PrivateKey} from "@injectivelabs/sdk-ts";
 import fs from "fs";
 
-function isEmpty(value: any) {
+export const pathsWorkspace = path.resolve(__dirname, "../..");
+export const pathsTestTool = path.join(pathsWorkspace, "test-tool");
+export const pathsTestToolArtifacts = path.join(pathsTestTool, "artifacts");
+
+
+    function isEmpty(value: any) {
     return value === null || value === undefined;
 }
 function notEmpty(value: any) {

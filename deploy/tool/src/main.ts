@@ -130,7 +130,9 @@ async function runMain() {
     console.log("");
     usageCommand = command;
 
-    if (fs.existsSync(pathsDeployArtifacts) && fs.readdirSync(pathsDeployArtifacts).length) {
+    if (!fs.existsSync(pathsDeployArtifacts)) {
+        fs.mkdirSync(pathsDeployArtifacts);
+    } else if (fs.readdirSync(pathsDeployArtifacts).length) {
         execSync(`rm ${pathsDeployArtifacts}/*`, {encoding: 'utf-8'})
     }
 
