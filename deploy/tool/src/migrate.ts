@@ -27,12 +27,9 @@ const migrateSpecDef = excess(t.type({
     note: t.union([t.string, t.undefined, t.null]),
 }, "MigrateSpec"));
 
-interface MigrateOutput {
-    txJsonPath: string;
-}
 
 type MigrateSpec = t.TypeOf<typeof migrateSpecDef>;
-interface MigrateContext extends TxContext<MigrateSpec,MigrateOutput> {}
+interface MigrateContext extends TxContext<MigrateSpec> {}
 
 type MigrateMessage = DegaMinterMigrateMsg | DegaCw721MigrateMsg;
 
@@ -64,11 +61,7 @@ export async function migrate(specPath: string, remainingArgs: string[]) {
         throw new DeployError("InputError", `Extra arguments`);
     }
 
-    const output: MigrateOutput = {
-        txJsonPath: ""
-    };
-
-    let context: MigrateContext = createTxContext(specPath, migrateSpecDef, output, "migrate");
+    let context: MigrateContext = createTxContext(specPath, migrateSpecDef, "migrate");
 
     const migrateMsg: MigrateMessage = getMigrateMsgForVariant(context);
 

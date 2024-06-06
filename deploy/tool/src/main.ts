@@ -4,7 +4,7 @@ import {isLeft} from "fp-ts/Either";
 import util from "util";
 import { instantiate } from "./instantiate";
 import { govProp } from "./gov-prop";
-import {sign} from "./sign-new";
+import {sign} from "./sign";
 import {pathsDeployArtifacts, pathsWorkspace} from "./context";
 import {DeployError} from "./error";
 import {execSync} from "child_process";

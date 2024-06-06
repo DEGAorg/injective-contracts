@@ -8,29 +8,16 @@ import {DeployError} from "./error";
 import {getUsageCommand} from "./main";
 
 export const pathsWorkspace = path.resolve(__dirname, "../../..")
-export const pathsWorkspaceArtifacts = path.join(pathsWorkspace, "artifacts")
-export const pathsWorkspaceArtifactsOptimized = path.join(pathsWorkspace, "artifacts-optimized")
 export const pathsDeploy = path.join(pathsWorkspace, "deploy")
 export const pathsDeployArtifacts = path.join(pathsDeploy, "artifacts")
-export const pathsDeploySpecs = path.join(pathsDeploy, "specs")
-export const pathsDeployPrivateKeys = path.join(pathsDeploy, "private-keys")
-export const pathsOutputFile = path.join(pathsDeployArtifacts, 'deploy-output.json')
-export const pathsLogFile = path.join(pathsDeployArtifacts, 'deploy-log.txt')
-export const pathsErrorFile = path.join(pathsDeployArtifacts, 'deploy-error.txt')
 
 // Properties that must be in every spec
 export interface DeploySpec {
     network: "Local" | "Testnet" | "Mainnet";
 }
 
-// Properties that must be in every output
-export interface DeployOutput {
-}
-
-
-export interface DeployContext<S extends DeploySpec, O extends DeployOutput> {
+export interface DeployContext<S extends DeploySpec> {
     spec: S;
-    output: O;
 }
 
 export function decode<I, A>(type: t.Decoder<I, A>, input: I) {
@@ -79,15 +66,13 @@ function loadSpec<I, S extends DeploySpec>(specPath: string, specDef: t.Decoder<
 }
 
 export function createContext
-<S extends DeploySpec, O extends DeployOutput>
+<S extends DeploySpec>
 (
     specPath: string,
-    specDef: t.Decoder<unknown, S>,
-    newOutput: O
-): DeployContext<S, O> {
+    specDef: t.Decoder<unknown, S>
+): DeployContext<S> {
     return {
-        spec: loadSpec(specPath, specDef),
-        output: newOutput
+        spec: loadSpec(specPath, specDef)
     }
 }
 

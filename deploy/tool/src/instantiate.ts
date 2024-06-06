@@ -35,12 +35,9 @@ const instantiateSpecDef = excess(t.type({
     note: t.union([t.string, t.undefined, t.null]),
 }, "InstantiateSpec"));
 
-interface InstantiateOutput {
-    txJsonPath: string;
-}
 
 type InstantiateSpec = t.TypeOf<typeof instantiateSpecDef>;
-interface InstantiateContext extends TxContext<InstantiateSpec,InstantiateOutput> {}
+interface InstantiateContext extends TxContext<InstantiateSpec> {}
 
 export async function instantiate(specPath: string, remainingArgs: string[]) {
 
@@ -51,10 +48,7 @@ export async function instantiate(specPath: string, remainingArgs: string[]) {
         throw new DeployError("UsageError", `Extra arguments`);
     }
 
-    const output: InstantiateOutput = {
-        txJsonPath: ""
-    };
-    let context: InstantiateContext = createTxContext(specPath, instantiateSpecDef, output, "instantiate");
+    let context: InstantiateContext = createTxContext(specPath, instantiateSpecDef, "instantiate");
 
     if (context.spec.collectionMigratable) {
 

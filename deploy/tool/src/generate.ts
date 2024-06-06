@@ -1,5 +1,5 @@
 import {execSync} from "child_process";
-import {InjectiveTx, TxContext, TxOutput, TxSpec} from "./transaction";
+import {InjectiveTx, TxContext, TxSpec} from "./transaction";
 import {DeploySpec, logObjectFullDepth} from "./context";
 import {DeployError} from "./error";
 
@@ -11,8 +11,7 @@ export interface GenerateSpec extends TxSpec {
 export async function generateTxJsonObj<
     T,
     S extends GenerateSpec,
-    O extends TxOutput,
->(context: TxContext<S, O>, txArgs: string[]): Promise<InjectiveTx<T>> {
+>(context: TxContext<S>, txArgs: string[]): Promise<InjectiveTx<T>> {
 
     console.log("Generating transaction");
     console.log("");

@@ -1,17 +1,12 @@
 import excess from "io-ts-excess";
 import * as t from "io-ts";
 import {createTxContext, InjectiveTx, TxContext} from "./transaction";
-import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
-import {DegaCw721MigrateMsg} from "./messages/dega_cw721_migrate";
 import {execSync} from "child_process";
 import path from "node:path";
 import fs from "fs";
 import {
     getFilePathFromSpecFile,
-    logObjectFullDepth,
-    pathsDeploy,
     pathsDeployArtifacts,
-    pathsWorkspace
 } from "./context";
 import {addUsage} from "./main";
 import {DeployError} from "./error";
@@ -36,12 +31,9 @@ const signSpecDef = excess(t.type({
     note: t.union([t.string, t.undefined, t.null]),
 }, "SignSpec"));
 
-interface SignOutput {
-    txJsonPath: string;
-}
 
 type SignSpec = t.TypeOf<typeof signSpecDef>;
-interface SignContext extends TxContext<SignSpec,SignOutput> {}
+interface SignContext extends TxContext<SignSpec> {}
 
 
 
@@ -52,10 +44,7 @@ export async function sign(specPath: string, remainingArgs: string[]) {
     console.log("Creating signing transaction...");
     console.log("");
 
-    const output: SignOutput = {
-        txJsonPath: ""
-    };
-    let context: SignContext = createTxContext(specPath, signSpecDef, output, "signed");
+    let context: SignContext = createTxContext(specPath, signSpecDef, "signed");
 
 
     const INJECTIVED_PASSWORD = process.env.INJECTIVED_PASSWORD;
@@ -169,6 +158,5 @@ export async function sign(specPath: string, remainingArgs: string[]) {
     let signedTxJsonObj: any = JSON.parse(rawSignedTxString) as any;
 
     fs.writeFileSync(signedTxJsonFilePath, JSON.stringify(signedTxJsonObj, null, 2));
-    context.output.txJsonPath = signedTxJsonFilePath;
 
 }

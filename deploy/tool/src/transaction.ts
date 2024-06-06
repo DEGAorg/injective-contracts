@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "fs";
-import {createContext, DeployContext, DeployOutput, DeploySpec, pathsDeployArtifacts} from "./context";
+import {createContext, DeployContext, DeploySpec, pathsDeployArtifacts} from "./context";
 import * as t from "io-ts";
 import {BigNumberInBase} from "@injectivelabs/utils";
 import {DeployError} from "./error";
@@ -11,11 +11,6 @@ type ContractVariant = "Minter" | "Collection";
 export interface TxSpec extends DeploySpec {
     node?: string | null;
     contractVariant?: ContractVariant | null;
-}
-
-// Properties that must be in all generate outputs (currently all specs)
-export interface TxOutput extends DeployOutput {
-    txJsonPath: string;
 }
 
 export interface InjectiveTx<T> {
@@ -42,7 +37,7 @@ export interface InjectiveTx<T> {
 type ChainId = "injective-1" | "injective-888";
 type GasOptions = "auto" | BigNumberInBase;
 
-export interface TxContext<S extends TxSpec, O extends TxOutput> extends DeployContext<S, O> {
+export interface TxContext<S extends TxSpec> extends DeployContext<S> {
     chainId: ChainId;
     node: string;
     gas: GasOptions;
@@ -51,14 +46,12 @@ export interface TxContext<S extends TxSpec, O extends TxOutput> extends DeployC
 
 export function createTxContext<
     S extends TxSpec,
-    O extends TxOutput,
 >(
     specPath: string,
     specDef: t.Decoder<unknown, S>,
-    newOutput: O,
     txName: string,
-): TxContext<S,O> {
-    const deployContext = createContext(specPath, specDef, newOutput);
+): TxContext<S> {
+    const deployContext = createContext(specPath, specDef);
     let chainId: ChainId;
     switch (deployContext.spec.network) {
         case "Local":
@@ -105,8 +98,7 @@ export function createTxContext<
 export function writeTxJsonOutput<
     T,
     S extends TxSpec,
-    O extends TxOutput,
->(context: TxContext<S,O>, txObj: InjectiveTx<T>) {
+>(context: TxContext<S>, txObj: InjectiveTx<T>) {
 
     let outputJsonTxFilepath =
         path.join(pathsDeployArtifacts, context.txName + "-tx_");
@@ -119,7 +111,6 @@ export function writeTxJsonOutput<
     outputJsonTxFilepath += ".json";
 
     console.log("Formatted Tx JSON File: " + outputJsonTxFilepath);
-    context.output.txJsonPath = outputJsonTxFilepath;
 
     fs.writeFileSync(outputJsonTxFilepath, JSON.stringify(txObj, null, 2));
 }

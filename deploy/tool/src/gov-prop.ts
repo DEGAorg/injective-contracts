@@ -44,12 +44,9 @@ const govPropSpecDef = excess(t.type({
     note: t.union([t.string, t.undefined, t.null]),
 }, "GovPropSpec"));
 
-interface GovPropOutput {
-    txJsonPath: string;
-}
 
 type GovPropSpec = t.TypeOf<typeof govPropSpecDef>;
-interface GovPropContext extends TxContext<GovPropSpec,GovPropOutput> {}
+interface GovPropContext extends TxContext<GovPropSpec> {}
 
 interface MsgSubmitProposalStoreCode {
     messages: {
@@ -78,10 +75,7 @@ export async function govProp(specPath: string, remainingArgs: string[]) {
         throw new DeployError("InputError", `Extra arguments`);
     }
 
-    const output: GovPropOutput = {
-        txJsonPath: ""
-    };
-    let context: GovPropContext = createTxContext(specPath, govPropSpecDef, output, "gov-prop");
+    let context: GovPropContext = createTxContext(specPath, govPropSpecDef, "gov-prop");
 
     console.log(`Contract variant: ${context.spec.contractVariant}`);
     console.log("");
