@@ -85,8 +85,11 @@ export async function query(args: string[]) {
         case "collection-contract-info":
             await queryCollectionContractInfo(args);
             break;
-        case "print-base64-object":
-            printBase64Object(args);
+        case "print-base64-as-object":
+            printBase64AsObject(args);
+            break;
+        case "print-object-as-base64":
+            printObjectAsBase64(args);
             break;
         default:
             console.log("Unknown test query sub-command: " + sub_command);
@@ -761,14 +764,34 @@ async function queryCollectionContractInfo(args: string[]) {
     logObjectFullDepth(response);
 }
 
-const printBase64Object = (args: string[]) => {
+function printBase64AsObject(args: string[]) {
 
     if (args.length < 1) {
-        console.log("Usage: query print-base64-object <base64-string>");
+        console.log("Usage: query print-base64-as-object <base64-string>");
         return;
     }
 
     const base64ObjectString = args[0];
     const object = fromBase64(base64ObjectString);
+    console.log("Object JSON:");
     logObjectFullDepth(object);
+
+    let objBuffer = Buffer.from(base64ObjectString, "base64");
+    let msgMd5Hash = Buffer.from(sha256(objBuffer)); // echo -n 'test message' | sha256sum
+    let msgHashHex = msgMd5Hash.toString("hex");
+
+    console.log(`Message Hash Hex: ${msgHashHex}`);
+}
+
+function printObjectAsBase64(args: string[]) {
+
+    if (args.length < 1) {
+        console.log("Usage: query print-object-as-base64 <object-json-string>");
+        return;
+    }
+
+    const jsonString = args[0];
+    const base64String = toBase64(JSON.parse(jsonString));
+    console.log("Base64 String:");
+    console.log(base64String);
 }
