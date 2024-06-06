@@ -713,7 +713,7 @@ async function refillLocal(args: string[]) {
     }
 
     if (args.length < 1 || (args[0] != "primary" && args[0] != "signer" && args[0] != "other")) {
-        throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
+        throw new Error("Please specify either 'primary' or 'signer' or 'other <address>' as the recipient of the refill.");
     }
 
     let dstInjectiveAddress = "";

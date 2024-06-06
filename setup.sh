@@ -29,3 +29,7 @@ npm install -g ./deploy/tool
 # Install the test tool dependencies and dega-inj-test command
 (cd test-tool && npm install)
 npm install -g ./test-tool
+
+if [ ! -f test-tool/.env ]; then
+  (cd test-tool && cp .env-default.txt .env)
+fi
