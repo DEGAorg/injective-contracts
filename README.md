@@ -2,8 +2,6 @@
 
 This repository contains the smart contracts for the DEGA platform on Injective.
 
-
-
 ## Workspace Setup 
 
 ### Pre-requisite Requirements
@@ -26,11 +24,11 @@ The test tool uses a .env file for a number of settings, in particular mnemonics
 
 The setup script above created a default .env file at "test-tool/.env".
 
-Open this file and enter mnemonics secret words into the following fields:
+Open that .env file and enter 24-word secret mnemonics into the following fields:
 
 ```bash
-PRIVATE_KEY_MNEMONIC=
-SIGNER_KEY_MNEMONIC=
+PRIVATE_KEY_MNEMONIC=<24-word mnemonic>
+SIGNER_KEY_MNEMONIC=<24-word mnemonic>
 ```
 
 ### Setting up injectived locally
@@ -58,11 +56,16 @@ To initialize your local chain.
 
 Finally, when you receive the output of the command, look for the "genesis" key mnemonic secret words.
 
-Copy these words to follow the "LOCAL_GENESIS_MNEMONIC=" field in your .
+Copy these words to follow the "LOCAL_GENESIS_MNEMONIC=" field in your .env file.
 
 This will give your test-tool access to the genesis account so that it can fill other accounts.
 
 Use the command "dega-inj-test tx refill-local" to refill addresses on your local testnet.
+
+Whenever you want to start your local chain, run:
+```bash
+injectived start
+```
 
 ## The Test Tool
 
