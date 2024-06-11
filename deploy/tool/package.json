@@ -9,8 +9,7 @@
   "scripts": {
     "tsc": "npx tsc",
     "run": "npm run tsc && node dist/main.js",
-    "clear": "rm -rf dist",
-    "prepare": "tsc"
+    "clear": "rm -rf dist"
   },
   "author": "DEGA Labs, Unamint Studios, Will Stahl <will@stahl.cc>",
   "license": "None (all rights reserved)",
