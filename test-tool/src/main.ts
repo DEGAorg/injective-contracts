@@ -1,95 +1,127 @@
 #!/usr/bin/env node
 
 import {generate} from "./generate";
-import {query} from "./query";
-import {tx} from "./tx";
-import {getAppContext} from "./context";
+import {getQueryCommand, query} from "./query";
+import {getTxCommand, tx} from "./tx";
+import {getToolsCommand, tools} from "./tools";
+import {contextSetShowHelpFlag, getAppContext} from "./context";
 import {Config} from "./config";
 import {toBase64} from "@injectivelabs/sdk-ts";
+import {handleError, ScriptError, UsageError} from "./error";
+import {setUsageCommand, setUsageSubCommand, showCommandHelp, showGeneralHelp, showSubCommandHelp} from "./help";
 
+export interface CommandInfo {
+    name: string;
+    summary: string;
+    aliases: string[];
+    subCommands: SubCommandInfo[];
+}
+
+export interface SubCommandInfo {
+    name: string;
+    summary: string;
+    additionalUsage: string;
+    run: (args: string[]) => Promise<void>;
+}
+
+
+
+async function runMain() {
+
+    if (process.argv.find((arg) => arg.includes("dega-inj-test"))) {
+        // Removes the following warning that is pulled in by the injective library via ethers.js:
+        //      (node:2954537) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+        //      (Use `node --trace-deprecation ...` to show where the warning was created)
+        // We mantain the warning when running via node directly rather than the dega-inj-test script
+        process.removeAllListeners('warning');
+    }
+
+    let commandList: CommandInfo[] = [];
+    commandList.push(getQueryCommand());
+    commandList.push(getTxCommand());
+    commandList.push(getToolsCommand());
+
+    await getAppContext();
+
+    // Strip the first two arguments
+    let args = process.argv.slice(2);
+
+    let commandName = args.shift();
+    let showHelp = false;
+
+    if (commandName && commandName == "help") {
+        // Consume help command and check for remaining specific command / subcommand to get help on
+        commandName = args.shift();
+        showHelp = true;
+    }
+
+    if (args.length) {
+        let helpSearchIndex = args.length;
+        while (helpSearchIndex--) {
+            const argToCheck = args[helpSearchIndex];
+            if (argToCheck == "--help" || argToCheck == "-h") {
+                args.splice(helpSearchIndex, 1);
+                if (!showHelp) {
+                    showHelp = true;
+                }
+            }
+        }
+    }
+
+    if (commandName) {
+
+        let command = commandList.find((command) => {
+            return command.name === commandName || command.aliases.includes(commandName);
+        });
+
+        if (command) {
+            setUsageCommand(commandName);
+            let subCommandName = args.shift();
+            if (subCommandName) {
+                let subCommand =
+                    command.subCommands.find((subCommand) => {
+                        return subCommand.name === subCommandName;
+                    });
+                if (subCommand) {
+                    setUsageSubCommand(subCommand);
+                    if (showHelp) {
+                        showSubCommandHelp(command, subCommand);
+                    } else {
+                        await subCommand.run(args);
+                    }
+
+                } else {
+                    throw new UsageError("Unknown sub-command: " + subCommandName);
+                }
+            } else if (showHelp) {
+                showCommandHelp(command);
+            } else {
+                throw new UsageError("Missing sub-command");
+            }
+        } else {
+            throw new UsageError("Unknown command: " + commandName);
+        }
+    } else if (showHelp) {
+        showGeneralHelp();
+    } else {
+        throw new UsageError("Missing command");
+    }
+
+}
 
 function main() {
 
     (async () => {
 
-        const context = await getAppContext();
-
-        console.log("Network: " + Config.NETWORK);
-        console.log("Minter Address: " + context.minterAddress);
-        console.log("CW721 Address: " + context.cw721Address);
-        console.log("Primary Address: " + context.primaryAddress);
-        console.log("Signer Address: " + context.signerAddress);
-        console.log("Signer Compressed Pubkey Base64: " + context.signerCompressedPublicKey.toString('base64'));
-        console.log("Local Genesis Address: " + context.localGenesisAddress);
-
-
-        let command: string | null = null; // default to query
-        let args = new Array<string>();
-        // Find the index of the argument containing the filename
-        let filenameIndex = process.argv.findIndex(arg => {
-            return arg.includes('main.js') || arg.includes('dega-inj-test');
-        });
-        if (filenameIndex !== -1) {
-            // Get all the remaining arguments after the filename
-            args = process.argv.slice(filenameIndex + 1);
-            let shift_result = args.shift();
-            if (shift_result != undefined) {
-                command = shift_result;
-            }
+        try {
+            await runMain()
+        } catch (e) {
+            handleError(e);
         }
 
-        if (command == null) {
-            return;
-        }
-
-        console.log("test command: " + command);
-        console.log("test args: " + args);
-
-        switch (command) {
-            case "query":
-            case "q":
-                await query(args);
-                break;
-            case "tx":
-                await tx(args);
-                break;
-            case "generate":
-            case "g":
-                await generate(args);
-                break;
-            case "make-sig":
-                await makeSig(args);
-                break;
-            default:
-                console.log("Unknown command: " + command);
-                break;
-        }
-
-    })();
+    })()
 }
 
 if (require.main === module) {
     main();
-}
-
-
-
-async function makeSig(args: string[]) {
-
-    const context = await getAppContext();
-    const message = args.shift();
-    if (!message) {
-        console.error("No message provided");
-        return;
-    }
-
-    let mintRequestBase64 = toBase64({message});
-    let buffer = Buffer.from(mintRequestBase64, "base64");
-    //let uint8Array = new Uint8Array(buffer);
-
-    const signature = await context.signerPrivateKey.sign(buffer);
-    let sigBase64 = toBase64(signature);
-
-    console.log("Signature:");
-    console.log(sigBase64);
 }

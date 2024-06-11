@@ -3,6 +3,7 @@ import path from "node:path";
 import {randomBytes} from "crypto";
 import {PrivateKey} from "@injectivelabs/sdk-ts";
 import fs from "fs";
+import {ScriptError} from "./error";
 
 export const pathsWorkspace = path.resolve(__dirname, "../..");
 export const pathsTestTool = path.join(pathsWorkspace, "test-tool");
@@ -50,7 +51,7 @@ function initConfig() {
 
     if (networkString != "Local" && networkString != "Testnet" && networkString != "Mainnet") {
         if (networkString) {
-            throw new Error("Invalid NETWORK defined in environment: " + networkString);
+            throw new ScriptError("Invalid NETWORK defined in environment: " + networkString);
         }
 
         networkType = "Testnet"; // Default to Local
@@ -63,15 +64,15 @@ function initConfig() {
     }
 
     if (!process.env.PRIVATE_KEY_MNEMONIC && !isJestRunning()) {
-        throw new Error("PRIVATE_KEY_MNEMONIC must be defined in the environment");
+        throw new ScriptError("PRIVATE_KEY_MNEMONIC must be defined in the environment");
     }
 
     if (!process.env.SIGNER_KEY_MNEMONIC && !isJestRunning()) {
-        throw new Error("SIGNER_KEY_MNEMONIC must be defined in the environment");
+        throw new ScriptError("SIGNER_KEY_MNEMONIC must be defined in the environment");
     }
 
     if (isJestRunning() && !process.env.LOCAL_GENESIS_MNEMONIC) {
-        throw new Error("LOCAL_GENESIS_MNEMONIC must be defined in the environment when running integration tests");
+        throw new ScriptError("LOCAL_GENESIS_MNEMONIC must be defined in the environment when running integration tests");
     }
 
     return {

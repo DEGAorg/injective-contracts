@@ -1,6 +1,7 @@
 import {FetchingJSONSchemaStore, InputData, IssueAnnotationData, JSONSchemaInput, quicktype} from "quicktype-core";
 import fs from "fs";
 import path from "node:path";
+import {ScriptError} from "./error";
 
 async function compileFile(
     schemaFilePath: string,
@@ -35,7 +36,7 @@ async function compileFile(
     }
 
     if (hadError) {
-        throw new Error("Error in quicktype");
+        throw new ScriptError("Error in quicktype");
     } else {
         fs.writeFileSync(path.resolve(__dirname, outputTsFilePath), compileResults.lines.join("\n"));
     }

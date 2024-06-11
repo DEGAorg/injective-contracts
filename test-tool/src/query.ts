@@ -1,216 +1,55 @@
 import {getAppContext} from "./context";
-import {Config} from "./config";
 import {fromBase64, sha256, toBase64} from "@injectivelabs/sdk-ts";
 import {DegaCw721QueryMsg, DegaMinterQueryMsg} from "./messages";
-import { Wallet } from 'ethers'
-import { SigningKey } from '@ethersproject/signing-key'
-import { Address as EthereumUtilsAddress } from 'ethereumjs-util'
 import secp256k1 from 'secp256k1'
-import { randomBytes } from 'crypto'
-import { bech32 } from 'bech32'
 import {MintRequest, SignerSourceTypeEnum} from "./messages/dega_minter_query";
-import {getNetworkEndpoints, Network} from "@injectivelabs/networks";
 import { execSync } from 'child_process';
 import { Cw2981QueryMsg } from "./messages/dega_cw721_query";
 import {createAdminsQuery, generalQueryGetter} from "./helpers/minter";
-import {createTokensQuery, generalCollectionGetter} from "./helpers/collection";
+import {generalCollectionGetter} from "./helpers/collection";
 import {logObjectFullDepth} from "./tests/setup";
+import {CommandInfo} from "./main";
+import {UsageError} from "./error";
 
+let queryCommand: CommandInfo = {
+    name: "query",
+    aliases: ["q"],
+    summary: "Query the contracts specified in the environment",
+    subCommands: []
+};
+
+export function getQueryCommand(): CommandInfo {
+    return queryCommand;
+}
 
 export async function query(args: string[]) {
 
     let sub_command = "info"; // default to query
-    let sub_args = new Array<string>();
 
     let shift_result = args.shift();
     if (shift_result != undefined) {
         sub_command = shift_result;
     }
 
-    switch (sub_command) {
-        case "info":
-            await info(args);
-            break;
-        case "check-sig":
-            await checkSig(args);
-            break;
-        case "sig-info":
-            await sigInfo(args);
-            break;
-        case "derive-eth":
-            await deriveEthBasedAddress();
-            break;
-        case "signing-details":
-            await signingDetails(args);
-            break;
-        case "check-royalties":
-            await queryRoyaltiesInfo(args);
-            break;
-        case "collection-info":
-            await queryCollectionInfo(args);
-            break;
-        case "minter-settings":
-            await queryMinterSettings(args);
-            break;
-        case "admins":
-            await queryAdmins(args);
-            break;
-        case "tokens":
-            await queryTokens(args);
-            break;
-        case "all-tokens":
-            await queryAllTokens(args);
-            break;
-        case "owner-of":
-            await queryOwnerOf(args);
-            break;
-        case "approval":
-            await queryApproval(args);
-            break;
-        case "all-approvals":
-            await queryAllApprovals(args);
-            break;
-        case "all-operators":
-            await queryAllOperators(args);
-            break;
-        case "num-tokens":
-            await queryNumTokens(args);
-            break;
-        case "nft-info":
-            await queryNftInfo(args);
-            break;
-        case "all-nft-info":
-            await queryAllNftInfo(args);
-            break;
-        case "collection-contract-info":
-            await queryCollectionContractInfo(args);
-            break;
-        case "print-base64-as-object":
-            printBase64AsObject(args);
-            break;
-        case "print-object-as-base64":
-            printObjectAsBase64(args);
-            break;
-        default:
-            console.log("Unknown test query sub-command: " + sub_command);
-            break;
+    const subCommand = queryCommand.subCommands.find((command) => command.name === sub_command);
+
+    if (subCommand) {
+        await subCommand.run(args);
+    } else {
+        console.log("Unknown test query sub-command: " + sub_command);
+        return;
     }
 }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-export async function info(args: string[]) {
-
-    const context = await getAppContext();
-
-    const bankBalances = await context.queryBankApi.fetchBalances(context.primaryAddress);
-    console.log(bankBalances);
-
-    //const queryFromObject = toBase64({ get_coin: {} })
-
-    // let signedVAA: Uint8Array = new Uint8Array(0);
-    // let otherQuert = {
-    //     is_vaa_redeemed: {
-    //         vaa: fromUint8Array(signedVAA),
-    //     }
-    // };
-
-    let configQuery: DegaMinterQueryMsg = {config: {}};
-    const configQueryResponse = await context.queryWasmApi.fetchSmartContractState(
-        context.minterAddress,
-        toBase64(configQuery),
-    );
-
-    const configQueryResponseObject: object = fromBase64(
-        Buffer.from(configQueryResponse.data).toString("base64")
-    );
-    //const { count } = configQueryResponseObject as { count: number };
-
-    console.log(configQueryResponseObject);
-
-    let collectionInfoQuery: DegaCw721QueryMsg = {collection_info: {}};
-
-    const collectionInfoQueryResponse = await context.queryWasmApi.fetchSmartContractState(
-        context.cw721Address,
-        toBase64(collectionInfoQuery),
-    );
-
-    const collectionInfoQueryResponseObject: object = fromBase64(
-        Buffer.from(collectionInfoQueryResponse.data).toString("base64")
-    );
-    //const { count } = collectionInfoQueryResponseObject as { count: number };
-
-    console.log(collectionInfoQueryResponseObject);
-
-}
 
 
+queryCommand.subCommands.push({
+    name: "sig-info",
+    additionalUsage: "",
+    summary: "Get info about signature and check it with the minter contract.",
+    run: querySigInfo
+});
 
-export async function checkSig(args: string[]) {
-
-    const context = await getAppContext();
-
-    let mintRequestMsg: MintRequest = {
-        to: context.primaryAddress,
-        primary_sale_recipient: context.primaryAddress,
-        uri: "https://www.domain.com",
-        price: "0",
-        currency: context.primaryAddress,
-        validity_start_timestamp: "0",
-        validity_end_timestamp: "0",
-        uuid: "00000000-0000-0000-0000-000000000000",
-        collection: context.cw721Address
-    };
-
-    let mintRequestBase64 = toBase64(mintRequestMsg);
-
-
-    let rawMessage = Buffer.from(mintRequestBase64, "base64");
-    let msgMd5Hash = Buffer.from(sha256(rawMessage))
-    //let uint8Array = new Uint8Array(buffer);
-
-
-    let signingKey = context.signerSigningKey
-    let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signingKey).signature)
-
-    let sigBase64 = signature.toString("base64");
-
-    console.log("Sig Length: " + sigBase64.length);
-
-    console.log("Tx: ");
-    console.log(mintRequestMsg);
-    console.log();
-    console.log("Signature: " + sigBase64);
-    console.log();
-    console.log("Address: " + context.signerAddress);
-    console.log();
-
-    let checkSigQuery: DegaMinterQueryMsg = {
-        check_sig: {
-            message: {
-                mint_request: mintRequestMsg
-                //string: rawTextMessage // Uncomment to test with a string instead of the mint request
-            },
-            signature: sigBase64,
-            //signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
-            // Uncomment below to test validating with a local public key using on chain logic
-            signer_source: {
-                pub_key_binary: Buffer.from(context.signerCompressedPublicKey).toString("base64")
-            }
-        }
-    };
-
-    const checkSigQueryResponse = await context.queryWasmApi.fetchSmartContractState(
-        context.minterAddress,
-        toBase64(checkSigQuery) // as DegaMinterQueryMsg),
-    );
-
-    const checkSigQueryResponseObject: object = fromBase64(
-        Buffer.from(checkSigQueryResponse.data).toString("base64")
-    );
-
-    console.log(checkSigQueryResponseObject);
-}
-
-async function sigInfo(args: string[]) {
+async function querySigInfo(args: string[]) {
 
     const context = await getAppContext();
 
@@ -280,8 +119,8 @@ async function sigInfo(args: string[]) {
 
     const checkSigQueryResponse =
         await context.queryWasmApi.fetchSmartContractState(
-        context.minterAddress,
-        toBase64(checkSigQuery));
+            context.minterAddress,
+            toBase64(checkSigQuery));
 
     const checkSigQueryResponseObject: object = fromBase64(
         Buffer.from(checkSigQueryResponse.data).toString("base64")
@@ -291,90 +130,43 @@ async function sigInfo(args: string[]) {
 }
 
 
-// https://docs.injective.network/learn/basic-concepts/accounts/#:~:text=Injective%20defines%20its%20own%20custom,'%2F0'%2F0%20.
-async function deriveEthBasedAddress() {
-    const mnemonic = Config.PRIVATE_KEY_MNEMONIC;
-    //const privateKey = "private key seed hex"
-    const wallet = Wallet.fromMnemonic(mnemonic);
-    const privateKey = wallet.privateKey;
-    const defaultDerivationPath = "m/44'/60'/0'/0/0"
-    const defaultBech32Prefix = 'inj'
-    const isPrivateKey: boolean = true /* just for the example */
+queryCommand.subCommands.push({
+    name: "account-details",
+    additionalUsage: "<address>",
+    summary: "Get the account details of a provided injective address.",
+    run: queryAccountDetails
+});
 
-    //const wallet = isPrivateKey ? Wallet.fromMnemonic(mnemonic, defaultDerivationPath) : new Wallet(privateKey)
-    const ethereumAddress = wallet.address
-    const addressBuffer = EthereumUtilsAddress.fromString(ethereumAddress.toString()).toBuffer()
-    const addressBufferHex = addressBuffer.toString('hex');
-    const injectiveAddress = bech32.encode(defaultBech32Prefix, bech32.toWords(addressBuffer))
-
-    console.log("mnemonic:")
-    console.log(mnemonic)
-
-    console.log("private key seed hex:")
-    console.log(privateKey)
-
-    console.log("injectiveAddress:")
-    console.log(injectiveAddress)
-}
-
-async function deriveSecp256k1Address() {
-    const context = await getAppContext();
-
-    const privateKey = context.primaryPrivateKey.toPrivateKeyHex()
-    const privateKeyHex = Buffer.from(privateKey, 'hex')
-    const publicKeyByte = secp256k1.publicKeyCreate(privateKeyHex)
-
-    const buf1 = Buffer.from([10])
-    const buf2 = Buffer.from([publicKeyByte.length])
-    const buf3 = Buffer.from(publicKeyByte)
-
-    const publicKey = Buffer.concat([buf1, buf2, buf3]).toString('base64')
-    const type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey'
-}
-
-async function signingDetails(args: string[]) {
+async function queryAccountDetails(args: string[]) {
 
     if (args.length < 2) {
-        console.log("Usage: query signing-details <network> <address>");
-        return;
+        throw new UsageError("Too few arguments")
     }
 
-    const networkString = args[0];
-    const address = args[1];
+    let context = await getAppContext();
 
-    let network;
-    let rpcEndpoint;
-
-    if (networkString === "mainnet") {
-        network = Network.Mainnet;
-        rpcEndpoint = "https://sentry.tm.injective.network:443";
-    } else if (networkString === "testnet") {
-        network = Network.Testnet;
-        rpcEndpoint = "https://testnet.sentry.tm.injective.network:443";
-    } else if (networkString === "local") {
-        network = Network.Local;
-        rpcEndpoint = "http://localhost:26657";
-    } else {
-        console.log("Invalid network: " + networkString);
-        return;
-    }
-
-    console.log("RPC Endpoint: " + rpcEndpoint);
+    const address = args[0];
 
     let execArgs = [];
     execArgs.push(`injectived`);
-    execArgs.push(`--node="${rpcEndpoint}"`);
+    execArgs.push(`--node="${context.cliNode}"`);
     execArgs.push(`query`);
     execArgs.push(`account`);
-    execArgs.push(address)
+    execArgs.push(address);
 
     const accountQuery = execSync(execArgs.join(" "), {encoding: 'utf-8'});
 
     logObjectFullDepth(accountQuery);
 }
 
-// query royalty info
-const queryRoyaltiesInfo = async (args: string[]) => {
+
+queryCommand.subCommands.push({
+    name: "royalty-info",
+    additionalUsage: "",
+    summary: "Get the royalty info from the collection contract.",
+    run: queryRoyaltiesInfo
+});
+async function queryRoyaltiesInfo(args: string[]) {
     const context = await getAppContext();
 
     const cw2981Message: Cw2981QueryMsg = {
@@ -416,8 +208,14 @@ const queryRoyaltiesInfo = async (args: string[]) => {
     return
 }
 
-// collection info
-const queryCollectionInfo = async (args: string[]) => {
+queryCommand.subCommands.push({
+name: "collection-info",
+    additionalUsage: "",
+    summary: "Get the collection info from the collection contract.",
+    run: queryCollectionInfo
+});
+
+async function queryCollectionInfo(args: string[]) {
     const context = await getAppContext();
 
     const cw721Query: DegaCw721QueryMsg = {
@@ -435,8 +233,13 @@ const queryCollectionInfo = async (args: string[]) => {
     return
 }
 
-// minter settings
-const queryMinterSettings = async (args: string[]) => {
+queryCommand.subCommands.push({
+    name: "minter-settings",
+    additionalUsage: "",
+    summary: "Get the settings info from the minter contract.",
+    run: queryCollectionInfo
+});
+async function queryMinterSettings(args: string[]) {
     const context = await getAppContext();
 
     const minterQuery: DegaMinterQueryMsg = {
@@ -454,18 +257,29 @@ const queryMinterSettings = async (args: string[]) => {
     return
 }
 
+queryCommand.subCommands.push({
+    name: "admins",
+    additionalUsage: "",
+    summary: "Get the list of contract admins from the minter contract.",
+    run: queryAdmins
+});
+
 async function queryAdmins(args: string[]) {
     const response = await generalQueryGetter(await getAppContext(), createAdminsQuery());
     logObjectFullDepth(response);
 }
 
+
+queryCommand.subCommands.push({
+    name: "tokens",
+    additionalUsage: "<owner-address> [<start-after> [<limit>]]",
+    summary: "Get the list of NFT tokens owned by a particular <owner-address>.",
+    run: queryTokens
+});
 async function queryTokens(args: string[]) {
 
-    const usage = "Usage: query tokens <address> [<start-after> [<limit>]]";
-
     if (args.length < 1 || args.length > 3) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments`);
     }
 
     const owner = args[0];
@@ -491,13 +305,17 @@ async function queryTokens(args: string[]) {
     logObjectFullDepth(response);
 }
 
+
+queryCommand.subCommands.push({
+    name: "all-tokens",
+    additionalUsage: "[<start-after> [<limit>]]",
+    summary: "Query through all tokens currently in the collection contract (does not include those burned).",
+    run: queryAllTokens
+});
 async function queryAllTokens(args: string[]) {
 
-    const usage = "Usage: query all-tokens [<start-after> [<limit>]]";
-
     if (args.length > 2) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments`);
     }
 
     let startAfter;
@@ -521,14 +339,16 @@ async function queryAllTokens(args: string[]) {
     logObjectFullDepth(response);
 }
 
-
+queryCommand.subCommands.push({
+    name: "owner-of",
+    additionalUsage: "<token-id> [<include-expired>]",
+    summary: "Get the owner of a particular token with <token-id>.",
+    run: queryOwnerOf
+});
 async function queryOwnerOf(args: string[]) {
 
-    const usage = "Usage: query owner-of <token-id> [<include-expired>]";
-
     if (args.length < 1 || args.length > 2) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments`);
     }
 
     const tokenId = args[0];
@@ -539,8 +359,7 @@ async function queryOwnerOf(args: string[]) {
         includeExpiredString = args[1];
 
         if (includeExpiredString != "true" && includeExpiredString != "false") {
-            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
-            return;
+            throw new UsageError(`Invalid include-expired value. Must be either true or false.`);
         }
 
         includeExpired = includeExpiredString == "true";
@@ -557,12 +376,16 @@ async function queryOwnerOf(args: string[]) {
     logObjectFullDepth(response);
 }
 
+queryCommand.subCommands.push({
+    name: "approval",
+    additionalUsage: "<spender-address> <token-id> [<include-expired>]",
+    summary: "Check whether a particular address with <spender-address> is an approved spender a particular <token-id>.",
+    run: queryApproval
+});
 async function queryApproval(args: string[]) {
-    const usage = "Usage: query approval <spender> <token-id> [<include-expired>]";
 
     if (args.length < 2 || args.length > 3) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments`);
     }
 
     const spenderAddress = args[0];
@@ -574,8 +397,7 @@ async function queryApproval(args: string[]) {
         includeExpiredString = args[2];
 
         if (includeExpiredString != "true" && includeExpiredString != "false") {
-            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
-            return;
+            throw new UsageError(`Invalid include-expired value. Must be either true or false.`);
         }
 
         includeExpired = includeExpiredString == "true";
@@ -593,12 +415,16 @@ async function queryApproval(args: string[]) {
     logObjectFullDepth(response);
 }
 
+queryCommand.subCommands.push({
+    name: "all-approvals",
+    additionalUsage: "<token-id> [<include-expired>]",
+    summary: "Get the full list of approved spenders for a particular token with <token-id>. Optionally include expired approvals.",
+    run: queryAllApprovals
+});
 async function queryAllApprovals(args: string[]) {
-    const usage = "Usage: query all-approvals <token-id> [<include-expired>]";
 
     if (args.length < 1 || args.length > 2) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments.`);
     }
 
     const tokenId = args[0];
@@ -609,8 +435,7 @@ async function queryAllApprovals(args: string[]) {
         includeExpiredString = args[1];
 
         if (includeExpiredString != "true" && includeExpiredString != "false") {
-            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
-            return;
+            throw new UsageError(`Invalid include-expired value. Must be either true or false.`);
         }
 
         includeExpired = includeExpiredString == "true";
@@ -627,14 +452,16 @@ async function queryAllApprovals(args: string[]) {
     logObjectFullDepth(response);
 }
 
-// query all operators
-const queryAllOperators = async (args: string[]) => {
-
-    const usage = "Usage: query all-operators <address> [<include-expired> [<start-after> [<limit>]]]";
+queryCommand.subCommands.push({
+    name: "all-operators",
+    additionalUsage: "<address> [<include-expired> [<start-after> [<limit>]]]",
+    summary: "Check who the approved operator spenders are for a particular <address>. Optionally include expired approvals.",
+    run: queryAllOperators
+});
+async function queryAllOperators(args: string[]) {
 
     if (args.length < 1 || args.length > 4) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments.`);
     }
 
     const owner = args[0];
@@ -647,8 +474,7 @@ const queryAllOperators = async (args: string[]) => {
         includeExpiredString = args[1];
 
         if (includeExpiredString != "true" && includeExpiredString != "false") {
-            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
-            return;
+            throw new UsageError(`Invalid include-expired value. Must be either true or false.`);
         }
 
         includeExpired = includeExpiredString == "true";
@@ -677,13 +503,16 @@ const queryAllOperators = async (args: string[]) => {
     logObjectFullDepth(response);
 }
 
+queryCommand.subCommands.push({
+    name: "num-tokens",
+    additionalUsage: "",
+    summary: "Get the total number of issued tokens from the collection contract.",
+    run: queryNumTokens
+});
 async function queryNumTokens(args: string[]) {
 
-    const usage = "Usage: query num-tokens";
-
     if (args.length > 1) {
-        console.log(`Arguments provided when none should be. ${usage}`);
-        return;
+        throw new UsageError(`Arguments provided when none should be`);
     }
 
     const query: DegaCw721QueryMsg = {
@@ -694,12 +523,16 @@ async function queryNumTokens(args: string[]) {
     logObjectFullDepth(response);
 }
 
+queryCommand.subCommands.push({
+    name: "nft-info",
+    additionalUsage: "<token-id>",
+    summary: "Get the metadata for a particular token with <token-id>.",
+    run: queryNftInfo
+});
 async function queryNftInfo(args: string[]) {
-    const usage = "Usage: query nft-info <token-id>";
 
     if (args.length != 1) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments`);
     }
 
     const tokenId = args[0];
@@ -714,12 +547,16 @@ async function queryNftInfo(args: string[]) {
     logObjectFullDepth(response);
 }
 
+queryCommand.subCommands.push({
+    name: "all-nft-info",
+    additionalUsage: "<token-id> [<include-expired>]",
+    summary: "Get the metadata, as well as owner and approved spenders for a particular token with <token-id>.",
+    run: queryAllNftInfo
+});
 async function queryAllNftInfo(args: string[]) {
-    const usage = "Usage: query all-nft-info <token-id> [<include-expired>]";
 
     if (args.length < 1 || args.length > 2) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments.`);
     }
 
     const tokenId = args[0];
@@ -730,8 +567,7 @@ async function queryAllNftInfo(args: string[]) {
         includeExpiredString = args[1];
 
         if (includeExpiredString != "true" && includeExpiredString != "false") {
-            console.log(`Invalid include-expired value. Must be either true or false. ${usage}`);
-            return;
+            throw new UsageError(`Invalid include-expired value. Must be either true or false.`);
         }
 
         includeExpired = includeExpiredString == "true";
@@ -748,12 +584,16 @@ async function queryAllNftInfo(args: string[]) {
     logObjectFullDepth(response);
 }
 
+queryCommand.subCommands.push({
+    name: "collection-contract-info",
+    additionalUsage: "",
+    summary: "Query the contract info for the collection contract.",
+    run: queryCollectionContractInfo
+});
 async function queryCollectionContractInfo(args: string[]) {
-    const usage = "Usage: query contract-info";
 
     if (args.length > 1) {
-        console.log(`Arguments provided when none should be. ${usage}`);
-        return;
+        throw new UsageError(`Arguments provided when none should be.`);
     }
 
     const query: DegaCw721QueryMsg = {
@@ -762,36 +602,4 @@ async function queryCollectionContractInfo(args: string[]) {
 
     const response = await generalCollectionGetter(await getAppContext(), query);
     logObjectFullDepth(response);
-}
-
-function printBase64AsObject(args: string[]) {
-
-    if (args.length < 1) {
-        console.log("Usage: query print-base64-as-object <base64-string>");
-        return;
-    }
-
-    const base64ObjectString = args[0];
-    const object = fromBase64(base64ObjectString);
-    console.log("Object JSON:");
-    logObjectFullDepth(object);
-
-    let objBuffer = Buffer.from(base64ObjectString, "base64");
-    let msgMd5Hash = Buffer.from(sha256(objBuffer)); // echo -n 'test message' | sha256sum
-    let msgHashHex = msgMd5Hash.toString("hex");
-
-    console.log(`Message Hash Hex: ${msgHashHex}`);
-}
-
-function printObjectAsBase64(args: string[]) {
-
-    if (args.length < 1) {
-        console.log("Usage: query print-object-as-base64 <object-json-string>");
-        return;
-    }
-
-    const jsonString = args[0];
-    const base64String = toBase64(JSON.parse(jsonString));
-    console.log("Base64 String:");
-    console.log(base64String);
 }

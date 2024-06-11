@@ -26,11 +26,19 @@ import {Convert, Cw721ReceiverTesterInnerMsg} from "./messages/cw721_receiver_te
 import {Cw721ReceiveMsg, Cw721ReceiverTesterExecuteMsg} from "./messages/cw721_receiver_tester_execute_msg";
 import {Expiration} from "./messages/dega_cw721_execute";
 import {addAdmin, pause, removeAdmin, setMintSigner, updateCollectionInfo} from "./tx-admin";
+import {ScriptError} from "./error";
+import {CommandInfo} from "./main";
 
+let txCommand: CommandInfo = {
+    name: "tx",
+    aliases: ["transact", "run", "exec", "execute"],
+    summary: "Submit transactions to the network and contracts specified in the environment",
+    subCommands: []
+}
 
-// Transaction Exec example:
-// https://github.com/InjectiveLabs/injective-create-app-template-nuxt-sc-counter/blob/c94c68de41cb0292c6df27dcd4354d64906ca901/store/counter.ts#L21
-
+export function getTxCommand() {
+    return txCommand;
+}
 
 export async function tx(args: string[]) {
 
@@ -140,7 +148,7 @@ export function logResponse(response: TxResponse) {
 
     if (response.code !== 0) {
         console.log(`Transaction failed: ${response.rawLog}`);
-        throw new Error("Transaction failed");
+        throw new ScriptError("Transaction failed");
     } else {
         console.log("txHash: " + response.txHash);
         console.log("Logs:");
@@ -172,7 +180,8 @@ export function logResponse(response: TxResponse) {
     }
 }
 
-// from DepsMut.Api in the smart contract parameters.
+
+
 async function mintCombined(args: string[]) {
 
     if (args.length < 2) {
@@ -285,7 +294,7 @@ async function mintCombined(args: string[]) {
 async function mintAsBackend(args: string[]) {
 
     if (args.length < 2) {
-        throw new Error("Missing argument. Usage: mint-as-backend <receiver_address> <price>");
+        throw new ScriptError("Missing argument. Usage: mint-as-backend <receiver_address> <price>");
     }
 
     const context = await getAppContext();
@@ -452,7 +461,7 @@ async function mintAsUser(args: string[]) {
 async function transferToken(args: string[]) {
 
     if (args.length < 2) {
-        throw new Error("Missing arguments. send usage: transfer <token_id> <recipient>");
+        throw new ScriptError("Missing arguments. send usage: transfer <token_id> <recipient>");
     }
 
     const context = await getAppContext();
@@ -495,7 +504,7 @@ async function transferToken(args: string[]) {
 async function sendToken(args: string[]) {
 
     if (args.length < 2) {
-        throw new Error("Missing arguments. send usage: send <token_id> <recipient_contract> <receive_message>");
+        throw new ScriptError("Missing arguments. send usage: send <token_id> <recipient_contract> <receive_message>");
     }
 
     const context = await getAppContext();
@@ -531,7 +540,7 @@ async function sendToken(args: string[]) {
 async function sendToReceiver(args: string[]) {
 
     if (args.length < 2) {
-        throw new Error("Missing arguments. usage: send-to-receiver <token_id> <should-succeed>");
+        throw new ScriptError("Missing arguments. usage: send-to-receiver <token_id> <should-succeed>");
     }
 
     const tokenId = args[0];
@@ -539,7 +548,7 @@ async function sendToReceiver(args: string[]) {
     const shouldSucceedString = args[1];
 
     if (shouldSucceedString != "true" && shouldSucceedString != "false") {
-        throw new Error("Invalid should-succeed value. Must be either true or false");
+        throw new ScriptError("Invalid should-succeed value. Must be either true or false");
     }
 
     const shouldSucceed: boolean = (shouldSucceedString == "true");
@@ -547,7 +556,7 @@ async function sendToReceiver(args: string[]) {
     const context = await getAppContext();
 
     if (context.receiverContractAddress == undefined) {
-        throw new Error("Receiver address not set in context")
+        throw new ScriptError("Receiver address not set in context")
     }
 
     let innerMsg: Cw721ReceiverTesterInnerMsg =
@@ -586,13 +595,13 @@ async function sendToReceiver(args: string[]) {
 async function callReceiveNftOnReceiver(args: string[]) {
 
     if (args.length < 2) {
-        throw new Error("Missing arguments. usage: call-receive-nft-on-receiver <token_id> <should-succeed>");
+        throw new ScriptError("Missing arguments. usage: call-receive-nft-on-receiver <token_id> <should-succeed>");
     }
 
     const context = await getAppContext();
 
     if (context.receiverContractAddress == undefined) {
-        throw new Error("Receiver address not set in context")
+        throw new ScriptError("Receiver address not set in context")
     }
 
     const tokenId = args[0];
@@ -600,7 +609,7 @@ async function callReceiveNftOnReceiver(args: string[]) {
     const shouldSucceedString = args[1];
 
     if (shouldSucceedString != "true" && shouldSucceedString != "false") {
-        throw new Error("Invalid should-succeed value. Must be either true or false");
+        throw new ScriptError("Invalid should-succeed value. Must be either true or false");
     }
 
     const shouldSucceed: boolean = (shouldSucceedString == "true");
@@ -646,7 +655,7 @@ function seriealizeReceiverInnerMessage(innerMsg: Cw721ReceiverTesterInnerMsg) {
 async function sendTalisSale(args: string[]) {
 
     if (args.length < 2) {
-        throw new Error("Missing arguments. send-talis-sell usage: send-talis-sell <token_id> <price>");
+        throw new ScriptError("Missing arguments. send-talis-sell usage: send-talis-sell <token_id> <price>");
     }
 
     const context = await getAppContext();
@@ -656,9 +665,9 @@ async function sendTalisSale(args: string[]) {
     if (Config.NETWORK == "Testnet") {
         market_address = "inj1n8n0p5l48g7xy9y7k4hu694jl4c82ej4mwqmfz"
     } else if (Config.NETWORK == "Mainnet") {
-        throw new Error("Mainnet address not known")
+        throw new ScriptError("Mainnet address not known")
     } else {
-        throw new Error("Cannot send to Talis when in Localnet")
+        throw new ScriptError("Cannot send to Talis when in Localnet")
     }
 
     const tokenId = args[0];
@@ -709,11 +718,11 @@ async function refillLocal(args: string[]) {
     const context = await getAppContext();
 
     if (context.localGenesisAddress == null || context.localGenesisBroadcaster == null) {
-        throw new Error("Local Genesis Address required for refilling local")
+        throw new ScriptError("Local Genesis Address required for refilling local")
     }
 
     if (args.length < 1 || (args[0] != "primary" && args[0] != "signer" && args[0] != "other")) {
-        throw new Error("Please specify either 'primary' or 'signer' or 'other <address>' as the recipient of the refill.");
+        throw new ScriptError("Please specify either 'primary' or 'signer' or 'other <address>' as the recipient of the refill.");
     }
 
     let dstInjectiveAddress = "";
@@ -727,12 +736,12 @@ async function refillLocal(args: string[]) {
                 break;
         case "other":
             if (args.length < 2) {
-                throw new Error("Please specify the address of the recipient of the refill.");
+                throw new ScriptError("Please specify the address of the recipient of the refill.");
             }
             dstInjectiveAddress = args[1];
             break;
         default:
-            throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
+            throw new ScriptError("Please specify either 'primary' or 'signer' as the recipient of the refill.");
 
     }
 
@@ -759,7 +768,7 @@ async function refillLocal(args: string[]) {
 async function refillLocalCommandLine(args: string[]) {
 
     if (args.length < 1 || (args[0] != "primary" && args[0] != "signer")) {
-        throw new Error("Please specify either 'primary' or 'signer' as the recipient of the refill.");
+        throw new ScriptError("Please specify either 'primary' or 'signer' as the recipient of the refill.");
     }
 
     const context = await getAppContext();
@@ -899,7 +908,7 @@ export async function instantiateMinter(instantiateMessage: MsgInstantiateContra
                 });
 
                 if (is_minter && is_cw721) {
-                    throw new Error("Both minter and cw721 contract code_ids found in instantiated event")
+                    throw new ScriptError("Both minter and cw721 contract code_ids found in instantiated event")
                 }
 
                 if (is_minter) {
@@ -913,7 +922,7 @@ export async function instantiateMinter(instantiateMessage: MsgInstantiateContra
     }
 
     if (minterAddress == "" || cw721Address == "") {
-        throw new Error("Minter or CW721 address not found in response during contract instantiation")
+        throw new ScriptError("Minter or CW721 address not found in response during contract instantiation")
     }
 
     return [response, minterAddress, cw721Address];
@@ -926,7 +935,7 @@ export async function instantiateReceiver(shouldLogResponse: boolean): Promise<[
     const context = await getAppContext();
 
     if (!context.receiverCodeId) {
-        throw new Error("Cannot instantiate receiver, code id not available in context (try setting in the config for this environment)")
+        throw new ScriptError("Cannot instantiate receiver, code id not available in context (try setting in the config for this environment)")
     }
 
     const instantiateContractMsg = MsgInstantiateContract.fromJSON({
@@ -953,7 +962,7 @@ export async function instantiateReceiver(shouldLogResponse: boolean): Promise<[
     let codeAddressPairs = getCodeKeyValuePairsFromEvents(response.events);
     let address = codeAddressPairs.get(context.receiverCodeId);
     if (!address) {
-        throw new Error("Receiver code id not found in response")
+        throw new ScriptError("Receiver code id not found in response")
     }
 
     if (shouldLogResponse) {
@@ -1020,10 +1029,10 @@ async function store(args: string[]) {
                 path.resolve(__dirname, "../../artifacts/cw721_receiver_tester.wasm"));
             await store_wasm("cw721_receiver_tester.wasm")
         } else {
-            throw new Error("Unknown wasm contract: " + args[1]);
+            throw new ScriptError("Unknown wasm contract: " + args[1]);
         }
     } else {
-        throw new Error("Bad arguments");
+        throw new ScriptError("Bad arguments");
     }
 }
 
@@ -1076,7 +1085,7 @@ export async function store_wasm(wasm_name: string): Promise<number> {
     }
 
     if (result == null) {
-        throw new Error("Code ID not found in response")
+        throw new ScriptError("Code ID not found in response")
     }
 
     return result;
@@ -1129,7 +1138,7 @@ async function storeCommandLine(args: string[]) {
 
 async function burn(args: string[]) {
     if (args.length < 1) {
-        throw new Error("Missing argument. Usage: tx burn <token_id>");
+        throw new ScriptError("Missing argument. Usage: tx burn <token_id>");
     }
 
     const context = await getAppContext();
@@ -1160,7 +1169,7 @@ async function burn(args: string[]) {
 async function transferInj(args: string[]) {
 
     if (args.length < 2) {
-        throw new Error("Missing argument. Usage: tx transfer-inj <receiver> <amount>");
+        throw new ScriptError("Missing argument. Usage: tx transfer-inj <receiver> <amount>");
     }
 
     const context = await getAppContext();
@@ -1206,7 +1215,7 @@ function getExpirationEpochInNanos(amount: string, units: string) {
             expirationSpanInSeconds = parseFloat(amount) * 60;
             break;
         default:
-            throw new Error("Invalid time unit. Must be either day(s), hour(s), or minute(s)");
+            throw new ScriptError("Invalid time unit. Must be either day(s), hour(s), or minute(s)");
     }
 
     let epochInMs = new BigNumberInBase(Math.round(Date.now()));
@@ -1383,7 +1392,7 @@ async function operator(args: string[]) {
 async function migrate(args: string[]) {
 
     if (args.length < 1) {
-        throw new Error("Missing argument. Usage: tx migrate <dev-version>");
+        throw new ScriptError("Missing argument. Usage: tx migrate <dev-version>");
     }
 
     const context = await getAppContext();
@@ -1460,7 +1469,7 @@ async function govProposal(
 ) {
 
     if (args.length < 1) {
-        throw new Error("Missing argument. Usage: tx gov-proposal <simulate|broadcast>");
+        throw new ScriptError("Missing argument. Usage: tx gov-proposal <simulate|broadcast>");
     }
 
     const context = await getAppContext();
@@ -1468,7 +1477,7 @@ async function govProposal(
     const dryRunString = args[0];
 
     if (dryRunString != "simulate" && dryRunString != "broadcast") {
-        throw new Error("Invalid on value. Must be either simulate or broadcast");
+        throw new ScriptError("Invalid on value. Must be either simulate or broadcast");
     }
 
     {
@@ -1543,7 +1552,7 @@ async function govProposalStoreCode(
     const context = await getAppContext();
 
     if (Config.NETWORK != "Local") {
-        throw new Error("This command is only meant for localnet, use the deploy tool for testnet and mainnet");
+        throw new ScriptError("This command is only meant for localnet, use the deploy tool for testnet and mainnet");
     }
 
     const artifactsDir = path.resolve(__dirname, "../../artifacts");
@@ -1689,4 +1698,3 @@ async function govSummaryTest(args: string[]) {
     console.log(escapedSummaryString);
     console.log("")
 }
-

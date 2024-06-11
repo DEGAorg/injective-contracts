@@ -13,6 +13,7 @@ import {logResponse} from "./tx";
 import {UpdateCollectionInfoMsg} from "./messages/dega_cw721_execute";
 import {isLeft} from "fp-ts/Either";
 import {failure} from "io-ts/PathReporter";
+import {ScriptError} from "./error";
 
 const collectionInfoUpdateSpecDef = excess(t.type({
     description: t.union([t.string, t.undefined, t.null]),
@@ -38,12 +39,12 @@ export async function updateCollectionInfo(args: string[]) {
 
     const specPathArg = args.shift();
     if (!specPathArg) {
-        throw new Error(`Missing deploy spec path argument`);
+        throw new ScriptError(`Missing deploy spec path argument`);
     }
 
     const specPath = path.resolve(process.cwd(), specPathArg);
     if (!fs.existsSync(specPath)) {
-        throw new Error(`Update Collection Info Spec path does not exist: ${specPath}`);
+        throw new ScriptError(`Update Collection Info Spec path does not exist: ${specPath}`);
     }
 
     const specContents = fs.readFileSync(specPath, 'utf-8');
@@ -87,7 +88,7 @@ export async function addAdmin(args: string[]) {
 
     const newAdminAddress = args.shift();
     if (!newAdminAddress) {
-        throw new Error(`Missing argument. ${usage}`);
+        throw new ScriptError(`Missing argument. ${usage}`);
     }
 
     const contractMsg: DegaMinterExecuteMsg = {
@@ -126,7 +127,7 @@ export async function removeAdmin(args: string[]) {
 
     const revokedAdminAddress = args.shift();
     if (!revokedAdminAddress) {
-        throw new Error(`Missing argument. ${usage}`);
+        throw new ScriptError(`Missing argument. ${usage}`);
     }
 
     const contractMsg: DegaMinterExecuteMsg = {
@@ -164,7 +165,7 @@ export async function setMintSigner(args: string[]) {
 
     const newSigningKeyBase64 = args.shift();
     if (!newSigningKeyBase64) {
-        throw new Error(`Missing argument. ${usage}`);
+        throw new ScriptError(`Missing argument. ${usage}`);
     }
 
     const contractMsg: DegaMinterExecuteMsg = {
@@ -203,11 +204,11 @@ export async function pause(args: string[]) {
 
     const onString = args.shift();
     if (!onString) {
-        throw new Error(`Missing argument. ${usage}`);
+        throw new ScriptError(`Missing argument. ${usage}`);
     }
 
     if (onString != "true" && onString != "false") {
-        throw new Error("Invalid on value. Must be either true or false");
+        throw new ScriptError("Invalid on value. Must be either true or false");
     }
 
     const newSetting: boolean = (onString == "true");
@@ -252,18 +253,18 @@ export function checkForGenerateArg(args: string[], usage: string) {
     }
 
     if (generateArg && generateArg !== "--generate") {
-        throw new Error(`Invalid argument, only --generate followed by sender address accepted. ${usage}`);
+        throw new ScriptError(`Invalid argument, only --generate followed by sender address accepted. ${usage}`);
     }
 
     const senderAddress = args.shift();
 
     if (!senderAddress) {
-        throw new Error(`Missing sender after --generate argument. ${usage}`);
+        throw new ScriptError(`Missing sender after --generate argument. ${usage}`);
     }
 
     const sampleInjAddress = "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6";
     if (!senderAddress.startsWith("inj") || senderAddress.length != sampleInjAddress.length) {
-        throw new Error(`Invalid sender address. ${usage}`);
+        throw new ScriptError(`Invalid sender address. ${usage}`);
     }
 
     return senderAddress;
@@ -319,7 +320,7 @@ function generateExecuteMessage(
 
     const injectivedPassword = Config.INJECTIVED_PASSWORD;
     if (!injectivedPassword) {
-        throw new Error("Must specify INJECTIVED_PASSWORD in the .env file / environment to generate transactions");
+        throw new ScriptError("Must specify INJECTIVED_PASSWORD in the .env file / environment to generate transactions");
     }
 
     let fullTxArgs = [];
@@ -376,7 +377,7 @@ Error details:
 ${errorDetails}
 `;
 
-        throw new Error(errorMsg);
+        throw new ScriptError(errorMsg);
     }
 
     return result.right;

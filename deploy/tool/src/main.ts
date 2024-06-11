@@ -12,7 +12,6 @@ import {DeployError} from "./error";
 import {execSync} from "child_process";
 import {migrate} from "./migrate";
 
-let usage = "Usage: node deploy.js <command> <signing-info-spec-path>";
 let usageCommand = "<command>"
 let additionalUsage = "";
 
@@ -29,7 +28,7 @@ export function getUsageCommand() {
 }
 
 function getUsage() {
-    let output = `Usage: node deploy.js ${usageCommand} <signing-info-spec-path>`;
+    let output = `Usage: dega-inj-deploy ${usageCommand} <signing-info-spec-path>`;
     if (additionalUsage) {
         output += " " + additionalUsage;
     }
@@ -91,6 +90,14 @@ function main() {
 }
 
 async function runMain() {
+
+    if (process.argv.find((arg) => arg.includes("dega-inj-deploy"))) {
+        // Removes the following warning that is pulled in by the injective library via ethers.js:
+        //      (node:2954537) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+        //      (Use `node --trace-deprecation ...` to show where the warning was created)
+        // We mantain the warning when running via node directly rather than the dega-inj-deploy script
+        process.removeAllListeners('warning');
+    }
 
     let args = new Array<string>()
 
