@@ -17,7 +17,7 @@ dependencies = [
 
 [tasks.unit-test]
 command = "cargo"
-args    = ["test", "--locked", "-p", "dega-inj", "-p", "dega-cw721", "-p", "dega-minter"]
+args    = ["test", "--locked", "--lib", "-p", "dega-inj", "-p", "dega-cw721", "-p", "dega-minter"]
 
 [tasks.int-test]
 script = """
