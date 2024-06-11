@@ -57,13 +57,14 @@ injectived init local-injective-node --chain-id=injective-1
 ```
 Where "local-injective-node" will be the moniker of your local node.
 
-Finally, when you receive the output of the command, look for the "genesis" key mnemonic secret words.
+The "LOCAL_GENESIS_MNEMONIC=" field in your .env file has been pre-filled by the workspace setup script with the mnemonic of "signer1"
+from the injective setup script, which contains a large balance of 1.35M INJ on your local network.
 
-Copy these words to follow the "LOCAL_GENESIS_MNEMONIC=" field in your .env file.
+See the setup.sh script you just downloaded for the mnemonics of the other local accounts if you need them.
 
-This will give your test-tool access to the genesis account so that it can fill other accounts.
+The password added by the injective setup script for all the local users is "12345678".
 
-Use the command `dega-inj-test tx refill-local` to refill addresses on your local testnet.
+Use the command `dega-inj-test tx refill-local` to refill addresses on your local testnet using the account specified in the "LOCAL_GENESIS_MNEMONIC" field.
 
 Run `dega-inj-test help tx refill-local` for more information on how to run the refill-local command.
 
