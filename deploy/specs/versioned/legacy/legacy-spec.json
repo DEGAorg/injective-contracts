@@ -1,5 +1,5 @@
 {
-  "privateKeyFilename": "sample-mnemonic.json",
+  "privateKeyFilename": "legacy-key-example.json",
   "network": "Local",
   "grpcEndpoint": null,
   "optionsBuildAndOptimize": true,

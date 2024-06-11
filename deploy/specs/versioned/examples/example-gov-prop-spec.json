@@ -6,7 +6,7 @@
   "wasmPath": "<deploy>/versions/1-0-0/dega_minter.wasm",
   "wasmChecksum": "6bdb7f231f5dd7f59790a7e7b0009ead0d8e207406a55b33f96ed07fd7b54c86",
   "proposalTitle": "Test proposal for the Minter contract wasm code",
-  "summaryFilePath": "<workspace>/deploy/specs/versioned/example-gov-prop-summary.txt",
+  "summaryFilePath": "<workspace>/deploy/specs/versioned/examples/example-gov-prop-summary.txt",
   "instantiateAddresses": [
     "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
     "inj19lzwx827dtsx8gdkqpu7p57dsaqku5e82pa05a"
