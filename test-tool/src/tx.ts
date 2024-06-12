@@ -723,7 +723,7 @@ async function instantiate(args: string[]) {
     } else if (args.length == 1 && args[0] == "receiver") {
         await instantiateReceiver(true)
     } else {
-        throw new SyntaxError("Unknown instantiate args.");
+        throw new UsageError("Unknown instantiate args.");
     }
 }
 

@@ -9,6 +9,9 @@ import {
 } from "./transaction";
 import {generateTxJsonObj} from "./generate";
 import {DeployError} from "./error";
+import {CommandInfo} from "./main";
+import {makeSpecHelp} from "./help";
+import {instantiate} from "./instantiate";
 
 const migrateSpecDef = excess(t.type({
     network: t.keyof({
@@ -33,24 +36,19 @@ interface MigrateContext extends TxContext<MigrateSpec> {}
 
 type MigrateMessage = DegaMinterMigrateMsg | DegaCw721MigrateMsg;
 
-function getMigrateMsgForVariant(context: MigrateContext): MigrateMessage {
-    switch (context.spec.contractVariant) {
-        case "Minter":
-            const minterMsg: DegaMinterMigrateMsg = {
-                is_dev: true,
-                dev_version: "dev-1",
-            }
-            return minterMsg;
-        case "Collection":
-            const collectionMsg: DegaCw721MigrateMsg = {
-                is_dev: true,
-                dev_version: "dev-1"
-            };
-            return collectionMsg;
-        default:
-            throw new Error("Unknown contract variant");
-    }
+
+const migrateCommand: CommandInfo = {
+    name: "migrate",
+    summary: "Create a migration transaction for a single deployed smart contract.",
+    additionalUsage: "",
+    run: migrate,
+    specHelp: makeSpecHelp(migrateSpecDef),
 }
+
+export function getMigrateCommand(): CommandInfo {
+    return migrateCommand;
+}
+
 
 export async function migrate(specPath: string, remainingArgs: string[]) {
 
@@ -79,3 +77,23 @@ export async function migrate(specPath: string, remainingArgs: string[]) {
     writeTxJsonOutput(context, migrateTxJson);
 }
 
+
+
+function getMigrateMsgForVariant(context: MigrateContext): MigrateMessage {
+    switch (context.spec.contractVariant) {
+        case "Minter":
+            const minterMsg: DegaMinterMigrateMsg = {
+                is_dev: true,
+                dev_version: "dev-1",
+            }
+            return minterMsg;
+        case "Collection":
+            const collectionMsg: DegaCw721MigrateMsg = {
+                is_dev: true,
+                dev_version: "dev-1"
+            };
+            return collectionMsg;
+        default:
+            throw new Error("Unknown contract variant");
+    }
+}

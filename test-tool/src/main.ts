@@ -56,15 +56,7 @@ async function runMain() {
     // Strip the first two arguments
     let args = process.argv.slice(2);
 
-    let commandName = args.shift();
     let showHelp = false;
-
-    if (commandName && commandName == "help") {
-        // Consume help command and check for remaining specific command / subcommand to get help on
-        commandName = args.shift();
-        showHelp = true;
-    }
-
     if (args.length) {
         let helpSearchIndex = args.length;
         while (helpSearchIndex--) {
@@ -76,6 +68,14 @@ async function runMain() {
                 }
             }
         }
+    }
+
+    let commandName = args.shift();
+
+    if (commandName && commandName == "help") {
+        // Consume help command and check for remaining specific command / subcommand to get help on
+        commandName = args.shift();
+        showHelp = true;
     }
 
     if (commandName === "help") {

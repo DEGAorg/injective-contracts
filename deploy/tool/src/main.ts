@@ -4,76 +4,30 @@ import fs from "fs";
 import path from "node:path";
 import {isLeft} from "fp-ts/Either";
 import util from "util";
-import { instantiate } from "./instantiate";
-import { govProp } from "./gov-prop";
-import {sign} from "./sign";
+import {getInstantiateCommand, instantiate} from "./instantiate";
+import {getGovPropCommand, govProp} from "./gov-prop";
+import {getSignCommand, sign} from "./sign";
 import {pathsDeployArtifacts, pathsWorkspace} from "./context";
-import {DeployError} from "./error";
+import {DeployError, handleError} from "./error";
 import {execSync} from "child_process";
-import {migrate} from "./migrate";
+import {getMigrateCommand, migrate} from "./migrate";
+import * as t from "io-ts";
+import {Props} from "io-ts";
+import {setUsageCommand, showCommandHelp, showGeneralHelp, showHelpHelp} from "./help";
 
-let usageCommand = "<command>"
-let additionalUsage = "";
 
-export function addUsage(newUsage: string) {
-    if (additionalUsage) {
-        additionalUsage += newUsage;
-    } else {
-        additionalUsage += " " + newUsage;
-    }
+export interface CommandInfo {
+    name: string;
+    summary: string;
+    additionalUsage: string;
+    run?: (specPath: string, remainingArgs: string[]) => Promise<void>;
+    specHelp?: string;
 }
 
-export function getUsageCommand() {
-    return usageCommand;
-}
+let commandList: CommandInfo[] = [];
 
-function getUsage() {
-    let output = `Usage: dega-inj-deploy ${usageCommand} <signing-info-spec-path>`;
-    if (additionalUsage) {
-        output += " " + additionalUsage;
-    }
-    return output;
-}
-
-function handleError(e: unknown) {
-    let errorCode;
-
-    if (e instanceof DeployError) {
-
-        console.error("");
-        console.error(`${e.err_type}: ${e.message}`);
-        if (e.err_type == "UsageError") {
-            console.error("");
-            console.error(getUsage());
-        }
-        console.error("");
-        switch (e.err_type) {
-            case "ScriptError":
-                errorCode = 2;
-                break;
-            case "UsageError":
-                errorCode = 3;
-                break;
-            case "InputError":
-                errorCode = 4;
-                break;
-            case "DecodeError":
-                errorCode = 5;
-                break;
-            default:
-                errorCode = 1;
-                console.error(`Unknown error type: ${e.err_type}`);
-                console.error("");
-                break;
-        }
-    } else {
-        errorCode = 1;
-        console.error(e);
-    }
-
-    //fs.writeFileSync(pathsErrorFile, util.inspect(e))
-
-    process.exit(errorCode);
+export function getCommandList() {
+    return commandList;
 }
 
 function main() {
@@ -99,20 +53,14 @@ async function runMain() {
         process.removeAllListeners('warning');
     }
 
-    let args = new Array<string>()
+    commandList.push(getGovPropCommand());
+    commandList.push(getInstantiateCommand());
+    commandList.push(getMigrateCommand());
+    commandList.push(getSignCommand());
 
-    // Find the index of the argument containing the filename
-    let filenameIndex = process.argv.findIndex(arg => {
-        return arg.includes('main.js') || arg.includes('dega-inj-deploy');
-    })
-    if (filenameIndex !== -1) {
-        // Get all the remaining arguments after the filename
 
-        args = process.argv.slice(filenameIndex + 1)
-
-    } else {
-        throw new DeployError("UsageError", "Improper calling semantics - missing script name argument");
-    }
+    // Strip the first two arguments
+    let args = process.argv.slice(2);
 
     const makeFilePath = path.join(pathsWorkspace, "Makefile.toml")
 
@@ -121,44 +69,73 @@ async function runMain() {
             "directory relative to the workspace root.")
     }
 
-    const command = args.shift();
-    if (!command) {
-        throw new DeployError("UsageError", `Missing deploy command`);
+    let showHelp = false;
+
+    if (args.length) {
+        let helpSearchIndex = args.length;
+        while (helpSearchIndex--) {
+            const argToCheck = args[helpSearchIndex];
+            if (argToCheck == "--help" || argToCheck == "-h") {
+                args.splice(helpSearchIndex, 1);
+                if (!showHelp) {
+                    showHelp = true;
+                }
+            }
+        }
     }
 
-    const specPathArg = args.shift();
-    if (!specPathArg) {
-        throw new DeployError("UsageError", `Missing deploy spec path argument`);
+    let commandName = args.shift();
+
+    if (commandName && commandName == "help") {
+        // Consume help command and check for remaining specific command / subcommand to get help on
+        commandName = args.shift();
+        showHelp = true;
     }
 
-    const specPath = path.resolve(process.cwd(), specPathArg);
+    if (commandName === "help") {
+        showHelpHelp();
+    } else if (commandName) {
 
-    console.log('Signing info spec path: ' + specPath);
-    console.log("");
-    usageCommand = command;
+        let command = commandList.find((command) => {
+            return command.name === commandName;
+        });
 
-    if (!fs.existsSync(pathsDeployArtifacts)) {
-        fs.mkdirSync(pathsDeployArtifacts);
-    } else if (fs.readdirSync(pathsDeployArtifacts).length && command !== "sign") {
-        execSync(`rm ${pathsDeployArtifacts}/*`, {encoding: 'utf-8'})
+        if (command) {
+            setUsageCommand(command);
+
+            if (showHelp) {
+                showCommandHelp(command);
+            } else if (command.run) {
+
+                const specPathArg = args.shift();
+                if (!specPathArg) {
+                    throw new DeployError("UsageError", `Missing deploy spec path argument`);
+                }
+
+                const specPath = path.resolve(process.cwd(), specPathArg);
+
+                console.log('Signing info spec path: ' + specPath);
+                console.log("");
+
+                if (!fs.existsSync(pathsDeployArtifacts)) {
+                    fs.mkdirSync(pathsDeployArtifacts);
+                } else if (fs.readdirSync(pathsDeployArtifacts).length && commandName !== "sign") {
+                    execSync(`rm ${pathsDeployArtifacts}/*`, {encoding: 'utf-8'})
+                }
+
+                await command.run(specPath, args);
+            }
+        } else if (showHelp) {
+            showGeneralHelp();
+        } else {
+            throw new DeployError("UsageError", "Unknown command: " + commandName);
+        }
+    } else if (showHelp) {
+        showGeneralHelp();
+    } else {
+        throw new DeployError("UsageError", "Missing command");
     }
 
-    switch (command) {
-        case "instantiate":
-            await instantiate(specPath, args);
-            break;
-        case "gov-prop":
-            await govProp(specPath, args);
-            break;
-        case "migrate":
-            await migrate(specPath, args);
-            break;
-        case "sign":
-            await sign(specPath, args);
-            break;
-        default:
-            throw new DeployError("UsageError", `Invalid command: ${command}`);
-    }
 }
 
 if (require.main === module) {

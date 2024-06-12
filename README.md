@@ -75,6 +75,20 @@ injectived start
 
 You will have to leave this terminal window open while you want to have your local chain running.
 
+### Multiple Workspaces
+
+If you are working with multiple workspaces, please note that the dega-inj-test and dega-inj-deploy commands will be
+linked to whichever workspace has most recently run the command `npm install -g .` in the workspace roots (./deploy/tool and
+./test-tool respectively).
+
+A script called `./activate.sh` has been created to help with this. Run `./activate.sh` in the workspace you wish to
+use to point the dega-inj-test and dega-inj-deploy commands there.
+
+In the future the commands could be adapted to run based on the workspace you are in.
+
+Additionally, directly running the tools with `npm run run` or `node ./dist/index.js` from the respective tool root,
+avoids this issue.
+
 ## Building
 
 Once you have run the setup script from the Workspace Setup instructions above, you can build the smart contracts

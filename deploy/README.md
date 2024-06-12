@@ -11,7 +11,7 @@ Its purpose is to allow these deployments to be done in a predictable build-like
 and instantiations in particular are done in a consistent mistake-free manner.
 
 This is critical as a simple mistake such as specifying the incorrect instantiate permissions or admins could lead to
-situations where the the contracts from a governance proposal cannot be used, or we become locked out of or 
+situations where the contracts from a governance proposal cannot be used, or we become locked out of or 
 unable to mint from a production contract.
 
 ## Usage
@@ -40,3 +40,57 @@ The following commands are available for the deployment tool:
 5. `help [<command>]` - To get the help info for the deployment tool, or a specific command.
 
 Run `dega-inj-deploy help <command>` for more detailed info on each command, and the full list of properties in the spec file.
+
+
+## JSON Artifact Files
+
+The deploy tool generates JSON files that contain the transaction data for the key transactions used in the deployment process.
+
+The files are generated in the `./deploy/artifacts` directory, and are named with the following format:
+
+For safety, the contents of the artifacts directory are deleted during each run, to reduce the chance of accidentally using an transaction
+file for the wrong thing.
+
+The execption to this is the `sign` command, which does not delete whatever is in the artifacts directory, to allow for signing
+of a JSON transaction file that was produced there previously.
+
+## Spec-Files
+
+Each command requires a spec-file to be passed in. This is a JSON file that contains all the information needed to 
+generate the transaction JSON file.
+
+Each command has a different spec-file format, use the help command for each command to see the full list of properties:
+
+```bash
+dega-inj-deploy help <command>
+```
+
+You can find examples of spec-files for each of the commands in the [./deploy/specs/examples](./deploy/specs/examples) directory.
+
+### Common Properties
+
+Certain properties in the spec-file are optional. Such properties are marked with the type `T | undefined | null`, to
+allow the property to be left out, or provided intentionally with a null value to leave in the property in the spec file but not specify it.
+
+Most of the properties are unique to each file, but a few properties such as "contractVariant" are in multiple files.
+
+The following properties are in every spec file:
+
+**network** - "Local", "Testnet" or "Mainnet", indicates the network to generate the transaction for.
+
+**note** - A string that will be included in the transaction JSON file as a note.
+
+The property `deployAddress` indicates the address of the deployer account that will be used to sign and deploy the contracts for each
+of the transaction commands (gov-prop, instantiate, migrate). 
+
+The `sign` command instead has "signerKeyName" which is the name of the key in the local injectived keystore to sign the transaction with.
+
+### File Path Properties
+
+Finally, the properties wasmPath", "summaryFilePath" and "txJsonFilePath" all require file paths to be provided.
+
+Each of the paths must be specified with one of the following 3 syntaxes:
+
+1. <workspaces>/path/to/file - To specify a file relative to the workspace root `./`.
+2. <deploy>/path/to/file - To specify a file relative to the `./deploy` directory.
+3. /root/path/to/file - To specify an absolute path from the root of the operating system.

@@ -21,6 +21,9 @@ import {
 import * as zlib from "node:zlib";
 import {generateTxJsonObj} from "./generate";
 import {DeployError} from "./error";
+import {CommandInfo} from "./main";
+import {TypeC} from "io-ts";
+import {makeSpecHelp} from "./help";
 
 
 const govPropSpecDef = excess(t.type({
@@ -66,6 +69,19 @@ interface MsgSubmitProposalStoreCode {
     title: string;
     summary: string;
 }
+
+const govPropCommand: CommandInfo = {
+    name: "gov-prop",
+    summary: "Create a governance proposal transaction for storing a wasm code with a formatted summary.",
+    additionalUsage: "",
+    run: govProp,
+    specHelp: makeSpecHelp(govPropSpecDef),
+}
+
+export function getGovPropCommand(): CommandInfo {
+    return govPropCommand;
+}
+
 
 export async function govProp(specPath: string, remainingArgs: string[]) {
     console.log("Creating governance proposal transaction...");

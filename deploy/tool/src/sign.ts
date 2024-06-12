@@ -8,8 +8,10 @@ import {
     getFilePathFromSpecFile,
     pathsDeployArtifacts,
 } from "./context";
-import {addUsage} from "./main";
 import {DeployError} from "./error";
+import {CommandInfo} from "./main";
+import {govProp} from "./gov-prop";
+import {makeSpecHelp} from "./help";
 
 
 const signSpecDef = excess(t.type({
@@ -37,9 +39,19 @@ interface SignContext extends TxContext<SignSpec> {}
 
 
 
-export async function sign(specPath: string, remainingArgs: string[]) {
+const signCommand: CommandInfo = {
+    name: "sign",
+    summary: "Sign an existing transaction JSON file, either provided as an argument or in the spec file.",
+    additionalUsage: "[<tx-json-file-path>]",
+    run: sign,
+    specHelp: makeSpecHelp(signSpecDef),
+}
 
-    addUsage("[<tx-json-file-path>]");
+export function getSignCommand(): CommandInfo {
+    return signCommand;
+}
+
+export async function sign(specPath: string, remainingArgs: string[]) {
 
     console.log("Creating signing transaction...");
     console.log("");

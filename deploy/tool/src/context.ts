@@ -5,7 +5,7 @@ import util from "util";
 import {isLeft} from "fp-ts/Either";
 import {failure} from "io-ts/PathReporter";
 import {DeployError} from "./error";
-import {getUsageCommand} from "./main";
+import {getUsageCommand} from "./help";
 
 export const pathsWorkspace = path.resolve(__dirname, "../../..")
 export const pathsDeploy = path.join(pathsWorkspace, "deploy")

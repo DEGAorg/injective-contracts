@@ -23,16 +23,16 @@ export function handleError(e: unknown) {
     if (e instanceof ScriptError || e instanceof UsageError) {
 
         console.error("");
-        console.error(e.message);
+        console.error("   " + e.message);
         if (e instanceof UsageError) {
 
             console.error("");
-            console.error(getUsage());
+            console.error("      Usage: " + getUsage());
 
             const usageSuggestion = getUsageSuggestion();
             if (usageSuggestion) {
                 console.error("");
-                console.error(usageSuggestion);
+                console.error("      " + usageSuggestion);
             }
         }
         console.error("");

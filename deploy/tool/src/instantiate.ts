@@ -4,6 +4,9 @@ import {createTxContext, TxContext, writeTxJsonOutput} from "./transaction";
 import {DegaMinterInstantiateMsg} from "./messages";
 import {generateTxJsonObj} from "./generate";
 import {DeployError} from "./error";
+import {CommandInfo} from "./main";
+import {makeSpecHelp} from "./help";
+import {govProp} from "./gov-prop";
 
 
 const instantiateSpecDef = excess(t.type({
@@ -38,6 +41,18 @@ const instantiateSpecDef = excess(t.type({
 
 type InstantiateSpec = t.TypeOf<typeof instantiateSpecDef>;
 interface InstantiateContext extends TxContext<InstantiateSpec> {}
+
+const instantiateCommand: CommandInfo = {
+    name: "instantiate",
+    summary: "Create an instantiation transaction to deploy both the minter and collection contracts simultaneously.",
+    additionalUsage: "",
+    run: instantiate,
+    specHelp: makeSpecHelp(instantiateSpecDef),
+}
+
+export function getInstantiateCommand(): CommandInfo {
+    return instantiateCommand;
+}
 
 export async function instantiate(specPath: string, remainingArgs: string[]) {
 
