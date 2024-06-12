@@ -14,7 +14,7 @@ import {
     TxResponse,
 } from "@injectivelabs/sdk-ts";
 import {BigNumberInBase, BigNumberInWei} from '@injectivelabs/utils'
-import {exec} from 'child_process';
+import {exec, execSync} from 'child_process';
 import path from "node:path";
 import fs from "fs";
 import secp256k1 from "secp256k1";
@@ -26,13 +26,19 @@ import {Convert, Cw721ReceiverTesterInnerMsg} from "./messages/cw721_receiver_te
 import {Cw721ReceiveMsg, Cw721ReceiverTesterExecuteMsg} from "./messages/cw721_receiver_tester_execute_msg";
 import {Expiration} from "./messages/dega_cw721_execute";
 import {addAdmin, pause, removeAdmin, setMintSigner, updateCollectionInfo} from "./tx-admin";
-import {ScriptError} from "./error";
+import {ScriptError, UsageError} from "./error";
 import {CommandInfo} from "./main";
+import {
+    escapeDoubleQuotes,
+    replaceLineEndingsWithBreaks,
+    replaceLineEndingsWithSlashN,
+    replaceWithUnicode
+} from "./tools";
 
 let txCommand: CommandInfo = {
     name: "tx",
     aliases: ["transact", "run", "exec", "execute"],
-    summary: "Submit transactions to the network and contracts specified in the environment",
+    summary: "Broadcast transactions to the network and contracts specified in the environment.",
     subCommands: []
 }
 
@@ -40,106 +46,7 @@ export function getTxCommand() {
     return txCommand;
 }
 
-export async function tx(args: string[]) {
 
-    let sub_command = "sign"; // default to query
-    let sub_args = new Array<string>();
-
-    let shift_result = args.shift();
-    if (shift_result != undefined) {
-        sub_command = shift_result;
-    }
-
-    switch (sub_command) {
-        case "i":
-        case "instantiate":
-            await instantiate(args);
-            break;
-        case "mint-combined":
-            await mintCombined(args);
-            break;
-        case "mint-as-backend":
-            await mintAsBackend(args);
-            break;
-        case "mint-as-user":
-            await mintAsUser(args);
-            break;
-        case "s":
-        case "store":
-            await store(args);
-            break;
-        case "transfer":
-            await transferToken(args);
-            break;
-        case "send":
-            await sendToken(args);
-            break;
-        case "send-to-receiver":
-            await sendToReceiver(args);
-            break;
-        case "call-receive-nft-on-receiver":
-            await callReceiveNftOnReceiver(args);
-            break;
-        case "send-talis-sell":
-            await sendTalisSale(args);
-            break;
-        case "refill-local":
-            await refillLocal(args);
-            break;
-        case "burn":
-            await burn(args);
-            break;
-        case "transfer-inj":
-            await transferInj(args);
-            break;
-        case "spender":
-            await spender(args);
-            break;
-        case "operator":
-            await operator(args);
-            break;
-        case "add-admin":
-            await addAdmin(args);
-            break;
-        case "remove-admin":
-            await removeAdmin(args);
-            break;
-        case "set-mint-signer":
-            await setMintSigner(args);
-            break;
-        case "pause":
-            await pause(args);
-            break;
-        case "update-collection-info":
-            await updateCollectionInfo(args);
-            break;
-        case "migrate":
-            await migrate(args);
-            break;
-        case "gov-proposal":
-            await govProposal(args);
-            break;
-        case "gov-summary-test":
-            await govSummaryTest(args);
-            break;
-        default:
-            console.log("Unknown tx sub-command: " + sub_command);
-            break;
-    }
-}
-
-
-// Private Key based Transaction example: (Also includes details on signing a message with the cosmos library)
-// https://github.com/InjectiveLabs/injective-ts/blob/ce8f591ea66e15f3a620734146a342ecb94bb2d6/.gitbook/transactions/private-key.md
-
-// https://github.com/CosmWasm/cosmwasm/tree/main/packages/crypto
-// https://github.com/CosmWasm/cosmwasm/blob/main/packages/crypto/src/secp256k1.rs
-
-// See:
-// fn secp256k1_verify
-// fn ed25519_verify
-// fn ed25519_batch_verify
-//
 async function sleep(seconds: number) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
@@ -158,37 +65,42 @@ export function logResponse(response: TxResponse) {
         console.log("==Events==");
         console.log("==========");
 
-        if (response.events == null) return;
-        const eventsTyped = response.events as TxEvent[];
+        if (response.events != null) {
+            const eventsTyped = response.events as TxEvent[];
 
-        let decoder = new TextDecoder();
+            let decoder = new TextDecoder();
 
-        eventsTyped.forEach((event) => {
+            eventsTyped.forEach((event) => {
 
-            if (event.type == null || event.attributes == null) return;
+                if (event.type != null && event.attributes != null) {
 
-            const eventTypeString = "Event: " + event.type;
-            console.log()
-            console.log(eventTypeString);
-            console.log("-".repeat(eventTypeString.length));
-            event.attributes.forEach((attr) => {
+                    const eventTypeString = "Event: " + event.type;
+                    console.log()
+                    console.log(eventTypeString);
+                    console.log("-".repeat(eventTypeString.length));
+                    event.attributes.forEach((attr) => {
 
-                if (attr.key == null || attr.value == null) return;
-                console.log(decoder.decode(attr.key) + ": " + decoder.decode(attr.value));
+                        if (attr.key != null && attr.value != null) {
+                            console.log(decoder.decode(attr.key) + ": " + decoder.decode(attr.value));
+                        }
+                    });
+                }
             });
-        });
+        }
     }
 }
 
 
-
+txCommand.subCommands.push({
+    name: "mint-combined",
+    additionalUsage: "<receiver_address> <price>",
+    summary: "Mints an NFT in one operation by playing the role of both the backend and the redeeming user.",
+    run: mintCombined
+});
 async function mintCombined(args: string[]) {
 
     if (args.length < 2) {
-        console.log("");
-        console.log("Invalid arguments. Usage: mint-combined <receiver_address> <price>");
-        console.log("");
-        return;
+        throw new UsageError("Invalid arguments.");
     }
 
     const context = await getAppContext();
@@ -291,10 +203,16 @@ async function mintCombined(args: string[]) {
     logResponse(response);
 }
 
+txCommand.subCommands.push({
+    name: "mint-as-backend",
+    additionalUsage: "<receiver_address> <price>",
+    summary: "Generates a mint signature in the fashion of the web-backend, that can then be minted with the mint-as-user sub-command.",
+    run: mintAsBackend
+});
 async function mintAsBackend(args: string[]) {
 
     if (args.length < 2) {
-        throw new ScriptError("Missing argument. Usage: mint-as-backend <receiver_address> <price>");
+        throw new UsageError("Missing argument.");
     }
 
     const context = await getAppContext();
@@ -385,6 +303,12 @@ async function mintAsBackend(args: string[]) {
     console.log("Mint Signature Base64: " + mintSignatureBase64);
 }
 
+txCommand.subCommands.push({
+    name: "mint-as-user",
+    additionalUsage: "",
+    summary: "Mints an NFT in the same fashion as a user, using the MintRequest generated by mint-as-backend.",
+    run: mintAsUser
+});
 async function mintAsUser(args: string[]) {
 
     const context = await getAppContext();
@@ -458,10 +382,16 @@ async function mintAsUser(args: string[]) {
     logResponse(response);
 }
 
+txCommand.subCommands.push({
+    name: "transfer",
+    additionalUsage: "<token-id> <recipient>",
+    summary: "Transfer a token with <token-id> to the <receipient>",
+    run: transferToken
+});
 async function transferToken(args: string[]) {
 
     if (args.length < 2) {
-        throw new ScriptError("Missing arguments. send usage: transfer <token_id> <recipient>");
+        throw new UsageError("Missing arguments.");
     }
 
     const context = await getAppContext();
@@ -500,11 +430,16 @@ async function transferToken(args: string[]) {
     logResponse(response);
 }
 
-
+txCommand.subCommands.push({
+    name: "send-nft",
+    additionalUsage: "<token-id> <recipient-contract> <receive-message>",
+    summary: "Send a token with <token-id> using send_nft call for smart contracts to the <recipient-contract> with a <receive-message>",
+    run: sendToken
+});
 async function sendToken(args: string[]) {
 
     if (args.length < 2) {
-        throw new ScriptError("Missing arguments. send usage: send <token_id> <recipient_contract> <receive_message>");
+        throw new UsageError("Missing arguments.");
     }
 
     const context = await getAppContext();
@@ -536,11 +471,16 @@ async function sendToken(args: string[]) {
     logResponse(response);
 }
 
-
+txCommand.subCommands.push({
+    name: "send-to-receiver",
+    additionalUsage: "<token-id> <should-succeed>",
+    summary: "Send <token-id> to the receiver contract and have the receiver accept or reject based on the <should-succeed> value.",
+    run: sendToReceiver
+});
 async function sendToReceiver(args: string[]) {
 
     if (args.length < 2) {
-        throw new ScriptError("Missing arguments. usage: send-to-receiver <token_id> <should-succeed>");
+        throw new UsageError("Missing arguments.");
     }
 
     const tokenId = args[0];
@@ -592,10 +532,16 @@ async function sendToReceiver(args: string[]) {
 
 }
 
+txCommand.subCommands.push({
+    name: "call-receive-nft",
+    additionalUsage: "<token-id> <should-succeed>",
+    summary: "A test transaction to call receive_nft directly on the receiver contract to ensure it is working properly.",
+    run: callReceiveNftOnReceiver
+});
 async function callReceiveNftOnReceiver(args: string[]) {
 
     if (args.length < 2) {
-        throw new ScriptError("Missing arguments. usage: call-receive-nft-on-receiver <token_id> <should-succeed>");
+        throw new UsageError("Missing arguments.");
     }
 
     const context = await getAppContext();
@@ -648,14 +594,21 @@ async function callReceiveNftOnReceiver(args: string[]) {
     logResponse(response);
 }
 
+
 function seriealizeReceiverInnerMessage(innerMsg: Cw721ReceiverTesterInnerMsg) {
     return Buffer.from(JSON.stringify(innerMsg)).toString("base64");
 }
 
+txCommand.subCommands.push({
+    name: "send-talis-sale",
+    additionalUsage: "<token-id> <price>",
+    summary: "Send a token with <token-id> to the Talis market to be sold at the given <price>.",
+    run: sendTalisSale
+});
 async function sendTalisSale(args: string[]) {
 
     if (args.length < 2) {
-        throw new ScriptError("Missing arguments. send-talis-sell usage: send-talis-sell <token_id> <price>");
+        throw new UsageError("Missing arguments.");
     }
 
     const context = await getAppContext();
@@ -712,7 +665,12 @@ async function sendTalisSale(args: string[]) {
     logResponse(response);
 }
 
-
+txCommand.subCommands.push({
+    name: "refill-local",
+    additionalUsage: "<amount> [<address>]",
+    summary: "Refills <address> with <amount> of INJ tokens. Fills primary address if none specified.",
+    run: refillLocal
+});
 async function refillLocal(args: string[]) {
 
     const context = await getAppContext();
@@ -721,28 +679,15 @@ async function refillLocal(args: string[]) {
         throw new ScriptError("Local Genesis Address required for refilling local")
     }
 
-    if (args.length < 1 || (args[0] != "primary" && args[0] != "signer" && args[0] != "other")) {
-        throw new ScriptError("Please specify either 'primary' or 'signer' or 'other <address>' as the recipient of the refill.");
+    if (args.length > 2) {
+        throw new UsageError("Too many arguments.");
     }
 
-    let dstInjectiveAddress = "";
+    const amount = args[0];
+    let dstInjectiveAddress = args[1];
 
-    switch (args[0]) {
-        case "primary":
-            dstInjectiveAddress = context.primaryAddress;
-            break;
-        case "signer":
-                dstInjectiveAddress = context.signerAddress;
-                break;
-        case "other":
-            if (args.length < 2) {
-                throw new ScriptError("Please specify the address of the recipient of the refill.");
-            }
-            dstInjectiveAddress = args[1];
-            break;
-        default:
-            throw new ScriptError("Please specify either 'primary' or 'signer' as the recipient of the refill.");
-
+    if (!dstInjectiveAddress) {
+        dstInjectiveAddress = context.primaryAddress;
     }
 
      const sendMsg = MsgSend.fromJSON({
@@ -750,7 +695,7 @@ async function refillLocal(args: string[]) {
         dstInjectiveAddress: dstInjectiveAddress,
         amount: {
             denom: "inj",
-            amount: new BigNumberInBase(10).toWei().toFixed()
+            amount: new BigNumberInBase(amount).toWei().toFixed()
         }
     });
 
@@ -764,42 +709,13 @@ async function refillLocal(args: string[]) {
     logResponse(response);
 }
 
-// Note used now but keeping as a reference
-async function refillLocalCommandLine(args: string[]) {
 
-    if (args.length < 1 || (args[0] != "primary" && args[0] != "signer")) {
-        throw new ScriptError("Please specify either 'primary' or 'signer' as the recipient of the refill.");
-    }
-
-    const context = await getAppContext();
-
-    const dstInjectiveAddress = (args[0] == "primary") ? context.primaryAddress : context.signerAddress;
-    const gasPrices = context.gasPricesAmountWei.toFixed() + "inj";
-    const gas = context.gasAmountWei.toFixed() + "inj";
-    const refillAmount = new BigNumberInBase(0.01).toWei().toFixed();
-
-    // Build your command using the variables
-    const command =
-        `yes ${Config.INJECTIVED_PASSWORD}` +
-        ` | injectived tx bank send --from=genesis --chain-id="injective-1"` +
-        ` --yes --gas-prices=${gasPrices}inj --gas=${gas}inj` +
-        ` ${context.localGenesisAddress} ${dstInjectiveAddress} ${refillAmount}inj`;
-
-    console.log("Running command: " + command)
-
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.log(`error: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.log(`stderr: ${stderr}`);
-            return;
-        }
-        console.log(`stdout: ${stdout}`);
-    });
-}
-
+txCommand.subCommands.push({
+    name: "instantiate",
+    additionalUsage: "[receiver]",
+    summary: "Instantiate the contracts with code-id's in the environment. Add 'receiver' to instantiate the receiver contract.",
+    run: instantiate
+});
 async function instantiate(args: string[]) {
 
     if (args.length == 0 || (args.length == 1 && args[0] == "minter")) {
@@ -807,8 +723,7 @@ async function instantiate(args: string[]) {
     } else if (args.length == 1 && args[0] == "receiver") {
         await instantiateReceiver(true)
     } else {
-        console.log("Unknown instantiate args. Usage: instantiate [receiver]");
-
+        throw new SyntaxError("Unknown instantiate args.");
     }
 }
 
@@ -1013,18 +928,23 @@ export function stripQuotes(input: string): string {
     return input;
 }
 
-
+txCommand.subCommands.push({
+    name: "store",
+    additionalUsage: "[-c <minter|collection|receiver>]",
+    summary: "Stores the codes for the minter and collection by default, or for the specified contract with the -c flag.",
+    run: store
+});
 async function store(args: string[]) {
 
     if (args.length < 1) {
         await store_wasm("dega_minter.wasm")
         await store_wasm("dega_cw721.wasm")
     } else if (args.length == 2 && args[0] == "-c") {
-        if (args[1] == "dega-minter") {
+        if (args[1] == "minter") {
             await store_wasm("dega_minter.wasm")
-        } else if (args[1] == "dega-cw721") {
+        } else if (args[1] == "collection") {
             await store_wasm("dega_cw721.wasm")
-        } else if (args[1] == "receiver" || args[1] == "cw721-receiver" || args[1] == "cw721-receiver-tester") {
+        } else if (args[1] == "receiver") {
             fs.copyFileSync(path.resolve(__dirname, "../data/cw721_receiver_tester.wasm"),
                 path.resolve(__dirname, "../../artifacts/cw721_receiver_tester.wasm"));
             await store_wasm("cw721_receiver_tester.wasm")
@@ -1102,43 +1022,15 @@ export interface TxAttribute {
 }
 
 
-async function storeCommandLine(args: string[]) {
-
-    const context = await getAppContext();
-
-    const artifactsDir = path.resolve(__dirname, "../../artifacts");
-    const minterPath = path.resolve(artifactsDir, "dega_minter.wasm");
-
-    const payerAddress = context.primaryAddress;
-    const gasPrices = context.gasPricesAmountWei.toFixed();
-    const gas = context.gasAmountWei.toFixed();
-
-    // Build your command using the variables
-    const command =
-        `yes ${Config.INJECTIVED_PASSWORD}` +
-        ` | injectived tx wasm store ${minterPath} --from=${payerAddress} --chain-id="injective-1"` +
-        ` --yes --gas-prices=${gasPrices}inj --gas=${gas}`; // note, the --gas param does NOT have the "inj" suffix
-
-    console.log("Running command: " + command)
-
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.log(`error: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.log(`stderr: ${stderr}`);
-            return;
-        }
-        console.log(`stdout: ${stdout}`);
-    });
-}
-
-
-
+txCommand.subCommands.push({
+    name: "burn",
+    additionalUsage: "<token-id>",
+    summary: "As the owner or spender of a token, burn the specified <token-id>.",
+    run: burn
+});
 async function burn(args: string[]) {
     if (args.length < 1) {
-        throw new ScriptError("Missing argument. Usage: tx burn <token_id>");
+        throw new UsageError("Missing argument.");
     }
 
     const context = await getAppContext();
@@ -1166,10 +1058,16 @@ async function burn(args: string[]) {
     logResponse(response);
 }
 
+txCommand.subCommands.push({
+    name: "transfer-inj",
+    additionalUsage: "<receiver> <amount>",
+    summary: "Transfer an <amount> of INJ in base units to the <receiver>.",
+    run: transferInj
+});
 async function transferInj(args: string[]) {
 
-    if (args.length < 2) {
-        throw new ScriptError("Missing argument. Usage: tx transfer-inj <receiver> <amount>");
+    if (args.length != 2) {
+        throw new UsageError("Bad arguments.");
     }
 
     const context = await getAppContext();
@@ -1226,27 +1124,30 @@ function getExpirationEpochInNanos(amount: string, units: string) {
     return epochInNanos.plus(expirationInNanos);
 }
 
+txCommand.subCommands.push({
+    name: "spender",
+    additionalUsage: "<add|remove> <spender-address> <token-id> [<expiration-number> <day(s)|hour(s)|minute(s)>]",
+    summary: "As a token owner, add or remove a spender for a token with <token-id>. Optionally specify an expiration duration.",
+    run: spender
+});
 async function spender(args: string[]) {
 
-    const usage = "Usage: tx spender <add|remove> <address> <token-id> [<expiration-number> <day(s)|hour(s)|minute(s)>]";
+    const usage = "Usage: tx spender ";
 
     if (args.length < 3 || args.length > 5) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments`);
     }
 
     const addRemoveString = args[0];
 
     if (addRemoveString != "add" && addRemoveString != "remove") {
-        console.log("Invalid on value. Must be either add or remove");
-        return;
+        throw new UsageError("Invalid <add|remove> value. Must be either add or remove");
     }
 
     const isAdding: boolean = (addRemoveString == "add");
 
     if (!isAdding && args.length != 3) {
-        console.log(`Expiration must only be provided if adding a spender. ${usage}`);
-        return;
+        throw new UsageError(`Expiration must only be provided if adding a spender`);
     }
 
     const context = await getAppContext();
@@ -1259,8 +1160,7 @@ async function spender(args: string[]) {
     if (isAdding) {
 
         if (args.length == 4) {
-            console.log(`Must specify time unit if specifying expiration span (e.g. "3 days"). ${usage}`);
-            return;
+            throw new UsageError(`Must specify time unit if specifying expiration span (e.g. "3 days").`);
         }
 
         let expiration: Expiration = {};
@@ -1309,27 +1209,28 @@ async function spender(args: string[]) {
     logResponse(response);
 }
 
+txCommand.subCommands.push({
+    name: "operator",
+    additionalUsage: "<add|remove> <operator-address> [<expiration-number> <day(s)|hour(s)|minute(s)>]",
+    summary: "As a token owner, add or remove an operator for all your tokens. Optionally specify an expiration duration.",
+    run: operator
+});
 async function operator(args: string[]) {
 
-    const usage = "Usage: tx operator <add|remove> <address> [<expiration-number> <day(s)|hour(s)|minute(s)>]";
-
     if (args.length < 2 || args.length > 4) {
-        console.log(`Bad arguments. ${usage}`);
-        return;
+        throw new UsageError(`Bad arguments.`);
     }
 
     const addRemoveString = args[0];
 
     if (addRemoveString != "add" && addRemoveString != "remove") {
-        console.log("Invalid on value. Must be either add or remove");
-        return;
+        throw new UsageError("Invalid <add|remove> value. Must be either add or remove");
     }
 
     const isAdding: boolean = (addRemoveString == "add");
 
     if (!isAdding && args.length != 2) {
-        console.log(`Expiration must only be provided if adding an operator. ${usage}`);
-        return;
+        throw new UsageError(`Expiration must only be provided if adding an operator`);
     }
 
     const context = await getAppContext();
@@ -1341,8 +1242,7 @@ async function operator(args: string[]) {
     if (isAdding) {
 
         if (args.length == 3) {
-            console.log(`Must specify time unit if specifying expiration span (e.g. "3 days"). ${usage}`);
-            return;
+            throw new UsageError(`Must specify time unit if specifying expiration span (e.g. "3 days").`);
         }
 
         let expiration: Expiration = {};
@@ -1389,10 +1289,16 @@ async function operator(args: string[]) {
 }
 
 
+txCommand.subCommands.push({
+    name: "migrate",
+    additionalUsage: "<dev-version>",
+    summary: "Migrate the minter and collection contracts to the specified <dev-version>.",
+    run: migrate
+});
 async function migrate(args: string[]) {
 
     if (args.length < 1) {
-        throw new ScriptError("Missing argument. Usage: tx migrate <dev-version>");
+        throw new UsageError("Missing argument.");
     }
 
     const context = await getAppContext();
@@ -1463,7 +1369,12 @@ async function migrateContract(
     console.log(`Successfully Migrated ${contractName}`)
 }
 
-
+txCommand.subCommands.push({
+    name: "gov-proposal",
+    additionalUsage: "",
+    summary: "Test for generating a governance proposal transaction.",
+    run: govProposal
+});
 async function govProposal(
     args: string[]
 ) {
@@ -1511,35 +1422,7 @@ async function govProposal(
     }
 }
 
-function replaceLineEndingsWithBreaks(input: string): string {
-    // Replace Windows-style line endings
-    let result = input.replace(/\r\n/g, '<br>\r\n');
 
-    // Replace Unix-style line endings
-    result = result.replace(/\n/g, '<br>\n');
-
-    return result;
-}
-
-function replaceLineEndingsWithSlashN(input: string): string {
-    // Replace Windows-style line endings
-    let result = input.replace(/\r\n/g, '\\n');
-
-    // Replace Unix-style line endings
-    result = result.replace(/\n/g, '\\n');
-
-    return result;
-}
-
-function replaceWithUnicode(input: string): string {
-    let result = input.replace(/</g, '\\u003C');
-    result = result.replace(/>/g, '\\u003E');
-    return result;
-}
-
-function escapeDoubleQuotes(input: string): string {
-    return input.replace(/"/g, '\\"');
-}
 
 async function govProposalStoreCode(
     wasm_name: string,
@@ -1640,61 +1523,7 @@ async function govProposalStoreCode(
 
     console.log("Running governance proposal for: " + wasm_name)
 
-    //command = "echo hello"
-
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.log(`error: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.log(`stderr: ${stderr}`);
-            return;
-        }
-        console.log(`stdout: ${stdout}`);
-    });
+    execSync(command);
 }
 
-async function govSummaryTest(args: string[]) {
 
-    const summaryFileName = "test-post.txt";
-    const summaryFilePath = path.resolve(__dirname, "../data", summaryFileName);
-    const summaryContents = fs.readFileSync(summaryFilePath, "utf-8");
-
-    const htmlPreview =
-        `<html>\n` +
-        `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />\n` +
-        replaceLineEndingsWithBreaks(summaryContents) + `\n` +
-        `</html>\n`;
-
-    const htmlPreviewFileName = summaryFileName.replace(".txt", ".html")
-    const htmlPreviewPath = path.resolve(__dirname, "../cache", htmlPreviewFileName);
-    fs.writeFileSync(htmlPreviewPath, htmlPreview);
-
-    console.log("===============")
-    console.log("==   INPUT   ==")
-    console.log("===============")
-    console.log("")
-    console.log(summaryContents);
-    console.log("")
-    console.log("")
-    console.log("")
-    console.log("")
-
-    // Replace carrots for HTML in the front end
-    const unicodeEncodedSummaryString = replaceWithUnicode(summaryContents);
-
-    // Replace line endings with \n
-    const newLineNormalizedSummaryString = replaceLineEndingsWithSlashN(unicodeEncodedSummaryString);
-
-    // Replace double quotes for the command line command
-    const escapedSummaryString = escapeDoubleQuotes(newLineNormalizedSummaryString);
-
-
-    console.log("================")
-    console.log("==   OUTPUT   ==")
-    console.log("================")
-    console.log("")
-    console.log(escapedSummaryString);
-    console.log("")
-}

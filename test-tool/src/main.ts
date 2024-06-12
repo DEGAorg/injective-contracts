@@ -1,14 +1,24 @@
 #!/usr/bin/env node
 
-import {generate} from "./generate";
 import {getQueryCommand, query} from "./query";
-import {getTxCommand, tx} from "./tx";
-import {getToolsCommand, tools} from "./tools";
-import {contextSetShowHelpFlag, getAppContext} from "./context";
-import {Config} from "./config";
-import {toBase64} from "@injectivelabs/sdk-ts";
-import {handleError, ScriptError, UsageError} from "./error";
-import {setUsageCommand, setUsageSubCommand, showCommandHelp, showGeneralHelp, showSubCommandHelp} from "./help";
+import {getTxCommand} from "./tx";
+import {getToolsCommand} from "./tools";
+import {getAppContext} from "./context";
+import {handleError, UsageError} from "./error";
+import {
+    setUsageCommand,
+    setUsageSubCommand,
+    showCommandHelp,
+    showGeneralHelp,
+    showHelpHelp,
+    showSubCommandHelp
+} from "./help";
+
+let commandList: CommandInfo[] = [];
+
+export function getCommandInfo() {
+    return commandList;
+}
 
 export interface CommandInfo {
     name: string;
@@ -36,7 +46,7 @@ async function runMain() {
         process.removeAllListeners('warning');
     }
 
-    let commandList: CommandInfo[] = [];
+
     commandList.push(getQueryCommand());
     commandList.push(getTxCommand());
     commandList.push(getToolsCommand());
@@ -68,14 +78,16 @@ async function runMain() {
         }
     }
 
-    if (commandName) {
+    if (commandName === "help") {
+        showHelpHelp();
+    } else if (commandName) {
 
         let command = commandList.find((command) => {
             return command.name === commandName || command.aliases.includes(commandName);
         });
 
         if (command) {
-            setUsageCommand(commandName);
+            setUsageCommand(command.name);
             let subCommandName = args.shift();
             if (subCommandName) {
                 let subCommand =

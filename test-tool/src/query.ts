@@ -14,7 +14,7 @@ import {UsageError} from "./error";
 let queryCommand: CommandInfo = {
     name: "query",
     aliases: ["q"],
-    summary: "Query the contracts specified in the environment",
+    summary: "Query the contracts specified in the environment.",
     subCommands: []
 };
 
@@ -45,7 +45,7 @@ export async function query(args: string[]) {
 queryCommand.subCommands.push({
     name: "sig-info",
     additionalUsage: "",
-    summary: "Get info about signature and check it with the minter contract.",
+    summary: "Get detailed debugging info related to signatures.",
     run: querySigInfo
 });
 
@@ -129,6 +129,78 @@ async function querySigInfo(args: string[]) {
     console.log(checkSigQueryResponseObject);
 }
 
+queryCommand.subCommands.push({
+    name: "check-sig",
+    additionalUsage: "",
+    summary: "A test query to check the signature of a text or mint request message.",
+    run: queryCheckSig
+});
+
+export async function queryCheckSig(args: string[]) {
+
+    const context = await getAppContext();
+
+    let mintRequestMsg: MintRequest = {
+        to: context.primaryAddress,
+        primary_sale_recipient: context.primaryAddress,
+        uri: "https://www.domain.com",
+        price: "0",
+        currency: context.primaryAddress,
+        validity_start_timestamp: "0",
+        validity_end_timestamp: "0",
+        uuid: "00000000-0000-0000-0000-000000000000",
+        collection: context.cw721Address
+    };
+
+    let mintRequestBase64 = toBase64(mintRequestMsg);
+
+
+    let rawMessage = Buffer.from(mintRequestBase64, "base64");
+    let msgMd5Hash = Buffer.from(sha256(rawMessage))
+    //let uint8Array = new Uint8Array(buffer);
+
+
+    let signingKey = context.signerSigningKey
+    let signature = Buffer.from(secp256k1.ecdsaSign(msgMd5Hash, signingKey).signature)
+
+    let sigBase64 = signature.toString("base64");
+
+    console.log("Sig Length: " + sigBase64.length);
+
+    console.log("Tx: ");
+    console.log(mintRequestMsg);
+    console.log();
+    console.log("Signature: " + sigBase64);
+    console.log();
+    console.log("Address: " + context.signerAddress);
+    console.log();
+
+    let checkSigQuery: DegaMinterQueryMsg = {
+        check_sig: {
+            message: {
+                mint_request: mintRequestMsg
+                //string: rawTextMessage // Uncomment to test with a string instead of the mint request
+            },
+            signature: sigBase64,
+            //signer_source: SignerSourceTypeEnum.ConfigSignerPubKey
+            // Uncomment below to test validating with a local public key using on chain logic
+            signer_source: {
+                pub_key_binary: Buffer.from(context.signerCompressedPublicKey).toString("base64")
+            }
+        }
+    };
+
+    const checkSigQueryResponse = await context.queryWasmApi.fetchSmartContractState(
+        context.minterAddress,
+        toBase64(checkSigQuery) // as DegaMinterQueryMsg),
+    );
+
+    const checkSigQueryResponseObject: object = fromBase64(
+        Buffer.from(checkSigQueryResponse.data).toString("base64")
+    );
+
+    console.log(checkSigQueryResponseObject);
+}
 
 queryCommand.subCommands.push({
     name: "account-details",
