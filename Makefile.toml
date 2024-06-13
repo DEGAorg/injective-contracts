@@ -16,6 +16,12 @@ dependencies = [
 ]
 
 [tasks.unit-test]
+dependencies = [
+  "run-unit-test",
+  "unit-cov-text"
+]
+
+[tasks.run-unit-test]
 command = "cargo"
 args    = ["test", "--locked", "--lib", "-p", "dega-inj", "-p", "dega-cw721", "-p", "dega-minter"]
 
@@ -46,6 +52,28 @@ docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
   ${image}:0.15.1
+"""
+
+[tasks.tools]
+dependencies = [
+  "deploy-tool",
+  "test-tool"
+]
+
+[tasks.deploy-tool]
+script = """
+(cd deploy/tool && npx tsc)
+"""
+
+[tasks.test-tool]
+script = """
+(cd test-tool && npx tsc)
+"""
+
+[tasks.activate]
+script = """
+npm install -g ./deploy/tool
+npm install -g ./test-tool
 """
 
 [tasks.schema]

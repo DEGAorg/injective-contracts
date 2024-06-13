@@ -13,7 +13,8 @@ import {logResponse} from "./tx";
 import {UpdateCollectionInfoMsg} from "./messages/dega_cw721_execute";
 import {isLeft} from "fp-ts/Either";
 import {failure} from "io-ts/PathReporter";
-import {ScriptError} from "./error";
+import {ScriptError, UsageError} from "./error";
+import {SubCommandInfo} from "./main";
 
 const collectionInfoUpdateSpecDef = excess(t.type({
     description: t.union([t.string, t.undefined, t.null]),
@@ -31,6 +32,47 @@ const collectionInfoUpdateSpecDef = excess(t.type({
 type CollectionInfoUpdateSpec = t.TypeOf<typeof collectionInfoUpdateSpecDef>;
 
 
+export function collectTxAdminSubCommands(): SubCommandInfo[] {
+    let txAdminSubcommands: SubCommandInfo[] = [];
+
+    txAdminSubcommands.push({
+        name: "update-collection-info",
+        additionalUsage: "<info-spec-path> [--generate <sender-address>]",
+        summary: "Update the collection contract's info based on a spec JSON file, and optionally generate a tx.",
+        run: updateCollectionInfo
+    });
+
+    txAdminSubcommands.push({
+        name: "add-admin",
+        additionalUsage: "<new-admin-address> [--generate <sender-address>]",
+        summary: "Add a new admin to the minter and collection contracts, and optionally generate a tx.",
+        run: addAdmin
+    });
+
+    txAdminSubcommands.push({
+        name: "remove-admin",
+        additionalUsage: "<revoked-admin-address> [--generate <sender-address>]",
+        summary: "Revoke admin permission for an address on the minter and collection contracts, and optionally generate a tx.",
+        run: removeAdmin
+    });
+
+    txAdminSubcommands.push({
+        name: "set-mint-signer",
+        additionalUsage: "<new-signing-key> [--generate <sender-address>]",
+        summary: "Set a new public key as the mint signer in the minter contract, and optionally generate a tx.",
+        run: setMintSigner
+    });
+
+    txAdminSubcommands.push({
+        name: "pause",
+        additionalUsage: "<new-setting> [--generate <sender-address>]",
+        summary: "Pause or unpause minting in the contracts (true for pause, false for unpaused), and optionally generate a tx.",
+        run: pause
+    });
+
+    return txAdminSubcommands;
+}
+
 export async function updateCollectionInfo(args: string[]) {
 
     const context = await getAppContext();
@@ -39,7 +81,7 @@ export async function updateCollectionInfo(args: string[]) {
 
     const specPathArg = args.shift();
     if (!specPathArg) {
-        throw new ScriptError(`Missing deploy spec path argument`);
+        throw new UsageError(`Missing deploy spec path argument`);
     }
 
     const specPath = path.resolve(process.cwd(), specPathArg);
@@ -88,7 +130,7 @@ export async function addAdmin(args: string[]) {
 
     const newAdminAddress = args.shift();
     if (!newAdminAddress) {
-        throw new ScriptError(`Missing argument. ${usage}`);
+        throw new UsageError(`Missing argument.`);
     }
 
     const contractMsg: DegaMinterExecuteMsg = {
@@ -127,7 +169,7 @@ export async function removeAdmin(args: string[]) {
 
     const revokedAdminAddress = args.shift();
     if (!revokedAdminAddress) {
-        throw new ScriptError(`Missing argument. ${usage}`);
+        throw new UsageError(`Missing argument.`);
     }
 
     const contractMsg: DegaMinterExecuteMsg = {
@@ -165,7 +207,7 @@ export async function setMintSigner(args: string[]) {
 
     const newSigningKeyBase64 = args.shift();
     if (!newSigningKeyBase64) {
-        throw new ScriptError(`Missing argument. ${usage}`);
+        throw new UsageError(`Missing argument.`);
     }
 
     const contractMsg: DegaMinterExecuteMsg = {
@@ -204,11 +246,11 @@ export async function pause(args: string[]) {
 
     const onString = args.shift();
     if (!onString) {
-        throw new ScriptError(`Missing argument. ${usage}`);
+        throw new UsageError(`Missing argument.`);
     }
 
     if (onString != "true" && onString != "false") {
-        throw new ScriptError("Invalid on value. Must be either true or false");
+        throw new UsageError("Invalid new-setting value. Must be either true or false");
     }
 
     const newSetting: boolean = (onString == "true");
@@ -253,13 +295,13 @@ export function checkForGenerateArg(args: string[], usage: string) {
     }
 
     if (generateArg && generateArg !== "--generate") {
-        throw new ScriptError(`Invalid argument, only --generate followed by sender address accepted. ${usage}`);
+        throw new UsageError(`Invalid argument, only --generate followed by sender address accepted.`);
     }
 
     const senderAddress = args.shift();
 
     if (!senderAddress) {
-        throw new ScriptError(`Missing sender after --generate argument. ${usage}`);
+        throw new UsageError(`Missing sender after --generate argument.`);
     }
 
     const sampleInjAddress = "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6";

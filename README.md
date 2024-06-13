@@ -81,7 +81,7 @@ If you are working with multiple workspaces, please note that the dega-inj-test 
 linked to whichever workspace has most recently run the command `npm install -g .` in the workspace roots (./deploy/tool and
 ./test-tool respectively).
 
-A script called `./activate.sh` has been created to help with this. Run `./activate.sh` in the workspace you wish to
+The command `cargo make activate` has been added to help with this. Run `cargo make activate` in the workspace you wish to
 use to point the dega-inj-test and dega-inj-deploy commands there.
 
 In the future the commands could be adapted to run based on the workspace you are in.
@@ -103,6 +103,13 @@ This will build the smart contracts and output the optimized wasm files to the `
 If you wish to simply build but not produce the optimized wasm file artifacts, you can run `cargo make build-raw`
 
 See the (Cargo Makefile)[./Makefile.toml] in the root of the workspace for where these build commands are defined.
+
+Additionally, if you make changes to the deploy or test tools, you will need to recompile the typescript each time you make a change.
+
+This can be done either via the command `npx tsc` or `npm run tsc` in the respective tool's root directory.
+
+Alternatively and often more conveniently, you can run either `cargo make deploy-tool` or `cargo make test-tool` from the
+root of the workspace to build either tool. `cargo make tools` will build both tools.
 
 ## The Test Tool
 
@@ -209,7 +216,9 @@ testing of the interface of the contracts.
 
 ### Unit Test Rust Code Coverage
 
-To check rust code coverage at the command line run `cargo make unit-cov-text` or via a generated web report
+Unit test code coverage is shown in text at the end of the `cargo make unit-test` command.
+
+To check rust code coverage at the command line directly, run `cargo make unit-cov-text` or via a generated web report
 via `cargo make unit-cov-html-open`.
 
 If the open command does not work on your machine, you may need to manually navigate to the HTML file generated
@@ -218,6 +227,8 @@ by the open command and open it in your web browser manually.
 Once you have generated a web based report, you can update it by running `cargo make unit-cov-html-update`.
 
 ### Integration Test Interface Coverage
+
+Integration test coverage is shown at the end of the `cargo make int-test` command.
 
 The interface coverage checks against the full set of read-only query and writable transaction execute messages
 by checking the code coverage of the functions defined in the `./test-tool/src/helpers` directory, which wrap around

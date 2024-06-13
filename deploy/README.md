@@ -65,7 +65,7 @@ Each command has a different spec-file format, use the help command for each com
 dega-inj-deploy help <command>
 ```
 
-You can find examples of spec-files for each of the commands in the [./deploy/specs/examples](./deploy/specs/examples) directory.
+You can find examples of spec-files for each of the commands in the [./deploy/specs/versioned/examples](./specs/versioned/examples) directory.
 
 ### Common Properties
 

@@ -61,21 +61,52 @@ are making changes to the test tool, this command will not receive the changes u
 
 ## Important commands
 
-- `dega-inj-test generate` - Generates the typescript messages from the rust messages
-- `dega-inj-test sig-info` - Get the signature information for the provided signature mnemonic.
-Critically the "compressed pubkey (base64)" line is what is needed for the signer pubkey variable
-of the minter contract.
 - `dega-inj-test query <call>` - Call one of the query commands / tests from query.ts
-- `dega-inj-test tx <call>` - Call one of the transaction commands / tests from tx.ts
+- `dega-inj-test tx <call>` - Call one of the transaction commands / tests from tx.
+- `dega-inj-test tools` - Call one of various utility and test commands.
 - `dega-inj-test tx store` (or "tx s") - Store the codes for the minter and collection contracts
 - `dega-inj-test tx instantiate` (or "tx i") - Instantiate the minter and collection contracts
 - `dega-inj-test tx mint-combined` - Do a mint call to the minter contract with signature verification.
 `dega-inj-test tx mint-as-backend` and `dega-inj-test tx mint-as-user` for minting in the same fashion as the web backend and submitting
 the transaction in the same fashion as a user.
+- `dega-inj-test query sig-info` - Get the signature information for the provided signature mnemonic.
+  Critically the "compressed pubkey (base64)" line is what is needed for the signer pubkey variable
+  of the minter contract.ts
+- `dega-inj-test tools generate` - Generates the typescript messages from the rust messages
+
+### Generating transactions for admin commands
+
+The admin commands `tx update-collection-info`, `tx add-admin`, `tx remove-admin`, `tx set-mint-signer` and `tx pause`
+all allow for the passing of a `--generate` flag which can be used to generate a transaction json file based on the
+network and contract address settings. The `--generate` flag must be followed by a sender address indicating the account
+that will sign and broadcast the transaction, the secured key of which should not be in the local .env file in a
+production environment.
+
+### Update collection info spec file
+
+For ease, the Update Collection Info command provides a spec file format which can be used to tailor which settings should
+be changed in the transaction.
+
+An example spec file can be found at the following path: [./test-tool/data/example-update-collection-info.json](./data/example-update-collection-info.json)
+
+The four properties which can be changed are: description, external_link, image and royalty_settings.
+
+Omitting a property from the spec file will result in the property not being changed in the transaction.
+
+The royalty_settings property has the following format:
+```json
+{
+  "royalty_settings": {
+    "payment_address": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
+    "share": "0.025"
+  }
+}
+```
+Where 0.025 here represents a 2.5% royalty.
 
 ## Typescript Message Class Generation
 
-The `dega-inj test generate` contains functionality that looks at the JSON schema files inside of the schema
+The `dega-inj-test tools generate` command contains functionality that looks at the JSON schema files inside the schema
 directory of the DEGA minter and CW721 collection contracts, and generates typescript classes that allow for
 easier validated calls to the message classes.
 

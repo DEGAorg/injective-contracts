@@ -25,7 +25,7 @@ import {DegaMinterMigrateMsg} from "./messages/dega_minter_migrate";
 import {Convert, Cw721ReceiverTesterInnerMsg} from "./messages/cw721_receiver_tester_inner_msg";
 import {Cw721ReceiveMsg, Cw721ReceiverTesterExecuteMsg} from "./messages/cw721_receiver_tester_execute_msg";
 import {Expiration} from "./messages/dega_cw721_execute";
-import {addAdmin, pause, removeAdmin, setMintSigner, updateCollectionInfo} from "./tx-admin";
+import {addAdmin, collectTxAdminSubCommands, pause, removeAdmin, setMintSigner, updateCollectionInfo} from "./tx-admin";
 import {ScriptError, UsageError} from "./error";
 import {CommandInfo} from "./main";
 import {
@@ -488,7 +488,7 @@ async function sendToReceiver(args: string[]) {
     const shouldSucceedString = args[1];
 
     if (shouldSucceedString != "true" && shouldSucceedString != "false") {
-        throw new ScriptError("Invalid should-succeed value. Must be either true or false");
+        throw new UsageError("Invalid should-succeed value. Must be either true or false");
     }
 
     const shouldSucceed: boolean = (shouldSucceedString == "true");
@@ -555,7 +555,7 @@ async function callReceiveNftOnReceiver(args: string[]) {
     const shouldSucceedString = args[1];
 
     if (shouldSucceedString != "true" && shouldSucceedString != "false") {
-        throw new ScriptError("Invalid should-succeed value. Must be either true or false");
+        throw new UsageError("Invalid should-succeed value. Must be either true or false");
     }
 
     const shouldSucceed: boolean = (shouldSucceedString == "true");
@@ -713,7 +713,7 @@ async function refillLocal(args: string[]) {
 txCommand.subCommands.push({
     name: "instantiate",
     additionalUsage: "[receiver]",
-    summary: "Instantiate the contracts with code-id's in the environment. Add 'receiver' to instantiate the receiver contract.",
+    summary: "Instantiate the contracts with code-id's in the environment. Add the arg 'receiver' to instantiate the receiver contract.",
     run: instantiate
 });
 async function instantiate(args: string[]) {
@@ -882,7 +882,9 @@ export async function instantiateReceiver(shouldLogResponse: boolean): Promise<[
 
     if (shouldLogResponse) {
         logResponse(response);
-        console.log("Contract address: " + address);
+        console.log("");
+        console.log("Receiver address: " + address);
+        console.log("");
     }
 
     return [response, address];
@@ -936,24 +938,39 @@ txCommand.subCommands.push({
 });
 async function store(args: string[]) {
 
+    let minter_id;
+    let collection_id;
+    let receiver_id;
+
     if (args.length < 1) {
-        await store_wasm("dega_minter.wasm")
-        await store_wasm("dega_cw721.wasm")
+        minter_id = await store_wasm("dega_minter.wasm")
+        collection_id = await store_wasm("dega_cw721.wasm")
     } else if (args.length == 2 && args[0] == "-c") {
         if (args[1] == "minter") {
-            await store_wasm("dega_minter.wasm")
+            minter_id = await store_wasm("dega_minter.wasm")
         } else if (args[1] == "collection") {
-            await store_wasm("dega_cw721.wasm")
+            collection_id = await store_wasm("dega_cw721.wasm")
         } else if (args[1] == "receiver") {
             fs.copyFileSync(path.resolve(__dirname, "../data/cw721_receiver_tester.wasm"),
                 path.resolve(__dirname, "../../artifacts/cw721_receiver_tester.wasm"));
-            await store_wasm("cw721_receiver_tester.wasm")
+            receiver_id = await store_wasm("cw721_receiver_tester.wasm")
         } else {
-            throw new ScriptError("Unknown wasm contract: " + args[1]);
+            throw new UsageError("Unknown wasm contract: " + args[1]);
         }
     } else {
-        throw new ScriptError("Bad arguments");
+        throw new UsageError("Bad arguments");
     }
+
+    if (minter_id) {
+        console.log("Minter Code ID: " + minter_id);
+    }
+    if (collection_id) {
+        console.log("Collection Code ID: " + collection_id);
+    }
+    if (receiver_id) {
+        console.log("Receiver Code ID: " + receiver_id);
+    }
+    console.log("");
 }
 
 export async function store_wasm(wasm_name: string): Promise<number> {
@@ -1113,7 +1130,7 @@ function getExpirationEpochInNanos(amount: string, units: string) {
             expirationSpanInSeconds = parseFloat(amount) * 60;
             break;
         default:
-            throw new ScriptError("Invalid time unit. Must be either day(s), hour(s), or minute(s)");
+            throw new UsageError("Invalid time unit. Must be either day(s), hour(s), or minute(s)");
     }
 
     let epochInMs = new BigNumberInBase(Math.round(Date.now()));
@@ -1371,7 +1388,7 @@ async function migrateContract(
 
 txCommand.subCommands.push({
     name: "gov-proposal",
-    additionalUsage: "",
+    additionalUsage: "<simulate|broadcast>",
     summary: "Test for generating a governance proposal transaction.",
     run: govProposal
 });
@@ -1380,7 +1397,7 @@ async function govProposal(
 ) {
 
     if (args.length < 1) {
-        throw new ScriptError("Missing argument. Usage: tx gov-proposal <simulate|broadcast>");
+        throw new UsageError("Missing argument.");
     }
 
     const context = await getAppContext();
@@ -1388,7 +1405,7 @@ async function govProposal(
     const dryRunString = args[0];
 
     if (dryRunString != "simulate" && dryRunString != "broadcast") {
-        throw new ScriptError("Invalid on value. Must be either simulate or broadcast");
+        throw new UsageError("Invalid on value. Must be either simulate or broadcast");
     }
 
     {
@@ -1527,3 +1544,4 @@ async function govProposalStoreCode(
 }
 
 
+txCommand.subCommands.push(...collectTxAdminSubCommands());
