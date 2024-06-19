@@ -2,6 +2,10 @@
 
 This repository contains the smart contracts for the DEGA platform on Injective.
 
+## Smart Contracts Location
+- [dega-cw721](https://github.com/DEGAorg/injective-contracts/blob/main/contracts/dega-cw721/src/entry.rs)
+- [dega-minter](https://github.com/DEGAorg/injective-contracts/blob/main/contracts/dega-minter/src/entry.rs)
+
 ## Workspace Setup
 
 ### Pre-requisite Requirements
