@@ -105,7 +105,7 @@ async function initTestContext(): Promise<TestContext> {
     let testCw721WasmChecksum;
     let testReceiverTesterWasmChecksum;
 
-    const checksumsTxtPath = path.resolve(__dirname, "..", "..", "..", "artifacts-optimized", "checksums.txt")
+    const checksumsTxtPath = path.resolve(__dirname, "..", "..", "..", "artifacts", "checksums.txt")
 
     if (inDeployment()) {
 
@@ -146,7 +146,7 @@ async function initTestContext(): Promise<TestContext> {
             }
         }
     } else {
-        throw new Error("artifacts-optimized/checksums.txt not found");
+        throw new Error("artifacts/checksums.txt not found");
     }
 
     if (testMinterWasmChecksum == undefined || testCw721WasmChecksum == undefined) {

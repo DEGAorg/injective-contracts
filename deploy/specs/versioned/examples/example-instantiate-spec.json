@@ -1,0 +1,23 @@
+{
+  "note": "Instantiating a contract",
+  "network": "Testnet",
+  "deployAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
+  "minterCodeId": 9450,
+  "minterMigratable": true,
+  "minterMigrateAdmin": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
+  "minterSignerPubKeyBase64": "A5GbXH0IYxWxWgIWLA788RUgMNOThvGWSezNdYmPRWQt",
+  "minterMintingPaused": false,
+  "minterInitialAdmin": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
+  "minterContractLabel": "Example NFT - Minter",
+  "collectionCodeId": 9451,
+  "collectionMigratable": true,
+  "collectionMigrateAdmin": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
+  "collectionContractLabel": "Example NFT - Collection",
+  "collectionName": "Example Collection",
+  "collectionSymbol": "EXAMPLE",
+  "collectionDescription": "This is an example collection",
+  "collectionImageURL": "https://example.com/image.jpg",
+  "collectionExternalLinkURL": "https://example.com/",
+  "collectionSecondaryRoyaltyPaymentAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
+  "collectionSecondaryRoyaltyShare": "0.05"
+}

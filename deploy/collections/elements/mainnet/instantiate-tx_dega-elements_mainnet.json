@@ -1,0 +1,59 @@
+{
+  "body": {
+    "messages": [
+      {
+        "@type": "/cosmwasm.wasm.v1.MsgInstantiateContract",
+        "sender": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
+        "admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00",
+        "code_id": "974",
+        "label": "DEGA Elements - Minter",
+        "msg": {
+          "collection_params": {
+            "code_id": 973,
+            "name": "DEGA Elements",
+            "symbol": "ELEMENTS",
+            "info": {
+              "description": "The collection of DEGA Elements items that provide in-game power ups across the DEGA Ecosystem.",
+              "image": "ipfs://bafybeieftd6nmpptacovvgktlmwmzjitd7jn5usgkwjxf4v7sismhq5o2y/elements.jpg",
+              "external_link": "https://www.dega.org/",
+              "royalty_settings": {
+                "payment_address": "inj1san33zpsefrzlq3cykcatn82x74eplj764q4sr",
+                "share": "0.05"
+              }
+            }
+          },
+          "minter_params": {
+            "dega_minter_settings": {
+              "signer_pub_key": "A6aom+xMPFjOrP0kq27udDfIl0Te9aar6qGxrf+GqlfH",
+              "minting_paused": false
+            },
+            "initial_admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00"
+          },
+          "cw721_contract_label": "DEGA Elements - Collection",
+          "cw721_contract_admin": "inj1sz34sp0qv6dhr6djguzdwtds4ma2flweykhm00"
+        },
+        "funds": []
+      }
+    ],
+    "memo": "",
+    "timeout_height": "0",
+    "extension_options": [],
+    "non_critical_extension_options": []
+  },
+  "auth_info": {
+    "signer_infos": [],
+    "fee": {
+      "amount": [
+        {
+          "denom": "inj",
+          "amount": "240804500000000"
+        }
+      ],
+      "gas_limit": "481609",
+      "payer": "",
+      "granter": ""
+    },
+    "tip": null
+  },
+  "signatures": []
+}

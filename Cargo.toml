@@ -3,8 +3,6 @@ members = [
     "packages/dega-inj",
     "contracts/dega-cw721",
     "contracts/dega-minter",
-    "packages/wasm-deploy",
-    "cli",
 ]
 resolver = "2"
 
@@ -48,7 +46,6 @@ hex                     = { version = "0.4.3" }
 dega-inj                = { version = "1.0.0", path = "packages/dega-inj" }
 dega-cw721              = { version = "1.0.0", path = "contracts/dega-cw721" }
 dega-minter             = { version = "1.0.0", path = "contracts/dega-minter" }
-dega-inj-cli            = { version = "1.0.0", path = "cli" }
 
 # Dev packages
 coverage-helper         = { version = "0.2.2" }
@@ -65,11 +62,3 @@ panic = 'abort'
 incremental = true
 overflow-checks = true
 strip = true
-
-
-[profile.release.package.dega-inj-cli]
-opt-level = 3
-debug = true
-codegen-units       = 256
-incremental         = true
-strip = false

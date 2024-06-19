@@ -1,0 +1,7 @@
+{
+  "image": "https://www.example.com/image.png",
+  "royalty_settings": {
+    "payment_address": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
+    "share": "0.025"
+  }
+}

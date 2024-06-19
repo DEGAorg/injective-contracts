@@ -13,6 +13,7 @@ import {ChainId} from "@injectivelabs/ts-types";
 import secp256k1 from "secp256k1"
 import {getTestContext} from "./tests/testContext";
 import {ChainGrpcTendermintApi} from "@injectivelabs/sdk-ts/dist/cjs/client/chain/grpc/ChainGrpcTendermintApi";
+import {ScriptError} from "./error";
 
 export interface AppContext {
     primaryPrivateKey: PrivateKey;
@@ -40,6 +41,9 @@ export interface AppContext {
     minterAddress: string;
     cw721Address: string;
     receiverContractAddress: string | undefined;
+    cliNode: string;
+    chainId: string;
+    showHelp: boolean;
 }
 
 // Run before each integration test
@@ -50,7 +54,7 @@ async function initAppContext(): Promise<AppContext> {
     const config = reloadConfig();
 
     if (config.PRIVATE_KEY_MNEMONIC == "" && !isJestRunning()) {
-        throw new Error("PRIVATE_KEY_MNEMONIC is required");
+        throw new ScriptError("PRIVATE_KEY_MNEMONIC is required");
     }
 
     // Primary User
@@ -63,7 +67,7 @@ async function initAppContext(): Promise<AppContext> {
 
     // Signer Account
     if (config.SIGNER_KEY_MNEMONIC == "" && !isJestRunning()) {
-        throw new Error("SIGNER_KEY_MNEMONIC is required");
+        throw new ScriptError("SIGNER_KEY_MNEMONIC is required");
     }
 
     const signerPrivateKey =
@@ -74,7 +78,7 @@ async function initAppContext(): Promise<AppContext> {
     const signerSigningKey = Buffer.from(signerPrivateKey.toPrivateKeyHex().slice(2), "hex");
 
     if (!secp256k1.privateKeyVerify(signerSigningKey)) {
-        throw new Error("Invalid signer private key");
+        throw new ScriptError("Invalid signer private key");
     }
 
     const signerCompressedPublicKey = Buffer.from(secp256k1.publicKeyCreate(signerSigningKey, true))
@@ -93,16 +97,24 @@ async function initAppContext(): Promise<AppContext> {
             undefined;
 
     let network;
+    let cliNode;
+    let chainId;
 
     switch (config.NETWORK) {
         case "Local":
             network = Network.Local;
+            cliNode = "http://localhost:26657";
+            chainId = ChainId.Mainnet;
             break;
         case "Testnet":
             network = Network.Testnet;
+            cliNode = "https://testnet.sentry.tm.injective.network:443";
+            chainId = ChainId.Testnet;
             break;
         case "Mainnet":
             network = Network.Mainnet;
+            cliNode = "https://sentry.tm.injective.network:443";
+            chainId = "injective-1";
             break;
     }
 
@@ -165,7 +177,7 @@ async function initAppContext(): Promise<AppContext> {
 
         if (config.TEST_MINTER_CODE_ID == undefined || config.TEST_CW721_CODE_ID == undefined || config.TEST_RECEIVER_CODE_ID == undefined ||
             config.TEST_MINTER_ADDRESS == undefined || config.TEST_CW721_ADDRESS == undefined || config.TEST_RECEIVER_ADDRESS == undefined) {
-            throw new Error("TEST_MINTER_CODE_ID, TEST_CW721_CODE_ID, TEST_RECEIVER_CODE_ID, TEST_MINTER_ADDRESS, TEST_CW721_ADDRESS, " +
+            throw new ScriptError("TEST_MINTER_CODE_ID, TEST_CW721_CODE_ID, TEST_RECEIVER_CODE_ID, TEST_MINTER_ADDRESS, TEST_CW721_ADDRESS, " +
                 "and TEST_RECEIVER_ADDRESS must be defined for Jest environment");
         }
         minterCodeId = parseInt(config.TEST_MINTER_CODE_ID);
@@ -180,7 +192,7 @@ async function initAppContext(): Promise<AppContext> {
             case "Local":
                 if (process.env.MINTER_CODE_ID_LOCAL == undefined || process.env.CW721_CODE_ID_LOCAL == undefined ||
                     process.env.MINTER_ADDRESS_LOCAL == undefined || process.env.CW721_ADDRESS_LOCAL == undefined) {
-                    throw new Error("MINTER_CODE_ID_LOCAL, CW721_CODE_ID_LOCAL, MINTER_ADDRESS_LOCAL, and " +
+                    throw new ScriptError("MINTER_CODE_ID_LOCAL, CW721_CODE_ID_LOCAL, MINTER_ADDRESS_LOCAL, and " +
                         "CW721_ADDRESS_LOCAL must be defined for Local environment");
                 }
                 minterCodeId = parseInt(process.env.MINTER_CODE_ID_LOCAL);
@@ -193,7 +205,7 @@ async function initAppContext(): Promise<AppContext> {
             case "Testnet":
                 if (process.env.MINTER_CODE_ID_TESTNET == undefined || process.env.CW721_CODE_ID_TESTNET == undefined ||
                     process.env.MINTER_ADDRESS_TESTNET == undefined || process.env.CW721_ADDRESS_TESTNET == undefined) {
-                    throw new Error("MINTER_CODE_ID_TESTNET, CW721_CODE_ID_TESTNET, MINTER_ADDRESS_TESTNET, and " +
+                    throw new ScriptError("MINTER_CODE_ID_TESTNET, CW721_CODE_ID_TESTNET, MINTER_ADDRESS_TESTNET, and " +
                         "CW721_ADDRESS_TESTNET must be defined for Testnet environment");
                 }
                 minterCodeId = parseInt(process.env.MINTER_CODE_ID_TESTNET);
@@ -206,7 +218,7 @@ async function initAppContext(): Promise<AppContext> {
             case "Mainnet":
                 if (process.env.MINTER_CODE_ID_MAINNET == undefined || process.env.CW721_CODE_ID_MAINNET == undefined ||
                     process.env.MINTER_ADDRESS_MAINNET == undefined || process.env.CW721_ADDRESS_MAINNET == undefined) {
-                    throw new Error("MINTER_CODE_ID_MAINNET, CW721_CODE_ID_MAINNET, MINTER_ADDRESS_MAINNET, and " +
+                    throw new ScriptError("MINTER_CODE_ID_MAINNET, CW721_CODE_ID_MAINNET, MINTER_ADDRESS_MAINNET, and " +
                         "CW721_ADDRESS_MAINNET must be defined for Mainnet environment");
                 }
                 minterCodeId = parseInt(process.env.MINTER_CODE_ID_MAINNET);
@@ -245,6 +257,9 @@ async function initAppContext(): Promise<AppContext> {
         minterAddress: minterAddress,
         cw721Address: cw721Address,
         receiverContractAddress: receiverContractAddress,
+        cliNode: cliNode,
+        chainId: chainId,
+        showHelp: false,
     }
 }
 
@@ -265,7 +280,7 @@ export function contextSetCodeIds(minterCodeId: number, cw721CodeId: number, rec
         context.cw721CodeId = cw721CodeId;
         context.receiverCodeId = receiverCodeId;
     } else {
-        throw new Error("Cannot set code ids without initializing context first");
+        throw new ScriptError("Cannot set code ids without initializing context first");
     }
 }
 
@@ -275,6 +290,14 @@ export function contextSetContractAddresses(minterAddress: string, cw721Address:
         context.cw721Address = cw721Address;
         context.receiverContractAddress = receiverContractAddress;
     } else {
-        throw new Error("Cannot set contract addresses without initializing context first");
+        throw new ScriptError("Cannot set contract addresses without initializing context first");
+    }
+}
+
+export function contextSetShowHelpFlag() {
+    if (context) {
+        context.showHelp = true;
+    } else {
+        throw new ScriptError("Cannot set show help indicator without initializing context first");
     }
 }

@@ -28,7 +28,7 @@ where
     K: DeserializeOwned + PrimaryKey<'a> + Clone,
     T: DeserializeOwned + Serialize,
 {
-    #[cfg(feature = "test-mode")]
+    #[cfg(any(feature = "test-mode", test))]
     {
         let namespace = map.namespace();
         crate::test_helpers::check_for_save_error::<K>(namespace)?
@@ -41,7 +41,7 @@ pub fn load_item_wrapped<T>(store: &dyn Storage, item: &Item<T>) -> StdResult<T>
 where
     T: Serialize + DeserializeOwned,
 {
-    #[cfg(feature = "test-mode")]
+    #[cfg(any(feature = "test-mode", test))]
     {
         let key_slice = item.as_slice();
         crate::test_helpers::check_for_load_error::<T>(key_slice)?
@@ -62,7 +62,7 @@ pub fn map_keys_wrapped<'a, 'c, K, T>(
         K: PrimaryKey<'a> + KeyDeserialize,
         K::Output: 'static,
 {
-    #[cfg(feature = "test-mode")]
+    #[cfg(any(feature = "test-mode", test))]
     {
         let namespace = map.namespace();
         if let Err(e) = crate::test_helpers::check_for_load_error::<T>(namespace) {
@@ -82,7 +82,7 @@ where
     U: Into<String>,
 {
 
-    #[cfg(feature = "test-mode")]
+    #[cfg(any(feature = "test-mode", test))]
     {
         if crate::test_helpers::SET_CONTRACT_VERSION_ERROR.get() {
             return Err(cosmwasm_std::StdError::generic_err("Mock set contract version error"))
@@ -98,7 +98,7 @@ pub fn to_json_binary_wrapped<T>(data: &T) -> StdResult<Binary>
 {
     let binary_result = to_json_binary(data);
 
-    #[cfg(feature = "test-mode")]
+    #[cfg(any(feature = "test-mode", test))]
     {
         let binary = binary_result.as_ref().unwrap();
         let maybe_error_bytes = crate::test_helpers::BINARY_FOR_JSON_ERROR

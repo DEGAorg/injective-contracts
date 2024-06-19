@@ -6,5 +6,5 @@ pub mod minter;
 pub mod cw721;
 pub mod helpers;
 
-#[cfg(feature = "test-mode")]
+#[cfg(any(feature = "test-mode", test))]
 pub mod test_helpers;

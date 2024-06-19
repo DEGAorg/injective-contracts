@@ -2,7 +2,6 @@ import { DegaMinterExecuteMsg } from "../messages";
 import { MsgExecuteContractCompat} from "@injectivelabs/sdk-ts";
 import { AppContext, getAppContext } from "../context";
 import { TestContext, getTestContext } from "./testContext";
-import { info } from "../query";
 import { compareWasmError, createBasicTx, createExecuteMintMessage, sanitizedMaxNumber, sleep } from "../helpers/minter";
 import Fuzz from "jest-fuzz";
 import * as dotenv from "dotenv";
@@ -149,10 +148,6 @@ describe('Dega Minter Negative confirmations', () => {
 
     // Execute Mint
     const execMsg = createExecuteMintMessage(appContext, mintRequestMsg, signature, appContext.primaryAddress);
-
-    await info([]);
-
-    console.log(`Minter Address: `, appContext.minterAddress);
 
     let wasmErrorComparison = false;
     // catch the error

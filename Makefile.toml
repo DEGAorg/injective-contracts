@@ -16,8 +16,14 @@ dependencies = [
 ]
 
 [tasks.unit-test]
+dependencies = [
+  "run-unit-test",
+  "unit-cov-text"
+]
+
+[tasks.run-unit-test]
 command = "cargo"
-args    = ["test", "--locked", "-p", "dega-inj", "-p", "dega-cw721", "-p", "dega-minter"]
+args    = ["test", "--locked", "--lib", "-p", "dega-inj", "-p", "dega-cw721", "-p", "dega-minter"]
 
 [tasks.int-test]
 script = """
@@ -36,10 +42,6 @@ args    = ["build", "--release", "--locked", "--target", "wasm32-unknown-unknown
 [tasks.build]
 # https://hub.docker.com/r/cosmwasm/workspace-optimizer/tags https://hub.docker.com/r/cosmwasm/workspace-optimizer-arm64/tags
 script = """
-if [[ -d "artifacts" ]]; then
-  rm artifacts/*
-fi
-
 if [[ $(arch) == "arm64" ]]; then
   image="cosmwasm/workspace-optimizer-arm64"
 else
@@ -50,15 +52,28 @@ docker run --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
   ${image}:0.15.1
+"""
 
-if [[ -d "artifacts-optimized" ]]; then
-  rm -rf artifacts-optimized/*
-fi
+[tasks.tools]
+dependencies = [
+  "deploy-tool",
+  "test-tool"
+]
 
-mkdir -p artifacts-optimized
+[tasks.deploy-tool]
+script = """
+(cd deploy/tool && npx tsc)
+"""
 
-mv artifacts/* artifacts-optimized/
-rmdir artifacts
+[tasks.test-tool]
+script = """
+(cd test-tool && npx tsc)
+"""
+
+[tasks.activate]
+script = """
+npm install -g ./deploy/tool
+npm install -g ./test-tool
 """
 
 [tasks.schema]

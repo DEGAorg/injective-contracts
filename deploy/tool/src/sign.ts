@@ -1,187 +1,161 @@
-import fs from "fs";
-import util from "util";
-import path from "node:path";
+import excess from "io-ts-excess";
 import * as t from "io-ts";
-import {isLeft} from "fp-ts/Either";
-import {Network} from "@injectivelabs/networks";
-import {ChainId} from "@injectivelabs/ts-types";
-import { execSync } from 'child_process';
+import {createTxContext, InjectiveTx, TxContext} from "./transaction";
+import {execSync} from "child_process";
+import path from "node:path";
+import fs from "fs";
+import {
+    getFilePathFromSpecFile,
+    pathsDeployArtifacts,
+} from "./context";
+import {DeployError} from "./error";
+import {CommandInfo} from "./main";
+import {govProp} from "./gov-prop";
+import {makeSpecHelp} from "./help";
 
 
-
-const pathDeploy = path.resolve(__dirname, "..", "..");
-const pathArtifacts = path.join(pathDeploy, "artifacts");
-
-const signingInfoSpec = t.type({
-    txJsonFilePath: t.string,
-    signerKeyName: t.string,
+const signSpecDef = excess(t.type({
     network: t.keyof({
         Local: null,
         Testnet: null,
         Mainnet: null
     }),
+    node: t.union([t.string, t.undefined, t.null]),
+
+
+    txJsonFilePath: t.union([t.string, t.undefined, t.null]),
+    signerKeyName: t.string,
     offline: t.boolean,
     accountNumber: t.union([t.number, t.undefined, t.null]),
     sequenceNumber: t.union([t.number, t.undefined, t.null]),
-});
-
-type SigningInfoSpec = t.TypeOf<typeof signingInfoSpec>;
 
 
-main()
+    note: t.union([t.string, t.undefined, t.null]),
+}, "SignSpec"));
 
-function main() {
 
-    (async () => {
+type SignSpec = t.TypeOf<typeof signSpecDef>;
+interface SignContext extends TxContext<SignSpec> {}
 
-        try {
-            await runMain()
-        } catch (e) {
 
-            console.error("Error while deploying: ")
-            console.error(e)
 
-            process.exit(1)
-        }
-
-    })()
+const signCommand: CommandInfo = {
+    name: "sign",
+    summary: "Sign an existing transaction JSON file, either provided as an argument or in the spec file.",
+    additionalUsage: "[<tx-json-file-path>]",
+    run: sign,
+    specHelp: makeSpecHelp(signSpecDef),
 }
 
-
-function loadSigningInfoSpec(specPath: string) {
-
-    const fileContents = fs.readFileSync(specPath, 'utf-8')
-    const jsonData = JSON.parse(fileContents)
-    return signingInfoSpec.decode(jsonData)
+export function getSignCommand(): CommandInfo {
+    return signCommand;
 }
 
-async function runMain() {
+export async function sign(specPath: string, remainingArgs: string[]) {
 
-    let args = new Array<string>()
+    console.log("Creating signing transaction...");
+    console.log("");
 
-    // Find the index of the argument containing the filename
-    let filenameIndex = process.argv.findIndex(arg => arg.includes('sign.js'))
-    if (filenameIndex !== -1) {
-        // Get all the remaining arguments after the filename
+    let context: SignContext = createTxContext(specPath, signSpecDef, "signed");
 
-        args = process.argv.slice(filenameIndex + 1)
-
-    } else {
-        throw new Error("Missing script name argument")
-    }
-
-    if (args.length !== 1) {
-        throw new Error("Missing signing info spec path argument")
-    }
-
-    const signingInfoSpecRelativePath = args[0]
-    const signingInfoSpecPath = path.join(pathDeploy, signingInfoSpecRelativePath);
-
-    console.log('Signing info spec path: ' + signingInfoSpecPath);
-
-    let signingInfoSpecResult = loadSigningInfoSpec(signingInfoSpecPath)
-
-    if (isLeft(signingInfoSpecResult)) {
-        throw new Error('Invalid data:' + signingInfoSpecResult.left)
-    }
-
-    const signingInfoSpec: SigningInfoSpec = signingInfoSpecResult.right
-    console.log('Loaded deploy spec:')
-    console.log(signingInfoSpec)
-
-    let network: Network;
-    let chainId: ChainId;
-    let endpoint: string;
-
-    if (signingInfoSpec.network === "Local") {
-        network = Network.Local;
-        chainId = ChainId.Mainnet; // Local uses the mainnet chainId
-        endpoint = "http://localhost:26657";
-    } else if (signingInfoSpec.network === "Testnet") {
-        network = Network.Testnet
-        chainId = ChainId.Testnet;
-        endpoint = "https://testnet.sentry.tm.injective.network:443";
-    } else if (signingInfoSpec.network === "Mainnet") {
-        network = Network.Mainnet
-        chainId = ChainId.Mainnet;
-        endpoint = "https://sentry.tm.injective.network:443";
-    } else {
-        throw new Error("Invalid network")
-    }
 
     const INJECTIVED_PASSWORD = process.env.INJECTIVED_PASSWORD;
 
     if (!INJECTIVED_PASSWORD) {
-        throw new Error("Missing INJECTIVED_PASSWORD environment variable")
+        throw new DeployError("InputError", "Missing INJECTIVED_PASSWORD environment variable")
     }
 
-    const txJsonRelativeFilePath = signingInfoSpec.txJsonFilePath;
-    const txJsonFilePath = path.join(pathDeploy, txJsonRelativeFilePath);
+    let txJsonFilePath;
 
-    if (!fs.existsSync(txJsonFilePath)) {
-        throw new Error(`Tx JSON file does not exist: ${txJsonFilePath}`);
+    if (context.spec.txJsonFilePath) {
+        txJsonFilePath = getFilePathFromSpecFile(context.spec.txJsonFilePath);
+    } else {
+        const txJsonArgFilePathArg = remainingArgs.shift();
+        if (!txJsonArgFilePathArg) {
+            throw new DeployError("UsageError", `Must specify tx JSON file path argument if not provided in the spec file`)
+        } else if (remainingArgs.length) {
+            throw new DeployError("UsageError", `Too many arguments`)
+        }
+
+        txJsonFilePath = path.resolve(process.cwd(), txJsonArgFilePathArg);
+
+        if (!fs.existsSync(txJsonFilePath)) {
+            throw new DeployError("UsageError", `Tx JSON file specified at the command line does not exist: ${txJsonFilePath}`);
+        }
     }
+
+    console.log('Transaction to sign path: ' + specPath);
+
+    const getKeyCommand = `echo ${INJECTIVED_PASSWORD} | injectived keys show ${context.spec.signerKeyName} -a`
+
+    const signerAddress = execSync(getKeyCommand, { encoding: 'utf-8' });
+    console.log("Signer Address: " + signerAddress);
 
     const unsignedTxJsonObj = JSON.parse(fs.readFileSync(txJsonFilePath, 'utf-8'));
 
     if (!unsignedTxJsonObj["body"] ||
         !unsignedTxJsonObj["body"]["messages"] ||
-        !unsignedTxJsonObj["body"]["messages"].length ||
-        !unsignedTxJsonObj["body"]["messages"][0]["proposer"]) {
-        throw new Error("Invalid governance proposal transaction JSON file")
+        !unsignedTxJsonObj["body"]["messages"].length) {
+        throw new DeployError("InputError", "Invalid transaction JSON file, no messages found.")
     }
 
-    const proposerAddress = unsignedTxJsonObj["body"]["messages"][0]["proposer"];
+    if (unsignedTxJsonObj.body.messages[0]["@type"] === "/cosmos.gov.v1.MsgSubmitProposal") {
+        if (!unsignedTxJsonObj["body"] ||
+            !unsignedTxJsonObj["body"]["messages"] ||
+            !unsignedTxJsonObj["body"]["messages"].length ||
+            !unsignedTxJsonObj["body"]["messages"][0]["proposer"]) {
+            throw new DeployError("InputError", "Invalid governance proposal transaction JSON file, proposer missing.")
+        }
 
-    console.log("Proposer address from Submit Proposal Tx: " + proposerAddress);
+        const proposerAddress = unsignedTxJsonObj["body"]["messages"][0]["proposer"];
 
-    const getKeyCommand = `echo ${INJECTIVED_PASSWORD} | injectived keys show ${signingInfoSpec.signerKeyName} -a`
+        console.log("Proposer address from Submit Proposal Tx: " + proposerAddress);
 
-    const signerAddress = execSync(getKeyCommand, { encoding: 'utf-8' });
-    console.log("Signer Address: " + signerAddress);
-
-    if (signerAddress.trim() !== proposerAddress) {
-        throw new Error("Signer address does not match the proposer address in the tx JSON file")
+        if (signerAddress.trim() !== proposerAddress) {
+            throw new DeployError("InputError", "Signer address does not match the proposer address in the tx JSON file.")
+        }
     }
 
-    if (signingInfoSpec.offline &&
-        (!signingInfoSpec.accountNumber || !signingInfoSpec.sequenceNumber)) {
-        throw new Error("Missing account number or sequence number for offline signing")
-    }
+    let baseTxArgs = [];
+    baseTxArgs.push(`injectived`);
+    baseTxArgs.push(`tx`);
+    baseTxArgs.push(`sign`);
+    baseTxArgs.push(`${txJsonFilePath}`);
+    baseTxArgs.push(`--chain-id="${context.chainId}"`);
+    baseTxArgs.push(`--from=${context.spec.signerKeyName}`);
 
-    let txArgs = [];
-    txArgs.push(`echo`);
-    txArgs.push(`${INJECTIVED_PASSWORD}`);
-    txArgs.push(`|`);
-    txArgs.push(`injectived`);
-    txArgs.push(`tx`);
-    txArgs.push(`sign`);
-    txArgs.push(`${txJsonFilePath}`);
-    txArgs.push(`--chain-id="${chainId}"`);
-    txArgs.push(`--from=${signingInfoSpec.signerKeyName}`);
-
-    if (signingInfoSpec.offline) {
-        txArgs.push(`--offline`);
-        txArgs.push(`--account-number=${signingInfoSpec.accountNumber}`);
-        txArgs.push(`--sequence=${signingInfoSpec.sequenceNumber}`);
+    if (context.spec.offline) {
+        if (!context.spec.accountNumber || !context.spec.sequenceNumber) {
+            throw new DeployError("InputError", "Missing account number or sequence number for offline signing")
+        }
+        baseTxArgs.push(`--offline`);
+        baseTxArgs.push(`--account-number=${context.spec.accountNumber}`);
+        baseTxArgs.push(`--sequence=${context.spec.sequenceNumber}`);
     } else {
-        txArgs.push(`--node=${endpoint}`);
-    }
+        if (!context.node) {
+            throw new DeployError("ScriptError", "Node URL is undefined in the context")
+        }
 
-    //txArgs.push(`--gas=auto`);
-    //txArgs.push(`--gas-adjustment=1.5`);
+        baseTxArgs.push(`--node=${context.node}`);
+    }
 
     console.log("CLI Command:");
-    console.log(txArgs.join(` `));
+    console.log(baseTxArgs.join(` `));
 
-    const rawSignedTxString = execSync(txArgs.join(` `), { encoding: 'utf-8' });
+    let fullTxArgs = [];
+    fullTxArgs.push("echo");
+    fullTxArgs.push(`${INJECTIVED_PASSWORD}`);
+    fullTxArgs.push(`|`);
+    fullTxArgs = fullTxArgs.concat(baseTxArgs);
+
+    const rawSignedTxString = execSync(fullTxArgs.join(` `), { encoding: 'utf-8' });
 
     console.log("Signed Tx:");
     console.log(rawSignedTxString);
     console.log("");
 
     let signedTxJsonFileName = "signed-" + path.basename(txJsonFilePath);
-    const signedTxJsonFilePath = path.join(pathArtifacts, signedTxJsonFileName);
+    const signedTxJsonFilePath = path.join(pathsDeployArtifacts, signedTxJsonFileName);
 
     console.log("Writing signed tx to: ");
     console.log(signedTxJsonFilePath);
@@ -191,25 +165,4 @@ async function runMain() {
 
     fs.writeFileSync(signedTxJsonFilePath, JSON.stringify(signedTxJsonObj, null, 2));
 
-    // txArgs.push(`--from=${govProposalSpec.proposerAddress}`);
-    // txArgs.push(`--generate-only`);
-
-    // For broadcast
-    // txArgs.push(`--broadcast-mode=sync`);
-    // txArgs.push(`--node=${context.deployTxBroadcaster.endpoints.rpc}`);
-    // txArgs.push(`--gas=${gas}`);
-    // txArgs.push(`--gas-prices=${gasPrices}inj`);
-    // txArgs.push(`--yes`);
-    // txArgs.push(`--output`);
-    // txArgs.push(`json`);
-    // if (govProposalSpec.dryRun) {
-    //     txArgs.push(`--dry-run`);
-    // }
-
-    // const outputJsonTxFilepath = path.join(pathsDeployArtifacts, "proposal-tx_" + contractName + ".json");
-    // const txJsonStringUnformatted = await run(context, "injectived", txArgs);
-
-
 }
-
-

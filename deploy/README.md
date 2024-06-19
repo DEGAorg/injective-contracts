@@ -2,196 +2,95 @@
 
 ## Overview
 
-This **deploy** directory contains the deployment tool, and all the directories relating to it.
+This `./deploy` directory contains the deployment tool, and all the directories relating to it.
+
+The deploy tool is a typescript tool that can be used to generate transaction JSON files for the key transactions
+used for deployments of the smart contracts.
+
+Its purpose is to allow these deployments to be done in a predictable build-like manner to ensure goverance proposals
+and instantiations in particular are done in a consistent mistake-free manner.
+
+This is critical as a simple mistake such as specifying the incorrect instantiate permissions or admins could lead to
+situations where the contracts from a governance proposal cannot be used, or we become locked out of or 
+unable to mint from a production contract.
 
 ## Usage
 
-The primary way the tool is meant to be run is via the `./deploy.sh` script at the root of the workspace.
+The primary way the tool is meant to be run is via the `dega-inj-deploy` command.
 
 The calling paradigm is 
 ```bash
-./deploy.sh <spec-file>
+dega-inj-deploy <command> <spec-file>
 ```
-With `<spec-file>` path relative to deploy directory.
+Where "command" is a command such as `intantiate` or `gov-prop` (see a full list of commands below), and where `<spec-file-path>` is the path to a valid spec-file
+for the command you are running. (relative to your current directory)
 
-The tool could also be called either via npm using `npm run deploy <spec-file>` from inside the deploy directory,
+The tool could also be called either via npm using `npm run deploy <spec-file>` from inside the `./deploy/tool` directory.
 
-or directly through node using `node deploy/dist/deploy.js <spec-file>`.
+or directly through node using `node dist/deploy.js <command> <spec-file>` again from inside the `./deploy/tool` directory.
 
-## Sub-directories
+## Commands
 
-### artifacts
+The following commands are available for the deployment tool:
 
-The **artifacts** directory inside here contains all the files that result from the deployment process.
+1. `instantiate <spec-file-path>` - To create a JSON for a transaction to instantiate the minter and collection contracts.
+2. `gov-prop <spec-file-path>` - To create a JSON for a transaction to propose a governance proposal to store the minter and collection contracts.
+3. `migrate <spec-file-path>` - To create a JSON for a transaction to migrate the minter or collection contracts.
+4. `sign <spec-file-path> [<transction-file-path>]` - To sign a transaction JSON file with a private key from your injectived install's local keystore.
+5. `help [<command>]` - To get the help info for the deployment tool, or a specific command.
 
-This includes:
+Run `dega-inj-deploy help <command>` for more detailed info on each command, and the full list of properties in the spec file.
 
-**checksums.txt** - A file containing the discrete checksums of the wasm files products by CosmWasm's "WorkspaceOptimizer" tool.
-See more info in the Rust Optimizer section at the bottom.
 
-**dega_cw721.wasm** - The compiled wasm binary for the CW721 / Collection Smart Contract.
+## JSON Artifact Files
 
-**dega_minter.wasm** - The compiled wasm binary for the Minter Smart Contract.
+The deploy tool generates JSON files that contain the transaction data for the key transactions used in the deployment process.
 
-**deploy-output.json** - A structured JSON file containing the key outputs of the build. Currently this includes the
-code-ids from the store-code commands on the target deployment network for any codes that were stored, and the resulting
-addresses of the minter and cw721 contracts if they were instantiated. Note that *both* addressed will always be included
-in instantiatations, as the minter contract always instantiates the paired cw721 collection contract it owns.
+The files are generated in the `./deploy/artifacts` directory, and are named with the following format:
 
-**deploy-log.txt** - A log file showing the full console output of all commands and sub-commands from the last deployment.
+For safety, the contents of the artifacts directory are deleted during each run, to reduce the chance of accidentally using an transaction
+file for the wrong thing.
 
-**deploy-error.txt** - A log file showing any error that occurred during the last build which caused the build to fail.
+The execption to this is the `sign` command, which does not delete whatever is in the artifacts directory, to allow for signing
+of a JSON transaction file that was produced there previously.
 
-NOTE: As one implementation detail worth mentioning, both the CLI library used (wasm deploy), and the rust optimizer by
-convention build their artifacts to the **artifacts** directory in the root of the workspace. To avoid any bugs
-where the artifacts from development in the CLI are co-mingled with the production artifacts, this deploy tool 
-deletes any existing artifacts in the workspace artifacts directory at the start of a new optimization process, and
-stores all of it's artifacts in it's own distinct artifacts directory inside the deploy directory. During optimization
-it moves the checksum and binary files from the workspace artifacts directory output by rust optimizer into the deploy
-artifacts directory.
+## Spec-Files
 
-### private-keys
+Each command requires a spec-file to be passed in. This is a JSON file that contains all the information needed to 
+generate the transaction JSON file.
 
-The **private-keys** directory contains the private key mnemonic or seed hash files used for deployment transactions.
+Each command has a different spec-file format, use the help command for each command to see the full list of properties:
 
-The directory contains two versioned example private keys to show the format of a mnemonic key and seed hash key.
+```bash
+dega-inj-deploy help <command>
+```
 
-The directory by default is ignored in version control.
+You can find examples of spec-files for each of the commands in the [./deploy/specs/versioned/examples](./specs/versioned/examples) directory.
 
-These keys can be referenced in the **privateKeyFilename** property of the build spec. That property specifies a file
-name (and if desired a path) relative to this private-keys subdirectory.
+### Common Properties
 
-### specs
+Certain properties in the spec-file are optional. Such properties are marked with the type `T | undefined | null`, to
+allow the property to be left out, or provided intentionally with a null value to leave in the property in the spec file but not specify it.
 
-This is a directory intended to hold both versioned and unversioned build specs.
+Most of the properties are unique to each file, but a few properties such as "contractVariant" are in multiple files.
 
-Unversioned build specs can be put directly in the directory and will be ignored.
+The following properties are in every spec file:
 
-Version build specs should be put in the "versioned" directory, and will be detected by version control.
+**network** - "Local", "Testnet" or "Mainnet", indicates the network to generate the transaction for.
 
-The first argument to the deployment tool specifies the relative path to the desired spec file inside this directory.
+**note** - A string that will be included in the transaction JSON file as a note.
 
-### tool
+The property `deployAddress` indicates the address of the deployer account that will be used to sign and deploy the contracts for each
+of the transaction commands (gov-prop, instantiate, migrate). 
 
-Contains the typescript source of the deployment script and project. All the code is put in a single deploy.ts file.
+The `sign` command instead has "signerKeyName" which is the name of the key in the local injectived keystore to sign the transaction with.
 
-## Build Specs
+### File Path Properties
 
-The build spec via a build-spec file acts as the arguments for the deployment, and are limited to specification through the spec
-file for simplicity. For each deployment a single spec-file is specified.
+Finally, the properties wasmPath", "summaryFilePath" and "txJsonFilePath" all require file paths to be provided.
 
-### Build Spec Files
+Each of the paths must be specified with one of the following 3 syntaxes:
 
-When you run a deployment, you **must** specify the relative path / name of a build spec file to use.
-
-The path is relative to the **specs** directory inside the **deploy** directory
-(<workspace-path>/deploy/specs/<my-spec-file>.json)
-
-### Build Spec Properties
-
-The following properties are currently present in a specfile.
-
-Most properties are required and thus must be specified. If not flagged as optional below, that property is required.
-
-Certain properties are optional (also shown below), which may be omitted, or specified
-as null if they are not needed. Specifying as null was made possible so optional properties can be
-left in the build spec as a reminder of their availability.
-
-`"privateKeyFilename": "dev-mnemonic.json",` - The filename of the private key mnemonic file to use for deployment.
-This key will be used to submit the store-code and instantation transactions to the target network.
-
-`"network": "Testnet",` - The target network for the deployment. Options are **Mainnet**, **Testnet** and **Local**.
-This is used to specify which network to deploy to, and sets up the network-id and endpoints
-based on the network selected.
-
-`"grpcEndpoint": null,` (Optional) - The gRPC endpoint which is used to submit the deployment transactions through.
-gRPC endpoints in CosmWasm are nodes connected to the injective network capable of querying the network for information
-and submitting transactions. See more information here in the Injective
-[Interacting with a node article](https://docs.injective.network/nodes/interact-node) from the docs.
-If not specified the tool will use a default gRPC endpoint for the given network that is configured in the 
-injective typescript library.
-
-`"optionsBuildAndOptimize": true,` - Use this to determine whether to run the optimizer to build and optimize fresh 
-wasm files to the deploy/artifacts directory, or to use the binaries from the previous build (for example for testing, 
-or to deploy a specific set of final binaries that are already finalized).
-
-`"optionsStoreCodeForMinter": true,` - Whether to upload the minter contract binary, or use an already uploaded binary on the chain.
-If set to false, the **preExistingMinterCodeId** property below **must** be specified.
-
-`"preExistingMinterCodeId": 12345 or null,` (Optional) - If not storing code for the minter - specify the code id for the binary
-already on the chain to use for instantiating the minter smart contract instance.
-
-`"optionsStoreCodeForCw721": true,` - Whether to upload the CW721 / collection contract binary, or use an already uploaded binary on the chain.
-If set to false, the **preExistingCW721CodeId** property below **must** be specified.
-
-`"preExistingCw721CodeId": 12345 or null,` (Optional) - If not storing code for the CW721 collection contract - specify the code id for the binary
-already on the chain to use for instantiating the minter smart contract instance.
-
-`"optionsInstantiate": true,` - Whether to instantiate the minter and cw721 contracts after storing the code binaries.
-
-`"optionsMigrateMinter": false,` - Whether to migrate the minter contract. If set to true, the **minterAddressForMigration** property below **must** be specified.
-
-`"minterAddressForMigration": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` (Optional) - The injective address of the minter contract to migrate.
-
-`"optionsMigrateCw721": false,` - Whether to migrate the cw721 contract. If set to true, the **cw721AddressForMigration** property below **must** be specified.
-
-`"cw721AddressForMigration": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` (Optional) - The injective address of the cw721 contract to migrate.
-
-`"collectionName": "Test collection",` - The name of the collection in the collection properties of the CW721 contract.
-
-`"collectionSymbol": "TEST",` - The ticker symbol of the collection in the collection properties of the CW721 contract.
-Note, this shows up as the "Denom" in the injective finder.
-
-`"collectionDescription": "This is a test collection",` - A description for the collection stored and queryable in the 
-smart contract.
-
-`"collectionImageURL": "https://storage.googleapis.com/dega-banner/banner.png",` - An image for the collection 
-stored and queryable in the smart contract.
-
-`"collectionExternalLinkURL": "https://realms.degaplatform.com/",` - An external link for the collection stored and queryable in the smart contract.
-
-`"collectionSecondaryRoyaltyPaymentAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` - The injective address of the secondary royalty payment address for the collection.
-
-`"collectionSecondaryRoyaltyShare": "0.05",` - The secondary market royalty share to use across the collection. .05 = 5%
-
-`"cw721ContractLabel": "DEGA Collection - Test Collection",` - A label for the instantiated collection smart contract. 
-This shows up at the top of the page in the finder when you browse to the collection contract's address as the name of 
-the contract.
-
-`"cw721ContractMigratable": false,` - Whether the CW721 contract should be migratable. If set to true, the **cw721MigrateAdmin** property below **must** be specified.
-
-`"cw721MigrateAdmin": null or "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` (Optional) - The injective address of the **root** admin to give permission to migrate the code ID of the CW721 contract being instantiated.
-
-`"minterSignerPubKeyBase64": "A9tu/MCgtgLwbz+UcyIc/kPB38+6k3BP895SShKV6eRR",` - The compressed ECDSA public "Verification"
-key for the mint transaction signer. Stored in the minter contract to verify mint signatures. This is the binary
-verification key encoded as a Base64 string, which is also how it is stored on the chain.
-
-`"minterBurningPaused": false,` - Whether burning should initially be in a paused state when the contract is instantiated.
-
-`"minterMintingPaused": false,` - Whether minting should initially be in a paused state when the contract is instantiated.
-
-`"minterTransferringPaused": false,` - Whether transferring should initially be in a paused state when the contract is instantiated.
-
-`"minterInitialAdmin": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",` - The injective address of the initial admin of the minter contract.
-
-`"minterContractLabel": "DEGA Minter - Test Collection"` - A label for the instantiated minter smart contract.
-This shows up at the top of the page in the finder when you browse to the minter contract's address as the name of
-the contract.
-
-`"minterContractMigratable": false,` - Whether the minter contract should be migratable. If set to true, the **minterMigrateAdmin** property below **must** be specified.
-
-`"minterMigrateAdmin": null or "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6"` (Optional) - The injective address of the **root** admin to give permission to migrate the code ID of the minter contract being instantiated.
-
-## CosmWasm Rust Optimizer
-
-The Rust Optimizer is a tool built by the CosmWasm team to optimize the wasm files produced by the Rust compiler, and produce
-them inside a docker container so they are produced in a discrete way, and the same workspace files produce the same wasm binary
-bit for bit every time. This is allows their validation tooling to confirm a set of source files produced a given output if that
-feature is desired.
-
-The tool also ensures any personal / security sensitive information in hardcoded strings / file paths for example 
-is stripped from the output.
-
-Our project uses "Workspace Optimizer", the cargo "workspace" oriented variant of CosmWasm's Rust Optimizer.
-
-Read more about the CosmWasm team's Rust Optimizer at their [github page here](https://github.com/CosmWasm/optimizer).
+1. <workspaces>/path/to/file - To specify a file relative to the workspace root `./`.
+2. <deploy>/path/to/file - To specify a file relative to the `./deploy` directory.
+3. /root/path/to/file - To specify an absolute path from the root of the operating system.

@@ -1,0 +1,9 @@
+{
+  "note": "Migrating a contract",
+  "network": "Testnet",
+  "node": null,
+  "contractVariant": "Minter",
+  "deployAddress": "inj1dy6zq408day25hvfrjkhsrd7hn6ku38x2f8dm6",
+  "codeId": 9448,
+  "contractAddressForMigration": "inj17s33g5jftycltsrnh5jr2jheqhqent8w282rpt"
+}

@@ -4,9 +4,7 @@ import { AppContext, getAppContext } from "../context";
 import { DegaCw721ExecuteMsg, DegaMinterExecuteMsg } from "../messages";
 import { TestContext, getTestContext } from "./testContext";
 import { logObjectFullDepth } from "./setup";
-import { MintRequest } from "../messages/dega_minter_execute";
 import { createAllNftInfoQuery, createAllOperatorsQuery, createAllTokensQuery, createApprovalQuery, createApprovalsQuery, createApproveAllToken, createApproveToken, createBurnNft, createCollectionInfoQuery, createContractInfoQuery, createExtensionQuery, createMintMsg, createMinterQuery, createNftInfoQuery, createNumTokensQuery, createOwnerOfQuery, createOwnershipQuery, createRevokeAlltoken, createRevokeToken, createSendNft, createTokensQuery, createTransferNft, createUpdateCollectionInfo, generalCollectionGetter } from "../helpers/collection";
-import { info } from "../query";
 import { Cw2981QueryMsg } from "../messages/dega_cw721_query";
 
 const mintToken = async (appContext: AppContext, testContext: TestContext, recipient: string) => {
